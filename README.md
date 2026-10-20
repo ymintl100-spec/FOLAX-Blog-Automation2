@@ -33,3 +33,9 @@ npm run dist:mac:x64   # Intel DMG: macOS에서 실행
 결과물은 `dist`에 생성되며 테스트·개인 데이터는 제외합니다. macOS에서는 `npm ci`를 새로 실행하세요. macOS 대응은 코드·모의 환경을 검증했으며 실제 Mac 실행·설치는 미검증입니다. 코드 서명·공증은 별도 설정이 필요합니다.
 
 기존 [blogauto-naver](https://github.com/boksajang/blogauto-naver)를 기반으로 합니다. 윤문 규칙의 출처와 라이선스는 [NOTICE](packages/blog-humanizer/NOTICE), [LICENSE](packages/blog-humanizer/LICENSE)에 보존합니다.
+
+## 라이선스
+
+이 프로젝트의 자체 코드는 [MIT 라이선스](LICENSE)를 따릅니다. Copyright (c) 2026 boksajang.
+
+제3자 구성요소에는 각 구성요소의 기존 라이선스와 저작권·출처 고지가 적용되며, 해당 고지를 유지해야 합니다. 특히 윤문 규칙의 [기존 LICENSE](packages/blog-humanizer/LICENSE)와 [NOTICE](packages/blog-humanizer/NOTICE)는 그대로 유지합니다.
