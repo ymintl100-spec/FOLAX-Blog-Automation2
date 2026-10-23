@@ -58,3 +58,10 @@ test('research, writing and final review agree on compact scope and hidden refer
  assert.match(layout.issue({article},options),/최대 3개/);
  const report=layout.report({article:'가'.repeat(700)},options);assert.equal(report.articleCharacters,700);assert.equal(report.lengthBudget.max,1000);assert.equal(report.referencesVisible,false);
 });
+test('resolving saved v3 auto and fixed formats retains their original length and presentation policy',()=>{
+ const auto=formats.resolve({version:3,id:'balanced'},{writerContract:{articleFormat:'explanation'}});
+ assert.equal(auto.version,3);assert.equal(auto.surface.minSections,2);assert.equal(auto.surface.paragraphTarget,80);assert.equal(auto.editing,undefined);assert.equal(lengths.limits({formatGuidance:auto}).max,2800);
+ const surface={minSections:2,paragraphTarget:90,lineTarget:24,alignment:'center'},fixed=formats.resolve({version:3,id:'practical',surface});
+ assert.deepEqual(fixed.surface,surface);assert.equal(fixed.version,3);assert.equal(lengths.limits({formatGuidance:fixed}).max,3200);
+ assert.equal(formats.resolve(formats.guidance('balanced'),{writerContract:{articleFormat:'explanation'}}).version,4);
+});

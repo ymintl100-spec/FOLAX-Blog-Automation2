@@ -23,6 +23,11 @@ function resolve(guide,research={},experienceNotes=''){
  let id=guide.id==='balanced'?research.writerContract?.articleFormat:guide.id;
  if(!Object.hasOwn(profiles,id)||id==='balanced')id='explanation';
  if(id==='essay'&&!String(experienceNotes).trim())id='explanation';
+ // Completed steps in a v3 checkpoint must keep the original length/layout policy.
+ if(guide.version===3){
+  const {editing,...legacy}=guidance(id);
+  return {...legacy,version:3,surface:guide.id===id&&guide.surface?guide.surface:{...legacy.surface,minSections:id==='essay'?0:2,paragraphTarget:['explanation','essay'].includes(id)?80:90}};
+ }
  return guidance(id);
 }
 module.exports={normalizeProfile,guidance,resolve,DEFAULT_DIRECTION};
