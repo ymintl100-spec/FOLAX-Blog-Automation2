@@ -203,6 +203,7 @@ async function generate(options,log,deps) {
   const optionKeys=['tokenSaving','qualityPolicyVersion','writingGuidance','formatGuidance','blogDirection','experienceNotes','experienceNotesId','topic','keyword','category','topicMode','currentDateLabel','includeTitleImage','maxBodyImages','titleImageAspectRatio','bodyImageAspectRatio','excludedTopics','publishPurpose','preferredTone','freshnessLevel','searchChannel','trustBlogAsSource','keywordLanes','recommendedKeywordLanes','historyTitles','searchResults','sourceQuality'];
   const recovery=restored?JSON.parse(JSON.stringify(restored)):{version:2,steps:{},retrievals:{},generationOptions:Object.fromEntries(optionKeys.filter(k=>options[k]!==undefined).map(k=>[k,options[k]])),attemptNumber:1};
   options={...options,...recovery.generationOptions};
+  if(restored)for(const key of ['experienceNotes','experienceNotesId','blogDirection','writingGuidance','formatGuidance'])if(!Object.hasOwn(recovery.generationOptions,key))options[key]=undefined;
   if(typeof(options.experienceNotes??'')!=='string'||String(options.experienceNotes||'').length>2000)throw new Error('이번 글의 실제 경험 메모는 2,000자 이내로 입력하세요.');
   if(options.formatGuidance?.version>=3&&options.formatGuidance.id==='essay'&&!String(options.experienceNotes||'').trim())return {status:'failed',failureKind:'execution',failurePhase:'input',failureReason:'일상·경험형에는 이번 글의 실제 경험 메모가 필요합니다. 경험을 입력하거나 자동·건강 설명형을 선택하세요.',article:'',title:''};
   const saveRecovery=async()=>{await options.onGenerationCheckpoint?.(JSON.parse(JSON.stringify(recovery)));};
