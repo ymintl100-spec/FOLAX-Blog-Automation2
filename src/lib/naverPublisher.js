@@ -1,5 +1,5 @@
 const { getBridge } = require('./extensionBridge');
-const MIN_EDITOR_BUILD = '20261023.1';
+const MIN_EDITOR_BUILD = '20261023.2';
 function naverScheduledAt(hours, now = Date.now()) {
   const delay = Number(hours ?? 3);
   if (!Number.isFinite(delay) || delay <= 0) throw new Error('예약 시간은 0보다 큰 숫자여야 합니다.');
@@ -32,6 +32,7 @@ async function publishToNaver(options={}) {
     scheduledAt:options.publishVisibility!=='draft' && options.publishScheduleMode==='reserve' ? naverScheduledAt(options.reserveAfterHours) : undefined,
     interactive:true,
     preserveParagraphs:options.preserveParagraphs===true,
+    presentation:options.presentation||null,
     breakSentencesInBody:options.preserveParagraphs!==true && options.breakSentencesInBody!==false
   },0);
   if (!require('./publishRecovery').confirmedPublication(result)) throw Object.assign(new Error('발행 완료를 확인하지 못했습니다. 열린 탭을 확인하세요.'),{code:'PUBLISH_UNCERTAIN'});

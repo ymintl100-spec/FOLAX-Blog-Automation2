@@ -55,11 +55,11 @@ function connectionStore() {
   const root=getRuntimeRoot(); const store=withAccountImageUrls(root,readAccountStore(root,readSettings(root)));
   return {...store, tistoryConnection:getBridge().snapshot(TISTORY_ACCOUNT_ID), accounts:store.accounts.map(a=>({...a,sessionStatus:getBridge().snapshot(a.id).status,sessionCheckedAt:getBridge().snapshot(a.id).checkedAt,connection:getBridge().snapshot(a.id)}))};
 }
-function prepareExtension() {
+function prepareExtension({copyPath=true}={}) {
   const source=app.isPackaged ? path.join(process.resourcesPath,'extension') : path.join(__dirname,'..','extension');
   const destination=path.join(app.getPath('userData'),'chrome-extension');
   fs.mkdirSync(destination,{recursive:true}); fs.cpSync(source,destination,{recursive:true});
-  clipboard.writeText(destination); return destination;
+  if(copyPath)clipboard.writeText(destination); return destination;
 }
 let mainWindow;
 let activeJob = null;
@@ -347,6 +347,7 @@ function buildPendingNaverPublishDraft({
     breakSentencesInBody,
     preserveParagraphs:agentResult.writingApplication?.guideVersion>=2,
     writingApplication:agentResult.writingApplication,
+    presentation:agentResult.writingApplication?.presentation,
     publishToTistoryAfterNaver,
     tistoryBlogId,
     keywordLane: keywordLaneResultPayload(latestLaneResult),
@@ -1042,7 +1043,12 @@ async function startJob(form) {
         qualityPolicyVersion: 1,
         writingGuidance: require('./lib/writingMemory').guidance(runtimeRoot,account.id),
         formatGuidance: require('./lib/writingMemory').formatGuidance(runtimeRoot,account.id),
-        onWritingApplication: applied=>safeLog(jobId,`실제 생성 설정: ${applied.label} · 형식 v${applied.guideVersion} · 수정·승인 예시 ${applied.approvedExamples}개${applied.resumed?' · 재개 작업의 기존 설정 사용':''}`),
+        blogDirection:require('./lib/writingMemory').direction(runtimeRoot,account.id),
+        experienceNotes:form.experienceNotes||'',experienceNotesId:form.experienceNotesId||'',
+        onWritingApplication: applied=>{
+          safeLog(jobId,`실제 생성 설정: ${applied.label} · 형식 v${applied.guideVersion} · 수정·승인 예시 ${applied.approvedExamples}개${applied.resumed?' · 재개 작업의 기존 설정 사용':''}`);
+          if(applied.experienceNotesId)emit('job:experienceConsumed',{accountId:account.id,id:applied.experienceNotesId});
+        },
         topic,
         keyword,
         category,
@@ -1510,6 +1516,7 @@ app.whenReady().then(async () => {
   ensureSettingsFile(getRuntimeRoot());
   ensureAccountStoreFile(getRuntimeRoot(), readSettings(getRuntimeRoot()));
   createWindow();
+  try{prepareExtension({copyPath:false});}catch(error){bridgeError+=' 확장 설치 폴더 준비가 필요합니다: '+error.message;}
 
   ipcMain.handle("app:getInitialData", () => {
     const runtimeRoot = getRuntimeRoot();
@@ -1538,6 +1545,13 @@ app.whenReady().then(async () => {
   ipcMain.handle('writing:add',(event,{accountId,...input})=>writingMemory.add(getRuntimeRoot(),writingAccount(event,accountId),input));
   ipcMain.handle('writing:remove',(event,{accountId,id})=>writingMemory.remove(getRuntimeRoot(),writingAccount(event,accountId),id));
   ipcMain.handle('writing:preferences',(event,{accountId,...input})=>writingMemory.savePreferences(getRuntimeRoot(),writingAccount(event,accountId),input));
+  ipcMain.handle('writing:preview',(event,input)=>{
+    if(event.sender!==mainWindow?.webContents)throw new Error('앱에서 미리보기를 여세요.');
+    if(typeof input?.article!=='string'||input.article.length>100000)throw new Error('미리보기 원고를 확인하세요.');
+    const plan=require(path.join(app.isPackaged?process.resourcesPath:path.join(__dirname,'..'),'extension','article-plan.js'));
+    const raw=input.presentation||{},presentation={headingStyle:raw.headingStyle==='quotation_underline'?'quotation_underline':'quotation_line',alignment:raw.alignment==='center'?'center':'left',preserveImageOrder:raw.preserveImageOrder===true,heroPosition:raw.heroPosition==='after-opening'?'after-opening':'before-opening'};
+    return {blocks:plan.articleWithHero(plan.articlePlan(input.article,{preserveParagraphs:true,presentation}),input.titleImagePlanned===true?{type:'hero'}:null,presentation.heroPosition),presentation};
+  });
 
   ipcMain.handle('codex:models', () => require('./lib/codexModels').getCodexCatalog(readSettings(getRuntimeRoot()).codexCmdPath));
   ipcMain.handle("chrome:installAndQuit", async () => {

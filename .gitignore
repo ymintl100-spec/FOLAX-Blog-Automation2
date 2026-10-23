@@ -76,3 +76,7 @@ packages/blog-humanizer/SKILL.md
 *.md
 !/README.md
 !packages/blog-humanizer/references/*.md
+!docs/
+docs/*
+!docs/blog-benchmark-2026-10-23.md
+!docs/blog-benchmark-samples.json

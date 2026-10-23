@@ -1,6 +1,6 @@
 // This function runs only inside the editor's isolated world. No debugger or remote control.
 async function editorCommand(command, args = {}) {
-  const build='20261023.1';let step='locate';
+  const build='20261023.2';let step='locate';
   try {
   const visible = el => Boolean(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
   const find = selector => [...document.querySelectorAll(selector)].find(visible);
@@ -169,7 +169,7 @@ async function editorCommand(command, args = {}) {
       if(el.matches('.se-documentTitle'))continue;
       const id=el.id;
       if(el.matches('.se-text')){const text=[...el.querySelectorAll('.se-text-paragraph')].map(readText).join('\n');if(normalize(text))blocks.push({id,type:'paragraph',text});}
-      else if(el.matches('.se-quotation'))blocks.push({id,type:'quote',text:readText(el.querySelector('.se-quote .se-text-paragraph') || el.querySelector('.se-text-paragraph')),style:el.classList.contains('se-l-quotation_line')?'quotation_line':'default'});
+      else if(el.matches('.se-quotation'))blocks.push({id,type:'quote',text:readText(el.querySelector('.se-quote .se-text-paragraph') || el.querySelector('.se-text-paragraph')),style:el.classList.contains('se-l-quotation_line')?'quotation_line':el.classList.contains('se-l-quotation_underline')?'quotation_underline':'default'});
       else if(el.matches('.se-image'))blocks.push({id,type:'image',name:el.querySelector('img')?.getAttribute('alt') || ''});
       else if(el.matches('.se-oglink')){
         const urls=[...el.querySelectorAll('a[href]')].map(a=>a.getAttribute('href')).filter(url=>/^https?:\/\//i.test(url || ''));
@@ -270,7 +270,17 @@ async function editorCommand(command, args = {}) {
   }
   if (command === 'paragraph') {
     const beforeText=bodyText();
-    await lastBody();
+    const target=await lastBody();
+    if(['left','center'].includes(args.alignment)){
+      const aligned=()=>{const el=target.id?document.getElementById(target.id):target;const actual=el&&getComputedStyle(el).textAlign;return actual===args.alignment||(args.alignment==='left'&&actual==='start');};
+      if(!aligned()){
+        const option=()=>find(`button[data-name="align"][data-value="${args.alignment}"], button[data-name="align"][data-value="align-${args.alignment}"], button[data-name="align-${args.alignment}"], button[aria-label="${args.alignment==='center'?'가운데 정렬':'왼쪽 정렬'}"]`);
+        if(!option()){const menu=find('button[data-name="align"][aria-haspopup="true"]');if(menu){menu.click();await wait(120);}}
+        const button=option();if(!button)throw new Error('본문 정렬 버튼을 찾지 못했습니다. 원고를 보존했습니다: '+args.alignment);
+        button.click();if(!await waitFor(aligned))throw new Error('본문 정렬 적용을 확인하지 못했습니다: '+args.alignment);
+        await activateParagraph(target.id?document.getElementById(target.id):target);
+      }
+    }
     const value=String(args.text),lines=[];
     if(args.preserveParagraphs)lines.push(...value.split(/\r?\n/));
     else if(args.breakSentences){
@@ -310,7 +320,7 @@ async function editorCommand(command, args = {}) {
   if (command === 'quote') {
     const beforeText=bodyText();
     const styleName=args.style || 'default';
-    if(!['default','quotation_line'].includes(styleName))throw new Error('지원하지 않는 인용구 스타일입니다.');
+    if(!['default','quotation_line','quotation_underline'].includes(styleName))throw new Error('지원하지 않는 인용구 스타일입니다.');
     const button = find('button[data-name="quotation"][aria-haspopup="true"]');
     if (!button) throw new Error('인용구 버튼을 찾지 못했습니다.');
     const before = quotes().length;
@@ -375,6 +385,7 @@ async function editorCommand(command, args = {}) {
     if(args.titleQuote && (!quotes()[0]?.classList.contains('se-l-default') || normalize(readText(quotes()[0]))!==normalize(args.title)))issues.push('본문 최상단 제목 인용구 불일치');
     if(sectionQuotes.length!==quoteCount)issues.push(`섹션 ${sectionQuotes.length}/${quoteCount}개`);
     if(args.sectionStyle && sectionQuotes.some(q=>!q.classList.contains('se-l-'+args.sectionStyle)))issues.push('섹션 버티컬 스타일 불일치');
+    if(['left','center'].includes(args.bodyAlignment)&&allParagraphs().filter(p=>normalize(readText(p))).some(p=>{const actual=getComputedStyle(p).textAlign;return actual!==args.bodyAlignment&&!(args.bodyAlignment==='left'&&actual==='start');}))issues.push('본문 정렬이 선택한 형식과 다릅니다.');
     if(args.plan){
       const components=[...document.querySelectorAll('.se-component')].filter(e=>!e.matches('.se-text') || normalize(readText(e)));let section=-1;
       for(let i=0;i<args.plan.length;i++)if(args.plan[i].type==='section'){

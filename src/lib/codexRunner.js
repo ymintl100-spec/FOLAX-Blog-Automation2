@@ -1101,7 +1101,7 @@ function writerOutputIssueReason(writerResult, options={}) {
       if(!isBlogCitation(citation) && !parts.references.includes(cleanSourceUrl(citation.url)))return '참고자료 URL이 본문에 표시되지 않았습니다. 맨 아래 [SECTION - 참고자료]에 실제 사용한 원문 링크를 모으세요.';
     }
   }
-  return require('./articleRequirements').articleLengthIssue(writerResult);
+  return require('./articleRequirements').articleLengthIssue(writerResult,options);
 }
 
 function articleSections(article) {
@@ -1128,11 +1128,13 @@ function writerImageContractIssueReason(writerResult, options = {}) {
   if(images.some(i=>!Number.isInteger(Number(i.sequence)) || Number(i.sequence)<1 || !markers.includes(Number(i.sequence)) || !String(i.prompt || '').trim()))return '이미지 번호, 본문 위치 또는 설명을 확인해 주세요.';
   const sections=articleSections(writerResult?.article);
   const bodySections=sections.filter(s=>s.heading!=='참고자료');
+  const unheadedEssay=options.formatGuidance?.version>=3&&options.formatGuidance.id==='essay'&&!bodySections.length;
   for(const image of images){
+    if(unheadedEssay&&image.sectionHeading==='본문'&&require('./publicationFormat').referenceParts(writerResult.article).body.includes(`[IMAGE INSERT - ${image.sequence}]`))continue;
     const section=bodySections.find(s=>normalizedSectionHeading(s.heading)===normalizedSectionHeading(image.sectionHeading));
     if(!section || !section.content.includes(`[IMAGE INSERT - ${image.sequence}]`))return '본문 이미지는 참고자료가 아닌 해당 소제목의 섹션에 배치해야 합니다.';
   }
-  if(new Set(images.map(i=>normalizedSectionHeading(i.sectionHeading))).size!==images.length)return '같은 섹션의 중복 이미지 대신 다른 주요 섹션에 배치하세요.';
+  if(!unheadedEssay&&new Set(images.map(i=>normalizedSectionHeading(i.sectionHeading))).size!==images.length)return '같은 섹션의 중복 이미지 대신 다른 주요 섹션에 배치하세요.';
   if(limit>0 && bodySections.length && !images.length)return '본문 주요 섹션을 함축하는 이미지를 최대한 배치하세요. 이미지 계획이 비어 있습니다.';
   if(limit>0 && images.length<Math.min(limit,bodySections.length)){
     const omissions=Array.isArray(writerResult?.imageOmissions)?writerResult.imageOmissions:[];

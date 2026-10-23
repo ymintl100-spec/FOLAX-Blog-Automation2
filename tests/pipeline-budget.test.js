@@ -62,7 +62,7 @@ const benchmarkGuide=require('../src/lib/blogFormatProfiles').guidance('balanced
 const closing='매일 쓰는 도구를 가까이 두고 며칠 사용해 본 뒤 불편했던 자리부터 조정해 보세요.';
 const headings=['자주 쓰는 도구부터 남기는 이유','공간과 쓰임을 함께 나누는 방법','사용한 뒤 바꿀 자리'];
 const benchmarkWriter={...writer,article:opening+'\n\n'+headings.map((h,i)=>'[SECTION - '+h+']\n'+help+'\n\n'+(i===2?closing:'분류 기준 '+i+'에서는 물건을 꺼내고 돌려놓는 위치를 함께 살펴봅니다.')).join('\n\n')};
-const benchmarkReview=()=>({...goodReview(),benchmarkFormatPass:true,benchmarkFormatEvidence:{openingQuote:opening,sectionHeadings:headings,closingQuote:closing,reason:'고민의 답과 판단 기준, 적용 순서가 실제 원고에 있습니다.'}});
+const benchmarkReview=()=>({...goodReview(),benchmarkFormatPass:true,benchmarkFormatEvidence:{openingQuote:opening,sectionHeadings:headings,closingQuote:closing,arcQuote:help,reason:'고민의 답과 판단 기준, 적용 순서가 실제 원고에 있습니다.'}});
 test('benchmark mode stops an old unsegmented template before publishing within the existing correction budget',async()=>{
  const h=harness({options:{formatGuidance:benchmarkGuide}});const result=await h.run();
  assert.equal(result.status,'failed');assert.equal(result.failurePhase,'writer');assert.match(result.failureReason,/벤치마크 형식/);
@@ -71,8 +71,8 @@ test('benchmark mode stops an old unsegmented template before publishing within 
 test('real benchmark structure and evidence pass with three calls and report the settings actually used',async()=>{
  const applied=[];const h=harness({writerResult:benchmarkWriter,review:benchmarkReview,options:{formatGuidance:benchmarkGuide,writingGuidance:{exampleCount:2,typicalParagraphCharacters:80},onWritingApplication:a=>applied.push(a)}});
  const result=await h.run();assert.equal(result.publishable,true);assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main']);
- assert.equal(result.writingApplication.profileId,'balanced');assert.equal(result.writingApplication.guideVersion,2);assert.equal(result.writingApplication.sectionCount,3);assert.equal(result.writingApplication.approvedExamples,2);assert.equal(applied[0].approvedExamples,2);
- assert(h.calls[0].prompt.includes('formatGuide'));assert(h.calls[1].prompt.includes('빈 줄로 구분'));
+ assert.equal(result.writingApplication.profileId,'explanation');assert.equal(result.writingApplication.guideVersion,3);assert.equal(result.writingApplication.sectionCount,3);assert.equal(result.writingApplication.approvedExamples,2);assert.equal(applied[0].approvedExamples,2);
+ assert(h.calls[0].prompt.includes('formatGuide'));assert(h.calls[1].prompt.includes('작은 문단'));
 });
 test('missing benchmark verdict preserves writer and retries only the review on resume',async()=>{
  const h=harness({writerResult:benchmarkWriter,review:n=>n===1?goodReview():benchmarkReview(),options:{formatGuidance:benchmarkGuide}});
@@ -83,4 +83,15 @@ test('missing benchmark verdict preserves writer and retries only the review on 
 test('a failed benchmark flow gets one targeted correction even when generic quality booleans pass',async()=>{
  const h=harness({writerResult:benchmarkWriter,review:()=>({...benchmarkReview(),benchmarkFormatPass:false,revisionInstructions:['도입의 고민과 소제목별 설명을 연결하세요.']}),options:{formatGuidance:benchmarkGuide}});
  const result=await h.run();assert.equal(result.status,'failed');assert.equal(result.failurePhase,'main_review');assert.equal(h.calls.filter(c=>c.agent==='writer').length,2);
+});
+test('explicit essay without this-job experience stops without a model call',async()=>{
+ const h=harness({options:{formatGuidance:require('../src/lib/blogFormatProfiles').guidance('essay')}});const result=await h.run();assert.equal(result.failurePhase,'input');assert.match(result.failureReason,/실제 경험/);assert.equal(h.calls.length,0);
+});
+test('actual experience and selected genre are checkpointed before the one-shot memo is consumed',async()=>{
+ const order=[],notes='오늘은 평소 지나치던 골목에 잠시 멈춰 표지판을 읽었습니다.';
+ const source='출근길에 늘 지나치던 골목을 오늘은 천천히 걸었습니다.\n\n사진을 남기려고 멈췄는데 평소 보지 못한 표지판이 보였습니다.\n\n돌아오는 길에는 다음에도 이 골목을 지나고 싶다는 생각이 들었습니다.';
+ const parts=source.split('\n\n');const review={...goodReview(),readerValueAssessment:{openingAnswer:parts[0],decisionHelp:parts[2]},benchmarkFormatPass:true,benchmarkFormatEvidence:{openingQuote:parts[0],closingQuote:parts[2],arcQuote:parts[1],sectionHeadings:[]}};
+ const h=harness({writerResult:{...writer,article:source},review:()=>review,options:{formatGuidance:require('../src/lib/blogFormatProfiles').guidance('essay'),experienceNotes:notes,experienceNotesId:'one-shot-memo',onWritingApplication:a=>order.push({event:'consumed',id:a.experienceNotesId})}});
+ const save=h.opts.onGenerationCheckpoint;h.opts.onGenerationCheckpoint=c=>{order.push({event:'saved',notes:c.generationOptions.experienceNotes});return save(c)};
+ const result=await h.run();assert.equal(result.publishable,true);assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main']);assert.equal(order[0].event,'saved');assert.equal(order[0].notes,notes);assert.equal(order[1].id,'one-shot-memo');assert.equal(result.writingApplication.profileId,'essay');
 });

@@ -28,12 +28,13 @@ function reviewEvidenceIssue(review,writer,options={}){
  if(layout.required(options)&&review.benchmarkFormatPass===true){
   const actual=layout.inspect(writer.article),evidence=review.benchmarkFormatEvidence||{};
   const normalize=s=>s.normalize('NFC').replace(/\s+/g,' ').trim();
-  for(const [key,part] of [['openingQuote',actual.opening],['closingQuote',actual.closing]]){
+  for(const [key,part] of [['openingQuote',actual.opening],['closingQuote',actual.closing],...(options.formatGuidance?.version>=3?[['arcQuote',body]]:[])]){
    const quote=typeof evidence[key]==='string'?normalize(evidence[key]):'';
    if(quote.length<12||quote.length>200||!normalize(part).includes(quote))return '벤치마크 형식 검수 인용이 실제 도입·마무리와 일치하지 않습니다: '+key;
   }
   const headings=evidence.sectionHeadings;
-  if(!Array.isArray(headings)||headings.some(h=>typeof h!=='string')||new Set(headings).size<2||headings.some(h=>!actual.sections.some(s=>s.body&&normalize(s.heading)===normalize(h))))return '벤치마크 형식 검수에 실제 본문 소제목 2개 이상이 필요합니다.';
+  const minimum=options.formatGuidance?.version>=3?options.formatGuidance.surface?.minSections??2:2;
+  if(!Array.isArray(headings)||headings.some(h=>typeof h!=='string')||new Set(headings).size<minimum||headings.some(h=>!actual.sections.some(s=>s.body&&normalize(s.heading)===normalize(h))))return `벤치마크 형식 검수에 실제 본문 소제목 ${minimum}개 이상이 필요합니다.`;
  }
  return '';
 }

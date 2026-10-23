@@ -170,8 +170,13 @@ function addLog(payload) {
   stream.scrollTop = stream.scrollHeight;
 }
 
-function runAutoStartJob(form) {
-  return window.blogAuto.startJob(form);
+const experienceUses=new Map();
+async function runAutoStartJob(form) {
+  const field=$('#experienceNotes'),notes=field?.dataset.accountId===form.accountId?field.value.trim():'';
+  const id=notes?crypto.randomUUID():'';
+  if(id)experienceUses.set(id,{accountId:form.accountId,text:notes});
+  try{return await window.blogAuto.startJob({...form,experienceNotes:notes,experienceNotesId:id});}
+  finally{if(id)experienceUses.delete(id);}
 }
 
 function clearAgentLogs() {
@@ -1278,6 +1283,7 @@ function resetJobPreview(target){
   state.currentJobId='';
   $('#articlePreview').value='';$('#selectedTitle').textContent='주제 선정 중';
   $('#writingApplicationStatus').textContent='새 작업의 형식 적용 준비 중';
+  previewArticleSequence++;$('#articleFormattedPreview').replaceChildren();$('#articleFormattedPreview').hidden=true;$('#articlePreview').hidden=false;
   $('#articleMeta').textContent=accountDisplayName(target.account)+' · '+target.category.name+' · 새 작업 시작';
   renderImages([]);renderImageNotes([]);clearAgentLogs();
 }
@@ -1387,6 +1393,12 @@ async function startTistoryTestPublish() {
 async function boot() {
   const initial = await window.blogAuto.getInitialData();
   $('#appVersion').textContent=initial.appVersion?'v'+initial.appVersion:'';
+  $('#showMobilePreview').addEventListener('click',()=>{mobilePreviewChosen=true;$('#articlePreview').hidden=true;$('#articleFormattedPreview').hidden=false;});
+  $('#showRawPreview').addEventListener('click',()=>{mobilePreviewChosen=false;$('#articlePreview').hidden=false;$('#articleFormattedPreview').hidden=true;});
+  window.blogAuto.onExperienceConsumed(payload=>{
+    const use=experienceUses.get(payload.id),field=$('#experienceNotes');
+    if(use&&payload.accountId===use.accountId&&field.dataset.accountId===use.accountId&&field.value.trim()===use.text)field.value='';
+  });
   $("#runtimePath").textContent = initial.runtimeRoot;
   renderCodexInstallation(initial.codexInstallation);
   state.chrome = initial.chrome || state.chrome;
@@ -1404,6 +1416,7 @@ async function boot() {
   if(initial.pendingPreview){
     const draft=initial.pendingPreview;
     $('#articlePreview').value=draft.article || '';$('#selectedTitle').textContent=draft.title || '';
+    renderFormattedArticle({...draft,article:draft.article,writingApplication:draft.writingApplication});
     $('#articleMeta').textContent=draft.status==='publish_uncertain'?'이전 발행 결과 확인 필요':'저장된 글 복구됨 · 같은 계정·카테고리에서 작업 시작 시 생성 없이 발행 재시도';
     renderImages(draft.images || []);
   }
@@ -1441,7 +1454,8 @@ async function boot() {
   window.blogAuto.onPreview((payload) => {
     $("#articlePreview").value = payload.article || "";
     const applied=payload.writingApplication;
-    $('#writingApplicationStatus').textContent=applied?`${applied.label} v${applied.guideVersion} · 소제목 ${applied.sectionCount}개 · 문단 ${applied.paragraphCount}개 · 수정·승인 예시 ${applied.approvedExamples}개 적용`:'본문 형식 점검 전 · 기존 원고를 불러온 경우 새 형식으로 재작성하지 않습니다.';
+    $('#writingApplicationStatus').textContent=applied?`${applied.label} v${applied.guideVersion} · 소제목 ${applied.sectionCount}개 · 문단 ${applied.paragraphCount}개 · 수정·승인 예시 ${applied.approvedExamples}개${applied.presentation?' · 줄 '+applied.presentation.lineTarget+'자 안팎 / '+(applied.presentation.alignment==='center'?'중앙':'왼쪽')+' 정렬':''}`:'본문 형식 점검 전 · 기존 원고를 불러온 경우 새 형식으로 재작성하지 않습니다.';
+    renderFormattedArticle(payload);
     $("#articleMeta").textContent = payload.previewStage === 'humanizing'
       ? `본문 ${payload.writerAttempt}차 작성 완료 · 문장 다듬는 중`
       : payload.previewStage === 'reviewing'
@@ -1465,6 +1479,7 @@ async function boot() {
     }
     setRunState(payload.status, payload.status);
     $("#articlePreview").value = payload.article || $("#articlePreview").value;
+    if(payload.article&&payload.article!==previewArticleText)renderFormattedArticle(payload);
     $("#articleMeta").textContent = payload.title || payload.status || "완료";
     if (payload.title) $("#selectedTitle").textContent = payload.title;
     if (payload.tokenUsage) setTokenTotal(payload.tokenUsage.total || 0);
@@ -1875,6 +1890,26 @@ async function refreshCodexCatalog(){
 window.addEventListener('focus',refreshCodexCatalog);
 setInterval(()=>{if(!document.hidden)refreshCodexCatalog();},300000);
 
+let previewArticleSequence=0,mobilePreviewChosen=null,previewArticleText='',previewArticlePresentation=null;
+async function renderFormattedArticle(payload){
+ const request=++previewArticleSequence,article=String(payload.article||'');
+ const presentation=payload.writingApplication?.presentation||(article===previewArticleText?previewArticlePresentation:null);
+ previewArticleText=article;previewArticlePresentation=presentation;
+ try{
+  const result=await window.blogAuto.getWritingPreview({article,presentation,titleImagePlanned:payload.writingApplication?.titleImagePlanned===true});if(request!==previewArticleSequence)return;
+  const host=$('#articleFormattedPreview'),paper=document.createElement('article');paper.className='mobile-article-paper'+(result.presentation.alignment==='center'?' center':'');
+  for(const block of result.blocks){
+   if(block.type==='image'||block.type==='hero'){
+    const source=(payload.images||[]).find(i=>block.type==='hero'?i.role==='title':i.role==='body'&&Number(i.sequence)===block.sequence);
+    const el=document.createElement(source?'img':'div');
+    if(source){el.src=source.url;el.alt=block.type==='hero'?'대표 이미지':'본문 이미지 '+block.sequence;}else{el.className='preview-image-slot';el.textContent=(block.type==='hero'?'대표 이미지':'이미지 '+block.sequence)+' · 생성 후 이 위치에 배치';}
+    paper.appendChild(el);
+   }else{const el=document.createElement(block.type==='section'?'blockquote':'p');el.textContent=block.text;if(block.style==='quotation_underline')el.className='underline';paper.appendChild(el);}
+  }
+  host.replaceChildren(paper);
+  const show=mobilePreviewChosen===null?Boolean(presentation):mobilePreviewChosen;host.hidden=!show;$('#articlePreview').hidden=show;
+ }catch(error){if(request===previewArticleSequence){$('#articleFormattedPreview').textContent='미리보기 확인 필요: '+error.message;}}
+}
 let writingRequestSequence=0;
 function writingStatus(message){$('#writingLearningStatus').textContent=message;}
 function renderWritingProfile(profile,account){
@@ -1882,8 +1917,9 @@ function renderWritingProfile(profile,account){
   $('#saveWritingExample').disabled=false;$('#saveWritingPreferences').disabled=false;
   $('#writingStyleEnabled').checked=profile.enabled;
   $('#writingFormatProfile').value=profile.formatProfile;
+  $('#writingDirection').value=profile.direction||'';
   $('#writingAvoidPhrases').value=profile.avoidPhrases.join(', ');
-  writingStatus(profile.eligibleCount+'개 수정·승인 예시 적용 / '+profile.examples.length+'개 보관');
+  writingStatus(profile.eligibleCount+'개 수정·승인 예시'+(profile.enabled?' 적용':' · 문체 적용 꺼짐')+' / '+profile.examples.length+'개 보관');
   const list=$('#writingExamples');list.replaceChildren();
   for(const example of profile.examples){
     const row=document.createElement('li'),label=document.createElement('span'),button=document.createElement('button');
@@ -1899,9 +1935,11 @@ async function refreshWritingLearning(){
   $('#writingLearning').dataset.accountId=account?.id || '';
   $('#saveWritingExample').disabled=true;$('#saveWritingPreferences').disabled=true;
   $('#writingExamples').replaceChildren();$('#writingAvoidPhrases').value='';
+  $('#writingDirection').value='';
   writingStatus('불러오는 중');
   $('#writingSampleText').value='';$('#writingOriginalText').value='';$('#writingSampleTitle').value='';$('#writingSampleApproved').checked=false;
   $('#writingFormatProfile').value='balanced';
+  const note=$('#experienceNotes');if(note.dataset.accountId!==(account?.id||'')){note.value='';note.dataset.accountId=account?.id||'';}
   if(!account){writingStatus('계정을 선택하세요');$('#writingLearningAccount').textContent='';$('#writingExamples').replaceChildren();return;}
   try{const profile=await window.blogAuto.getWritingProfile(account.id);if(request===writingRequestSequence&&selectedAccount()?.id===account.id)renderWritingProfile(profile,account);}catch(error){if(request===writingRequestSequence)writingStatus(error.message);}
 }
@@ -1923,7 +1961,7 @@ function initializeWritingLearning(){
   });
   $('#saveWritingPreferences').addEventListener('click',async()=>{
     const account=selectedAccount();if(!account)return;const button=$('#saveWritingPreferences');button.disabled=true;
-    try{const profile=await window.blogAuto.saveWritingPreferences({accountId:account.id,enabled:$('#writingStyleEnabled').checked,formatProfile:$('#writingFormatProfile').value,avoidPhrases:$('#writingAvoidPhrases').value.split(',').map(s=>s.trim()).filter(Boolean)});
+    try{const profile=await window.blogAuto.saveWritingPreferences({accountId:account.id,enabled:$('#writingStyleEnabled').checked,formatProfile:$('#writingFormatProfile').value,direction:$('#writingDirection').value,avoidPhrases:$('#writingAvoidPhrases').value.split(',').map(s=>s.trim()).filter(Boolean)});
       if(selectedAccount()?.id===account.id){renderWritingProfile(profile,account);writingStatus('문체 설정 저장됨 · 다음 새 글부터 반영');}
     }catch(error){writingStatus(error.message);}finally{button.disabled=!selectedAccount();}
   });

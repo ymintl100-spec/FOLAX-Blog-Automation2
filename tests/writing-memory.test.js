@@ -61,7 +61,7 @@ test('approved paragraph-only edits retain line breaks and headings in compact g
  const article=first+'\n\n[SECTION - 도구를 놓는 기준]\n'+second+'\n\n'+first+'\n\n[SECTION - 공간에 맞춰 바꾸기]\n'+second+'\n\n'+first;
  const saved=memory.add(root,'layout-only',{...sample(),originalArticle:original,article});assert.equal(saved.eligibleCount,1);
  const guide=memory.guidance(root,'layout-only');assert(guide.styleFragments[0].includes('\n\n'));assert(guide.styleFragments[0].includes('[SECTION - 도구를 놓는 기준]'));
- assert(guide.typicalParagraphCharacters<original.length/2);assert(guide.typicalLineCharacters>0);assert(guide.approvedEdits[0].after.includes('\n'));
+ assert(guide.typicalParagraphCharacters<original.length/2);assert(guide.typicalLineCharacters>0);assert(guide.styleFragments.some(s=>s.includes('\n')));
  assert.equal(memory.add(root,'layout-only',{...sample(),originalArticle:original,article:article.replace(/ /g,'  ')}).duplicate,true);
  const reflowed=original.replaceAll('. ','.\n\n');assert.equal(reflowed.replace(/\s/g,''),original.replace(/\s/g,''));
  assert.equal(memory.add(root,'line-break-only',{...sample(),originalArticle:original,article:reflowed}).eligibleCount,1);

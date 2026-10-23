@@ -1,15 +1,27 @@
-// Manually observed public post structure, 2026-10-23. No source prose or images.
-// Sampling links and limitations are documented in README.md.
+// Editorial patterns observed across 40 public posts; see docs/blog-benchmark-2026-10-23.md.
+// Source prose and photographs are not model context or writing-memory examples.
 const profiles={
- balanced:{label:'공통 형식 · 주제에 맞게',flow:'독자의 고민 또는 상황 → 핵심 답 → 이유·판단 기준 → 필요한 실행 방법 → 구체적인 마무리. 설명형 글과 절차형 글 중 주제에 맞는 전개를 선택한다.'},
- explanation:{label:'설명 중심 · 고민에서 판단 기준으로',flow:'독자가 혼동하기 쉬운 상황 → 핵심 답 → 왜 그런지 설명 → 조건별 차이와 판단 기준 → 적용할 한 가지. 사례는 제공된 실제 자료나 가정임을 밝힌 예시만 쓴다.'},
- practical:{label:'실행 중심 · 원리에서 순서로',flow:'독자의 고민과 얻을 도움 → 필요한 원리 → 실행 순서 또는 비교 기준 → 해당 단계의 주의점 → 다음 행동. 실제 순서가 있는 내용에만 번호를 붙인다.'}
+ balanced:{label:'자동 · 건강 정보와 일상',purpose:'주제·근거·실제 경험 메모에 맞는 글의 역할 선택'},
+ explanation:{label:'건강 설명 · 오해에서 선택 기준으로',purpose:'일상의 질문과 흔한 해석을 이유·조건으로 풀어주는 글',arc:['독자가 마주한 구체적인 상황','자연스럽게 생기는 질문','흔한 해석과 달라지는 조건','이유를 쉬운 말과 일상 예로 연결','처음의 고민으로 돌아오는 선택 기준'],title:'독자가 실제로 물을 질문과 달라지는 조건을 제목에 담는다. 의사·전문가 자격과 진료 경험을 빌리지 않는다.',closing:'도입의 걱정을 다시 보며 적용할 작은 기준 하나를 남긴다.',surface:{headingStyle:'quotation_line',alignment:'left',heroPosition:'after-opening',lineTarget:22,paragraphTarget:80,minSections:2}},
+ practical:{label:'실행·루틴 · 이해에서 따라 하는 순서로',purpose:'준비·실행 순서와 쉬운 대안을 근거 안에서 설명하는 글',arc:['대상과 불편한 상황','움직임이나 방법이 필요한 짧은 이유','준비·시작 조건','실제 순서와 해당 단계의 설명·이미지','어려울 때 대안과 필요한 주의점','생활에 넣을 작은 실행'],title:'대상·상황·방법을 명확히 한다. 시간·횟수·효과는 근거가 있을 때만 약속한다.',closing:'완벽하게 수행하라는 요구보다 가능한 범위와 지속할 조건을 남긴다.',surface:{headingStyle:'quotation_underline',alignment:'center',heroPosition:'before-opening',lineTarget:24,paragraphTarget:90,minSections:2}},
+ comparison:{label:'선택·비교 · 같은 기준으로 살펴보기',purpose:'같은 비교 축으로 조건별 선택을 돕는 글',arc:['선택을 어렵게 하는 상황','비교할 공통 기준','같은 기준에서 보는 차이','조건에 따라 선택이 바뀌는 지점','독자가 확인할 한 가지'],title:'무엇과 무엇을 어떤 상황에서 비교하는지 드러낸다. 근거 없는 승자·우월성을 만들지 않는다.',closing:'누구에게나 같은 정답을 주지 않고 선택이 달라지는 조건을 정리한다.',surface:{headingStyle:'quotation_line',alignment:'left',heroPosition:'after-opening',lineTarget:24,paragraphTarget:90,minSections:2}},
+ essay:{label:'일상·경험 · 장면에서 여운으로',purpose:'사용자가 제공한 이번 경험을 장면·선택·변화로 잇는 글',arc:['경험 메모에 있는 한 장면','그때의 생각과 선택','작은 사건이나 변화','지금 돌아보는 의미','첫 장면을 떠올리는 여운'],title:'이번 경험 메모에 실제로 있는 장면·선택·질문을 제목으로 삼는다. 허구의 성취·증상·장소·대화는 만들지 않는다.',closing:'정의·원인·방법·요약으로 마무리하지 않고 시작의 장면을 다시 비추며 끝낸다.',surface:{headingStyle:'quotation_line',alignment:'left',heroPosition:'after-opening',lineTarget:22,paragraphTarget:80,minSections:0}}
 };
+const DEFAULT_DIRECTION='건강 정보와 일상·경험을 함께 기록하며, 몸과 일상을 쉽게 이해하고 무리 없이 이어갈 선택을 돕는다.';
 function normalizeProfile(value){return value==='off'||Object.hasOwn(profiles,value)?value:'balanced';}
 function guidance(value){
  const id=normalizeProfile(value);if(id==='off')return null;
- return {version:2,id,label:profiles[id].label,flow:profiles[id].flow,
-  layout:'소제목 없는 짧은 도입에서 독자의 상황과 핵심 답을 연결한다. 본론은 서로 다른 질문을 해결하는 소제목 3~5개를 보통 사용하며 내용에 맞춰 조정하되 2개 이상으로 나눈다. 소제목은 목차 항목 나열 대신 해당 부분에서 알게 될 차이·이유·방법을 구체적으로 표현한다. 한 문단에 한 가지 의미와 1~3문장을 담고 문단 사이를 빈 줄로 구분한다. 긴 문장은 의미 단위 줄바꿈을 허용하며 승인 예시의 문단·줄 길이를 우선한다. 설명 주변에 설정 최대치 안에서 이미지를 배치한다. 마지막은 소제목 뒤의 짧은 적용 기준 또는 행동으로 끝내며 같은 요약을 반복하지 않는다.',
-  boundaries:'참고한 것은 전개와 배치뿐이다. 참고 블로그의 문장·고유 인사·전문가 자격·경험·건강 주장·광고 문구·사진은 재사용하지 않는다. 문체와 표현은 사용자가 수정·승인한 예시를 우선하며 근거·주제·필수 조건을 보존한다. 목차·FAQ·소제목 수·짧은 줄바꿈을 기계적으로 강제하지 않는다.'};
+ const p=profiles[id];
+ return {version:3,id,label:p.label,...(id==='balanced'?{catalog:Object.entries(profiles).filter(([k])=>k!=='balanced').map(([id,p])=>({id,purpose:p.purpose}))}:{arc:p.arc,title:p.title,closing:p.closing,surface:p.surface}),
+  flow:p.arc?.join(' → ')||'기존 조사 응답에서 글의 역할을 선택한다',
+  layout:'한 가지 의미를 짧은 줄과 작은 문단으로 전달한다. 승인 문체·줄·문단 리듬을 우선한다. 이미지는 설명 가까이 설정 예산 안에서 배치한다.',
+  boundaries:'참고 블로그의 문장·인물·자격·경험·의학 주장·사진은 재사용하지 않는다. 문체 예시는 사실 자료가 아니다. 소제목 수·FAQ·요약·인사를 기계적으로 반복하지 않는다.'};
 }
-module.exports={normalizeProfile,guidance};
+function resolve(guide,research={},experienceNotes=''){
+ if(!guide||!(guide.version>=3))return guide;
+ let id=guide.id==='balanced'?research.writerContract?.articleFormat:guide.id;
+ if(!Object.hasOwn(profiles,id)||id==='balanced')id='explanation';
+ if(id==='essay'&&!String(experienceNotes).trim())id='explanation';
+ return guidance(id);
+}
+module.exports={normalizeProfile,guidance,resolve,DEFAULT_DIRECTION};

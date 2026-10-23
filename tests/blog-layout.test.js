@@ -13,7 +13,7 @@ test('format inspection excludes references and detects missing opening, section
  assert.equal(layout.issue({article:body.repeat(20)},{formatGuidance:null}),'');
 });
 test('benchmark evidence must cite real opening, closing, and distinct actual headings',()=>{
- const review={status:'PASS',naturalnessPass:true,naverReadabilityPass:true,readerValueAssessment:{openingAnswer:opening,decisionHelp:body},benchmarkFormatPass:true,benchmarkFormatEvidence:{openingQuote:opening,closingQuote:closing,sectionHeadings:['쓰임에 맞춰 나누기','사용하며 조정하기']}};
+ const review={status:'PASS',naturalnessPass:true,naverReadabilityPass:true,readerValueAssessment:{openingAnswer:opening,decisionHelp:body},benchmarkFormatPass:true,benchmarkFormatEvidence:{openingQuote:opening,closingQuote:closing,arcQuote:body,sectionHeadings:['쓰임에 맞춰 나누기','사용하며 조정하기']}};
  assert.equal(quality.reviewEvidenceIssue(review,{article},options),'');
  assert.match(quality.reviewEvidenceIssue({...review,benchmarkFormatEvidence:{...review.benchmarkFormatEvidence,closingQuote:body}},{article},options),/마무리/);
  assert.match(quality.reviewEvidenceIssue({...review,benchmarkFormatEvidence:{...review.benchmarkFormatEvidence,sectionHeadings:['없는 소제목','사용하며 조정하기']}},{article},options),/소제목/);
@@ -37,6 +37,6 @@ test('publish payload transports paragraph preservation and blocks old extension
   await require('../src/lib/tistoryPublisher').publishToTistory({tistoryBlogId:'test-blog',article,title:'테스트 원고',preserveParagraphs:true});
   for(const payload of sent){assert.equal(payload.article,article);assert.equal(payload.preserveParagraphs,true);assert.equal(payload.breakSentencesInBody,false);}
   assert.throws(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261007.2'},'test-blog'),/구버전/);
-  assert.doesNotThrow(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261023.1'},'test-blog'));
+  assert.doesNotThrow(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261023.2'},'test-blog'));
  }finally{bridge.stop();fs.rmSync(root,{recursive:true,force:true});}
 });

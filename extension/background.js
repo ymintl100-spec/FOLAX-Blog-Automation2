@@ -144,11 +144,12 @@ async function saveNaverDraft(task,resumeOnly=false) {
 async function publish(task) {
   if(task.platform==='tistory')return publishTistory(task);
   const tabId=task.tabId, p=task.payload;
-  const plan=articlePlan(p.article,{preserveParagraphs:p.preserveParagraphs===true});
-  const steps=[{type:'title',text:p.title},{type:'quote',text:p.title,style:'default'}];
-  if(p.titleImageIndex!==null)steps.push({type:'image',index:p.titleImageIndex,name:p.titleImageName || 'blog_img_title.png'});
-  for(const block of plan){
-    if(block.type==='image'){const asset=p.bodyImages.find(i=>Number(i.sequence)===block.sequence);if(asset?.index>=0)steps.push({type:'image',index:asset.index,name:asset.name || 'blog_img_'+block.sequence+'.png'});}
+  const plan=articlePlan(p.article,{preserveParagraphs:p.preserveParagraphs===true,presentation:p.presentation||{}});
+  const steps=[{type:'title',text:p.title},...(!p.presentation?[{type:'quote',text:p.title,style:'default'}]:[])];
+  const ordered=articleWithHero(plan,p.titleImageIndex!==null?{type:'hero',index:p.titleImageIndex,name:p.titleImageName||'blog_img_title.png'}:null,p.presentation?.heroPosition);
+  for(const block of ordered){
+    if(block.type==='hero')steps.push({...block,type:'image'});
+    else if(block.type==='image'){const asset=p.bodyImages.find(i=>Number(i.sequence)===block.sequence);if(asset?.index>=0)steps.push({type:'image',index:asset.index,name:asset.name || 'blog_img_'+block.sequence+'.png'});}
     else steps.push({...block,type:block.type==='section'?'quote':'paragraph'});
   }
   await runWriter({steps,requireEmpty:true,
@@ -158,14 +159,14 @@ async function publish(task) {
         const {connection}=await stored();const response=await fetch(API+'/asset?task='+task.id+'&index='+block.index,{headers:{Authorization:'Bearer '+connection.token},signal:AbortSignal.timeout(15000)});
         if(!response.ok)throw new Error('이미지를 가져오지 못했습니다.');return command(tabId,'image',{...await response.json(),...anchor});
       }
-      return command(tabId,block.type,{...block,...anchor,breakSentences:p.breakSentencesInBody,preserveParagraphs:p.preserveParagraphs===true});
+      return command(tabId,block.type,{...block,...anchor,breakSentences:p.breakSentencesInBody,preserveParagraphs:p.preserveParagraphs===true,alignment:p.presentation?.alignment});
     },
     save:checkpoint=>chrome.storage.local.set({authoringCheckpoint:{...checkpoint,blogId:task.blogId,title:p.title,taskId:task.id}}),
     onProgress:(done,total,type)=>type==='paragraph' && done!==total ? undefined : api('/progress',{id:task.id,message:`네이버 ${done}/${total} · ${type==='image'?'이미지':type==='quote'?'제목·섹션':'본문'} 입력 확인 완료`}),
     checkCancelled:async()=>{if((await api('/task/status',{id:task.id})).state!=='running')throw new Error('작업이 취소되었습니다. 입력한 내용은 보존됩니다.');}
   });
   await command(tabId,'imageAi');
-  await command(tabId,'verify',{title:p.title,article:p.article,plan,titleQuote:true,requireAi:true,sectionStyle:'quotation_line',imageCount:p.bodyImages.filter(i=>i.index>=0).length+(p.titleImageIndex!==null?1:0)});
+  await command(tabId,'verify',{title:p.title,article:p.article,plan,titleQuote:!p.presentation,bodyAlignment:p.presentation?.alignment,requireAi:true,sectionStyle:p.presentation?.headingStyle||'quotation_line',imageCount:p.bodyImages.filter(i=>i.index>=0).length+(p.titleImageIndex!==null?1:0)});
   if(p.publishVisibility==='draft')return saveNaverDraft(task);
   await command(tabId,'click',{selector:'button[data-click-area="tpb.publish"], button[class*="publish_btn__"]',skipIfSelector:'button[data-testid="seOnePublishBtn"]'}); await sleep(400);
   await command(tabId,'settings',p);
