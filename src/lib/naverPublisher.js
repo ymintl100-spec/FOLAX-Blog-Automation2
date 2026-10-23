@@ -1,5 +1,5 @@
 const { getBridge } = require('./extensionBridge');
-const MIN_EDITOR_BUILD = '20261007.2';
+const MIN_EDITOR_BUILD = '20261023.3';
 function naverScheduledAt(hours, now = Date.now()) {
   const delay = Number(hours ?? 3);
   if (!Number.isFinite(delay) || delay <= 0) throw new Error('예약 시간은 0보다 큰 숫자여야 합니다.');
@@ -10,7 +10,7 @@ function requireCompatibleEditor(result, blogId, requiredBuild=MIN_EDITOR_BUILD)
   if(result?.status!=='valid')return;
   const build=String(result.editorBuild || /확장\s+(\d{8}\.\d+)/.exec(result.reason || '')?.[1] || '');
   const parts=build.split('.').map(Number), minimum=requiredBuild.split('.').map(Number);
-  if(!build || parts[0]<minimum[0] || (parts[0]===minimum[0] && parts[1]<minimum[1])) {
+  if(!build || parts.length!==2 || !parts.every(Number.isFinite) || parts[0]<minimum[0] || (parts[0]===minimum[0] && parts[1]<minimum[1])) {
     throw Object.assign(new Error(`${blogId} 계정 Chrome의 BlogAuto 확장이 구버전입니다 (${build || '버전 확인 불가'} / 필요 ${requiredBuild}). 해당 계정 창의 chrome://extensions에서 BlogAuto 새로고침(↻) 후 다시 시작하세요. 다른 계정 창의 새로고침은 이 창에 적용되지 않습니다. 원고 재생성은 진행하지 않았습니다.`),{code:'EXTENSION_UPDATE_REQUIRED'});
   }
 }
@@ -25,13 +25,15 @@ async function checkNaverSession(options={}) {
 async function publishToNaver(options={}) {
   const bridge=getBridge(), id=accountId(options);
   const result=await bridge.request(id,'publish',{
-    title:options.title,article:options.article,titleImagePath:options.titleImagePath,
+    title:options.title,article:require('./publicationFormat').omitReferences(options.article),titleImagePath:options.titleImagePath,
     bodyImages:options.bodyImages || [],tags:options.tags || [], category:options.category || '',
     publishVisibility:options.publishVisibility || (options.publishPrivate===false?'public':'private'),
     publishScheduleMode:options.publishVisibility==='draft'?'now':options.publishScheduleMode || 'now',reserveAfterHours:options.reserveAfterHours || 3,
     scheduledAt:options.publishVisibility!=='draft' && options.publishScheduleMode==='reserve' ? naverScheduledAt(options.reserveAfterHours) : undefined,
     interactive:true,
-    breakSentencesInBody:true
+    preserveParagraphs:options.preserveParagraphs===true,
+    presentation:options.presentation||null,
+    breakSentencesInBody:options.preserveParagraphs!==true && options.breakSentencesInBody!==false
   },0);
   if (!require('./publishRecovery').confirmedPublication(result)) throw Object.assign(new Error('발행 완료를 확인하지 못했습니다. 열린 탭을 확인하세요.'),{code:'PUBLISH_UNCERTAIN'});
   options.log?.(result.saved ? '네이버 임시저장 완료 · 빈 편집기 복귀 확인' : result.scheduled ? `네이버 예약 등록 완료: ${result.scheduledAt}` : `확장 발행 완료: ${result.url}`); return result;

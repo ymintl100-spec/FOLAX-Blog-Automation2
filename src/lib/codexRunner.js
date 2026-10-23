@@ -466,6 +466,9 @@ function extractAssistantOutputTexts(event) {
   if (item?.type === "agent_message" && typeof item.message === "string") {
     texts.push(item.message);
   }
+  if (item?.type === "agent_message" && typeof item.text === "string") {
+    texts.push(item.text);
+  }
   if (payload.type === "agent_message_delta" && typeof payload.delta === "string") {
     texts.push(payload.delta);
   }
@@ -751,7 +754,7 @@ function buildImageWorkerPrompt({
   imageAspectRatio = DEFAULT_IMAGE_ASPECT_RATIO,
   titleImageAspectRatio,
   bodyImageAspectRatio,
-  maxBodyImages = 10,
+  maxBodyImages = 3,
   writerResult,
   finalTitle,
   accountImageStylePrompt = "",
@@ -808,7 +811,7 @@ function buildImageWorkerPrompt({
     "Body image policy:",
     bodyImageLimit > 0 ? "- Body images are section-compression visuals, not generic decoration and not title cards. Avoid readable Korean paragraphs, long labels, UI copy, and text-heavy charts." : "- Body image generation is disabled.",
     bodyImageLimit > 0 ? `- Every body image must use aspect ratio ${selectedBodyImageAspectRatio}.` : "",
-    bodyImageLimit > 0 ? "- For every supplied item, preserve sequence and sectionHeading and compress the entire section's concrete subject, relationship, process, comparison, timeline, or decision cue into one coherent image." : "",
+    bodyImageLimit > 0 ? options.formatGuidance?.version>=3&&options.formatGuidance.id==='practical'?"- Preserve every sequence and parent sectionHeading. Each item's prompt may describe a different step within one section: visualize that specific setup, action or alternative. Keep those step images distinct and do not merge them into a repeated whole-section summary.":"- For every supplied item, preserve sequence and sectionHeading and compress the entire section's concrete subject, relationship, process, comparison, timeline, or decision cue into one coherent image." : "",
     bodyImageLimit > 0 ? "- Inspect each generated body image before accepting it. If it is generic, loosely related, or misses the section's central structure, report that image as failed with the specific reason. Do not regenerate within this task; the app permits one targeted retry." : "",
     "",
     "Writer Agent image handoff:",
@@ -1083,22 +1086,21 @@ function writerOutputIssueReason(writerResult, options={}) {
   if (!String(writerResult?.article || "").trim()) {
     return "Writer Agent가 본문(article)을 비워 반환했습니다.";
   }
-  const {cleanSourceUrl,referenceParts,isBlogCitation}=require('./publicationFormat');
+  const {cleanSourceUrl,referenceParts}=require('./publicationFormat');
   const parts=referenceParts(writerResult.article);
-  if(/\[(?:(?:참고|출처)\s*)?\d{1,3}(?:\s*[,–-]\s*\d{1,3})*\]/.test(parts.body))return '본문에는 참고 번호를 넣지 마세요. 출처는 맨 아래 [SECTION - 참고자료]에만 모으세요.';
-  if(parts.count>1 || (parts.count && /^\[SECTION\s*-/m.test(parts.references)))return '참고자료는 글 맨 아래 한 번만 배치하세요.';
+  if(/\[(?:(?:참고|출처)\s*)?\d{1,3}(?:\s*[,–-]\s*\d{1,3})*\]/.test(parts.body))return '본문에는 참고 번호를 넣지 마세요. 출처 연결은 내부 citations에만 보존하세요.';
+  if(parts.count)return '공개 원고에는 참고자료·출처 목록을 넣지 마세요. 내부 citations는 유지하세요.';
   if(options.researchTitleResult?.factBased===true || options.researchTitleResult?.factChecks?.some(f=>f.essential===true) || (options.researchTitleResult?.searchNeed && options.researchTitleResult.searchNeed!=='skip')) {
     const {sourcesFor}=require('./generationPrompts');
     const sources=new Map(sourcesFor(options).map(s=>[s.sourceId,s]));
     const citations=writerResult.citations;
-    if(!Array.isArray(citations) || !citations.length)return '출처 의존 글의 본문 참고자료와 citations가 없습니다. 실제 사용한 원문을 표시하세요.';
+    if(!Array.isArray(citations) || !citations.length)return '출처 의존 글의 내부 citations가 없습니다. 실제 사용한 sourceId와 URL을 연결하세요.';
     for(const citation of citations){
       const source=sources.get(citation.sourceId);
       if(!source || ![source.url,source.fetchedUrl].filter(Boolean).map(cleanSourceUrl).includes(cleanSourceUrl(citation.url)))return '본문 출처가 전달한 원문과 일치하지 않습니다. 제공된 sourceId와 URL을 사용하세요.';
-      if(!isBlogCitation(citation) && !parts.references.includes(cleanSourceUrl(citation.url)))return '참고자료 URL이 본문에 표시되지 않았습니다. 맨 아래 [SECTION - 참고자료]에 실제 사용한 원문 링크를 모으세요.';
     }
   }
-  return require('./articleRequirements').articleLengthIssue(writerResult);
+  return require('./articleRequirements').articleLengthIssue(writerResult,options);
 }
 
 function articleSections(article) {
@@ -1125,11 +1127,14 @@ function writerImageContractIssueReason(writerResult, options = {}) {
   if(images.some(i=>!Number.isInteger(Number(i.sequence)) || Number(i.sequence)<1 || !markers.includes(Number(i.sequence)) || !String(i.prompt || '').trim()))return '이미지 번호, 본문 위치 또는 설명을 확인해 주세요.';
   const sections=articleSections(writerResult?.article);
   const bodySections=sections.filter(s=>s.heading!=='참고자료');
+  const unheadedEssay=options.formatGuidance?.version>=3&&options.formatGuidance.id==='essay'&&!bodySections.length;
   for(const image of images){
+    if(unheadedEssay&&image.sectionHeading==='본문'&&require('./publicationFormat').referenceParts(writerResult.article).body.includes(`[IMAGE INSERT - ${image.sequence}]`))continue;
     const section=bodySections.find(s=>normalizedSectionHeading(s.heading)===normalizedSectionHeading(image.sectionHeading));
     if(!section || !section.content.includes(`[IMAGE INSERT - ${image.sequence}]`))return '본문 이미지는 참고자료가 아닌 해당 소제목의 섹션에 배치해야 합니다.';
   }
-  if(new Set(images.map(i=>normalizedSectionHeading(i.sectionHeading))).size!==images.length)return '같은 섹션의 중복 이미지 대신 다른 주요 섹션에 배치하세요.';
+  const stepImages=options.formatGuidance?.version>=3&&options.formatGuidance.id==='practical';
+  if(!unheadedEssay&&!stepImages&&new Set(images.map(i=>normalizedSectionHeading(i.sectionHeading))).size!==images.length)return '같은 섹션의 중복 이미지 대신 다른 주요 섹션에 배치하세요.';
   if(limit>0 && bodySections.length && !images.length)return '본문 주요 섹션을 함축하는 이미지를 최대한 배치하세요. 이미지 계획이 비어 있습니다.';
   if(limit>0 && images.length<Math.min(limit,bodySections.length)){
     const omissions=Array.isArray(writerResult?.imageOmissions)?writerResult.imageOmissions:[];
@@ -1198,12 +1203,18 @@ async function runCodexTask({
   agentTokenOffset = 0,
   agent = "main"
 }) {
+  const imageOutput = require('./imageTaskOutput');
+  const imageStage = imageOutput.isImageStage(agent);
+  const outputFileName = imageStage ? imageOutput.lastMessageName(resultFileName) : resultFileName;
+  let lastAssistantText = '';
   const directText=require('./textTaskOutput').isTextStage(agent);
   if(directText)prompt=require('./textTaskOutput').responsePrompt(prompt);
+  else if(imageStage)prompt=imageOutput.responsePrompt(prompt);
   else if(options.trustBlogAsSource===true)prompt+='\n'+require('./generationPrompts').sourceOnlyPolicy;
   else prompt += '\nQuality policy: source-quality scores and domain classifications are discovery hints, not proof or vetoes. Assess original excerpts, dates, scope and conflicts. Stable explanations need no artificial current-news hook. A single directly relevant primary source can suffice; unknown domains may be primary sources. Blogs can inform discovery or first-hand experience, but cannot alone establish high-stakes or release claims. Omit nonessential unsupported details instead of blocking the whole topic. Never invent facts. Minor style differences are notes, not revision grounds.';
   fs.writeFileSync(path.join(options.jobDir, promptFileName), prompt, "utf8");
   removeAgentResultFile(options.jobDir, resultFileName);
+  if (imageStage) removeAgentResultFile(options.jobDir, outputFileName);
   const outputState = { section: "meta" };
   const tokenState = {
     awaitingValue: false,
@@ -1318,6 +1329,10 @@ async function runCodexTask({
         reportTokenUsage();
       }
       for (const assistantText of extractAssistantOutputTexts(parsedJson)) {
+        if (imageStage && parsedJson.type !== 'item.started' && parsedJson.type !== 'item.updated'
+            && parsedJson.type !== 'agent_message_delta' && parsedJson.payload?.type !== 'agent_message_delta') {
+          lastAssistantText = String(assistantText || '').slice(-262144);
+        }
         String(assistantText || "")
           .split(/\r?\n/)
           .forEach((nestedLine) => {
@@ -1369,7 +1384,7 @@ async function runCodexTask({
       "exec",
       "--json",
       "--skip-git-repo-check",
-      ...(directText ? ['--output-last-message',path.join(options.jobDir,resultFileName)] : []),
+      ...((directText || imageStage) ? ['--output-last-message',path.join(options.jobDir,outputFileName)] : []),
       ...(codexModel ? ["--model", codexModel] : []),
       "-c",
       `model_reasoning_effort=${taskEffort}`,
@@ -1484,12 +1499,21 @@ async function runCodexTask({
     tokenState.lastOutputTokens = 0;
     tokenState.rateLimits = null;
     removeAgentResultFile(options.jobDir, resultFileName);
+    if (imageStage) removeAgentResultFile(options.jobDir, outputFileName);
+    lastAssistantText = '';
     taskStartedAt = Date.now();
     await executeCodex();
   }
   recoverTokenUsageFromSession();
   reportTokenUsage({ final: true });
 
+  if (imageStage) {
+    const received = imageOutput.saveResult(options.jobDir, resultFileName, agent, lastAssistantText);
+    if (received.status !== 'success') {
+      const detail = imageOutput.diagnosticText(received.failureReason || (received.notes || []).join(' / '));
+      if (detail) log('이미지 작업 응답: ' + detail, 'warn', agent);
+    }
+  }
   return {
     ...readAgentResult(options.jobDir, resultFileName),
     tokenUsage: {

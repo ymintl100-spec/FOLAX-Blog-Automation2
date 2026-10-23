@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header class="titlebar"><img src="../assets/app-icon.png" alt="" /><span>네이버 블로그 자동화 <span class="titlebar-credit">by @복사장의생존발악</span></span></header>
+    <header class="titlebar"><img src="../assets/app-icon.png" alt="" /><span>네이버 블로그 자동화 <span class="titlebar-credit">by @복사장의생존발악</span> <span id="appVersion" class="titlebar-credit"></span></span></header>
     <div class="app-shell">
       <p id="runtimePath" hidden>런타임 폴더 확인 중</p>
       <header class="topbar">
@@ -241,6 +241,8 @@
                 <input id="reserveAfterHours" type="number" min="1" step="1" value="3" />
               </label>
             </div>
+            <label class="wide compact-check"><input id="tokenSaving" type="checkbox" checked /> 토큰 절약 · 별도 윤문을 작성 단계에 통합</label>
+            <p class="hint wide">최종 사실·문체·독자 유용성 검수는 유지합니다. 수정은 최대 한 번 진행하고 실패한 주제의 자동 전체 재생성은 생략합니다.</p>
             <div class="form-actions wide">
             <button id="saveSettingsButton" class="ghost wide" type="button">설정 저장</button>
             <button hidden id="tistoryTestButton" class="ghost wide" type="button">Tistory 테스트 발행</button>
@@ -286,8 +288,32 @@
             <span>선정 제목</span>
             <strong id="selectedTitle">아직 선정 전</strong>
           </div>
+          <div class="writing-actions"><button id="showMobilePreview" type="button" class="ghost small">모바일 형식 보기</button><button id="showRawPreview" type="button" class="ghost small">원고 텍스트 보기</button></div>
+          <div id="articleFormattedPreview" class="mobile-article-preview" role="document" aria-label="생성 원고의 모바일 형식 미리보기" hidden></div>
           <textarea id="articlePreview" readonly placeholder="선택한 주제로 생성된 본문이 이곳에 표시됩니다.
 왼쪽에서 블로그와 주제를 선택하고 작업을 시작하세요."></textarea>
+          <p id="writingApplicationStatus" class="hint" role="status">글 생성 후 적용한 형식과 승인 예시 수를 표시합니다.</p>
+          <details id="writingLearning" class="writing-learning">
+            <summary>내 글 문체 학습 · <span id="writingLearningStatus">계정을 선택하세요</span></summary>
+            <p class="hint" id="writingLearningAccount"></p>
+            <p class="hint">수정 전 원고와 직접 수정·승인한 최종 글을 비교해 전체 분량·도입과 마무리·소제목 수·설명 방식·줄바꿈을 참고합니다. 수정 없는 원고나 승인하지 않은 글은 학습하지 않습니다. 다음 새 글부터 적용하며, 여기서 편집해도 현재 원고나 게시글은 바뀌지 않습니다.</p>
+            <p class="hint">예시는 이 PC에 저장됩니다. 문체를 적용할 때 짧은 발췌만 Codex에 전달하며, 학습을 위한 추가 AI 호출은 없습니다.</p>
+            <label>블로그 운영 방향 (계정별, 최대 400자)<textarea id="writingDirection" rows="2" maxlength="400" placeholder="주 독자와 이 블로그에서 계속 전하고 싶은 관점"></textarea></label>
+            <label>벤치마크 형식<select id="writingFormatProfile"><option value="balanced">자동 · 건강 정보와 일상</option><option value="explanation">건강 설명 · 오해에서 선택 기준으로</option><option value="practical">실행·루틴 · 이해에서 따라 하는 순서로</option><option value="comparison">선택·비교 · 같은 기준으로 살펴보기</option><option value="essay">일상·경험 · 장면에서 여운으로</option><option value="off">벤치마크 형식 끄기</option></select></label>
+            <p class="hint">공개 글 100편의 전개·소제목·이미지 배치를 분석했습니다. 짧은 본문을 기본으로 하며 참고자료 목록은 표시하지 않습니다. 문체와 표현은 내가 수정·승인한 글을 우선합니다.</p>
+            <label class="compact-check"><input id="writingStyleEnabled" type="checkbox" checked /> 학습한 문체 적용</label>
+            <label>피하고 싶은 표현 (쉼표 구분, 최대 12개)<input id="writingAvoidPhrases" maxlength="650" placeholder="예: 살펴보겠습니다, 여러분도 꼭" /></label>
+            <button id="saveWritingPreferences" class="ghost small" type="button">문체 설정 저장</button>
+            <label>이번 글의 실제 경험 메모 (선택, 최대 2,000자)<textarea id="experienceNotes" rows="4" maxlength="2000" placeholder="직접 겪은 장면, 당시 생각, 선택, 달라진 점을 적어주세요. 없는 경험·대화·의학적 사실을 만들지 않습니다."></textarea></label>
+            <p class="hint">선택 계정의 다음 새 작업 한 번에 사용합니다. 생성이 시작되면 입력칸을 비우고 재개 기록에는 보존합니다. 메모가 없으면 자동 형식은 정보형을 선택합니다. 학습 예시의 경험은 새 글의 사실로 가져오지 않습니다.</p>
+            <label>예시 제목<input id="writingSampleTitle" maxlength="120" placeholder="내 글 예시 이름" /></label>
+            <button id="loadCurrentWriting" class="ghost small" type="button">현재 원고를 수정 전후 칸에 불러오기</button>
+            <label>수정 전 원고 (200~12,000자)<textarea id="writingOriginalText" rows="4" maxlength="12000" placeholder="원래 원고를 붙여넣으세요. 현재 원고 불러오기도 가능합니다."></textarea></label>
+            <label>직접 수정한 최종 글 (200~12,000자)<textarea id="writingSampleText" rows="7" maxlength="12000" placeholder="수정 전 원고에서 마음에 들지 않는 표현을 직접 고치세요."></textarea></label>
+            <label class="compact-check"><input id="writingSampleApproved" type="checkbox" /> 위 최종 글을 직접 수정·검토했으며 문체 학습을 승인합니다.</label>
+            <div class="writing-actions"><button id="saveWritingExample" class="primary small" type="button">수정본 승인·학습</button></div>
+            <ul id="writingExamples" class="writing-examples"></ul>
+          </details>
         </section>
 
         <section class="panel image-panel" aria-label="생성 이미지 미리보기">
@@ -317,7 +343,10 @@
                 <span>본문섹션이미지</span>
                 <select id="maxBodyImages">
                   <option value="0">사용 안 함</option>
-                  <option value="10" selected>섹션별 생성(최대 10장)</option>
+                  <option value="2">최대 2장</option>
+                  <option value="3" selected>최대 3장</option>
+                  <option value="5">최대 5장</option>
+                  <option value="10">섹션별 생성(최대 10장)</option>
                 </select>
               </label>
             </div>

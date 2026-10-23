@@ -55,11 +55,11 @@ function connectionStore() {
   const root=getRuntimeRoot(); const store=withAccountImageUrls(root,readAccountStore(root,readSettings(root)));
   return {...store, tistoryConnection:getBridge().snapshot(TISTORY_ACCOUNT_ID), accounts:store.accounts.map(a=>({...a,sessionStatus:getBridge().snapshot(a.id).status,sessionCheckedAt:getBridge().snapshot(a.id).checkedAt,connection:getBridge().snapshot(a.id)}))};
 }
-function prepareExtension() {
+function prepareExtension({copyPath=true}={}) {
   const source=app.isPackaged ? path.join(process.resourcesPath,'extension') : path.join(__dirname,'..','extension');
   const destination=path.join(app.getPath('userData'),'chrome-extension');
   fs.mkdirSync(destination,{recursive:true}); fs.cpSync(source,destination,{recursive:true});
-  clipboard.writeText(destination); return destination;
+  if(copyPath)clipboard.writeText(destination); return destination;
 }
 let mainWindow;
 let activeJob = null;
@@ -345,6 +345,9 @@ function buildPendingNaverPublishDraft({
     publishScheduleMode,
     reserveAfterHours,
     breakSentencesInBody,
+    preserveParagraphs:agentResult.writingApplication?.guideVersion>=2,
+    writingApplication:agentResult.writingApplication,
+    presentation:agentResult.writingApplication?.presentation,
     publishToTistoryAfterNaver,
     tistoryBlogId,
     keywordLane: keywordLaneResultPayload(latestLaneResult),
@@ -903,7 +906,7 @@ async function startJob(form) {
   if (shouldPublish && pendingDraftMatches(pendingDraft, { account, blogId, category })) {
     const resumeAgentResult = {
       title: pendingDraft.title || "",
-      article: pendingDraft.article || "",
+      article: require("./lib/publicationFormat").omitReferences(pendingDraft.article),
       titleImagePath: pendingDraft.titleImagePath || "",
       bodyImages: Array.isArray(pendingDraft.bodyImages) ? pendingDraft.bodyImages : [],
       imageWarnings: []
@@ -1014,6 +1017,7 @@ async function startJob(form) {
     safeLog(jobId, `Agent 모델 설정: Codex ${modelSnapshot.codexModel}, Main ${modelSnapshot.main}, Research/Title ${modelSnapshot.research}, Writer ${modelSnapshot.writer}, Image Worker ${modelSnapshot.image}`);
     safeLog(jobId, `Codex ${usesImages ? "본문/이미지 프롬프트" : "본문"} 생성 시작: ${generationSubject}`);
     if(generationDraft?.checkpoint)safeLog(jobId,'중단된 작업을 이어갑니다. 완료된 조사·본문·검증·이미지는 재사용하고 미완료 단계부터 다시 시도합니다.');
+    if((form.tokenSaving ?? settings.tokenSaving)!==false)safeLog(jobId,'토큰 절약 적용 · Writer 자체 다듬기 + 최종 품질 검수 · 실패 시 전체 주제 재생성 생략');
     const generationStartedAt = Date.now();
     let generationPhase = "준비 중";
     const generationHeartbeat = setInterval(() => {
@@ -1035,6 +1039,17 @@ async function startJob(form) {
         runtimeRoot,
         jobDir,
         codexModel,
+        tokenSaving: (form.tokenSaving ?? settings.tokenSaving) !== false,
+        qualityPolicyVersion: 1,
+        compactWriting:true,
+        writingGuidance: require('./lib/writingMemory').guidance(runtimeRoot,account.id),
+        formatGuidance: require('./lib/writingMemory').formatGuidance(runtimeRoot,account.id),
+        blogDirection:require('./lib/writingMemory').direction(runtimeRoot,account.id),
+        experienceNotes:form.experienceNotes||'',experienceNotesId:form.experienceNotesId||'',
+        onWritingApplication: applied=>{
+          safeLog(jobId,`실제 생성 설정: ${applied.label} · 형식 v${applied.guideVersion} · 수정·승인 예시 ${applied.approvedExamples}개${applied.resumed?' · 재개 작업의 기존 설정 사용':''}`);
+          if(applied.experienceNotesId)emit('job:experienceConsumed',{accountId:account.id,id:applied.experienceNotesId});
+        },
         topic,
         keyword,
         category,
@@ -1077,7 +1092,7 @@ async function startJob(form) {
         onArticleReady: (draft) => {
           // Preview only: unreviewed text is never a resumable publish draft.
           emit("job:preview", {jobId,title:draft.title,article:draft.article,
-            previewStage:draft.previewStage,writerAttempt:draft.writerAttempt,
+            previewStage:draft.previewStage,writerAttempt:draft.writerAttempt,writingApplication:draft.writingApplication,
             images:[],imageNotes:[],tags:draft.tags || []});
         },
         onResearchTitle: (researchResult) => {
@@ -1302,6 +1317,7 @@ async function startJob(form) {
       currentDateLabel,
       result: codexResult
     });
+    agentResult.writingApplication=codexResult.writingApplication;
     latestAgentResultForResume = agentResult;
     if(codexResult.publishable===false || agentResult.imageWarnings?.length){
       throw Object.assign(new Error([...(codexResult.notes || []),...(agentResult.imageWarnings || [])].join(' / ') || '이미지 생성을 완료하지 못했습니다. 본문을 보존하고 자동 진행을 중지합니다.'),{failureKind:'execution',failurePhase:'image'});
@@ -1320,6 +1336,7 @@ async function startJob(form) {
       jobId,
       title: agentResult.title,
       article: agentResult.article,
+      writingApplication:codexResult.writingApplication,
       images: getPreviewImages(agentResult),
       imageNotes: [...(agentResult.imageWarnings || []),...(codexResult.publishable===false ? codexResult.notes || [] : [])],
       tokenUsage: jobTokenUsage,
@@ -1500,21 +1517,41 @@ app.whenReady().then(async () => {
   ensureSettingsFile(getRuntimeRoot());
   ensureAccountStoreFile(getRuntimeRoot(), readSettings(getRuntimeRoot()));
   createWindow();
+  try{prepareExtension({copyPath:false});}catch(error){bridgeError+=' 확장 설치 폴더 준비가 필요합니다: '+error.message;}
 
   ipcMain.handle("app:getInitialData", () => {
     const runtimeRoot = getRuntimeRoot();
     const settings = readSettings(runtimeRoot);
     return {
       runtimeRoot,
+      appVersion:require('../package.json').version,
       codexCmdPath: resolveCodexCmdPath(settings.codexCmdPath),
       codexInstallation: require('./lib/codexPlatform').detectCodexInstallation(settings.codexCmdPath),
       chrome: detectChromeInstall(),
       settings,
       accountStore: connectionStore(),
       bridgeError,
-      pendingPreview:settings.pendingNaverPublishDraft ? {...settings.pendingNaverPublishDraft,images:getPreviewImages(settings.pendingNaverPublishDraft)} : null,
+      pendingPreview:settings.pendingNaverPublishDraft ? {...settings.pendingNaverPublishDraft,article:require("./lib/publicationFormat").omitReferences(settings.pendingNaverPublishDraft.article),images:getPreviewImages(settings.pendingNaverPublishDraft)} : null,
       history: historyForUi(runtimeRoot)
     };
+  });
+
+  const writingMemory=require('./lib/writingMemory');
+  const writingAccount=(event,id)=>{
+    if(event.sender!==mainWindow?.webContents)throw new Error('앱 창에서 요청하세요.');
+    if(typeof id!=='string'||!readAccountStore(getRuntimeRoot(),readSettings(getRuntimeRoot())).accounts.some(a=>a.id===id))throw new Error('등록된 계정을 선택하세요.');
+    return id;
+  };
+  ipcMain.handle('writing:list',(event,id)=>writingMemory.list(getRuntimeRoot(),writingAccount(event,id)));
+  ipcMain.handle('writing:add',(event,{accountId,...input})=>writingMemory.add(getRuntimeRoot(),writingAccount(event,accountId),input));
+  ipcMain.handle('writing:remove',(event,{accountId,id})=>writingMemory.remove(getRuntimeRoot(),writingAccount(event,accountId),id));
+  ipcMain.handle('writing:preferences',(event,{accountId,...input})=>writingMemory.savePreferences(getRuntimeRoot(),writingAccount(event,accountId),input));
+  ipcMain.handle('writing:preview',(event,input)=>{
+    if(event.sender!==mainWindow?.webContents)throw new Error('앱에서 미리보기를 여세요.');
+    if(typeof input?.article!=='string'||input.article.length>100000)throw new Error('미리보기 원고를 확인하세요.');
+    const plan=require(path.join(app.isPackaged?process.resourcesPath:path.join(__dirname,'..'),'extension','article-plan.js'));
+    const raw=input.presentation||{},presentation={headingStyle:raw.headingStyle==='quotation_underline'?'quotation_underline':'quotation_line',alignment:raw.alignment==='center'?'center':'left',preserveImageOrder:raw.preserveImageOrder===true,heroPosition:raw.heroPosition==='after-opening'?'after-opening':'before-opening'};
+    return {blocks:plan.articleWithHero(plan.articlePlan(input.article,{preserveParagraphs:true,presentation}),input.titleImagePlanned===true?{type:'hero'}:null,presentation.heroPosition),presentation};
   });
 
   ipcMain.handle('codex:models', () => require('./lib/codexModels').getCodexCatalog(readSettings(getRuntimeRoot()).codexCmdPath));

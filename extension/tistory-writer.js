@@ -1,15 +1,17 @@
-function tistoryDocument(title,plan,images) {
+function tistoryDocument(title,plan,images,presentation) {
   const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const texts=[title];
-  let html='<blockquote data-ke-style="style1">'+escape(title)+'</blockquote>';
-  if(images.title)html+='<p>'+images.title+'</p>';
-  for(const block of plan){
+  let html=presentation?'':'<blockquote data-ke-style="style1">'+escape(title)+'</blockquote>';
+  const placeHero=typeof articleWithHero==='function'?articleWithHero:require('./article-plan').articleWithHero;
+  for(const block of placeHero(plan,images.title?{type:'hero'}:null,presentation?.heroPosition)){
+    if(block.type==='hero'){html+='<p>'+images.title+'</p>';continue;}
     if(block.type==='image'){
       if(!images[block.sequence])throw new Error('티스토리 이미지 '+block.sequence+'이 누락되었습니다.');
       html+='<p>'+images[block.sequence]+'</p>';continue;
     }
     texts.push(block.text);
-    html+=block.type==='section'?'<h2 data-ke-size="size26">'+escape(block.text)+'</h2>':'<p data-ke-size="size16">'+escape(block.text)+'</p><p>&nbsp;</p>';
+    const alignment=presentation?.alignment==='center'?' style="text-align:center"':'';
+    html+=block.type==='section'?'<h2 data-ke-size="size26"'+alignment+'>'+escape(block.text)+'</h2>':'<p data-ke-size="size16"'+alignment+'>'+escape(block.text).replace(/\r?\n/g,'<br>')+'</p><p>&nbsp;</p>';
   }
   return {html,texts,imageCount:Object.keys(images).length};
 }
@@ -61,7 +63,7 @@ async function publishTistory(task) {
   }
   await check();
   if(!checkpoint.composed){
-    const document=tistoryDocument(p.title,articlePlan(p.article),checkpoint.images);
+    const document=tistoryDocument(p.title,articlePlan(p.article,{preserveParagraphs:p.preserveParagraphs===true,presentation:p.presentation||{}}),checkpoint.images,p.presentation);
     checkpoint.pending={type:'content',html:document.html};await save();
     const result=await command(tabId,'content',{blogId:task.blogId,...document,expectedHtml:checkpoint.html});
     checkpoint.html=result.html;checkpoint.composed=true;checkpoint.pending=null;await save();

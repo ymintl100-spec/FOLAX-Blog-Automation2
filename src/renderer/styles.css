@@ -196,3 +196,17 @@ button{transition:background-color .15s,border-color .15s,color .15s}
 #draftTistoryLabel[hidden]{display:none!important}
 #draftTistoryLabel{align-self:end;padding-bottom:10px;white-space:nowrap}
 .compact-check input[type="checkbox"]{margin:0}
+
+.writing-learning{border-top:1px solid var(--border);padding-top:12px;margin-top:12px;flex-shrink:0;font-size:13px}
+.writing-learning summary{cursor:pointer;font-weight:600}.writing-learning[open]{max-height:430px;overflow:auto;padding-right:6px}
+.writing-learning label{display:flex;flex-direction:column;gap:6px;margin:10px 0}.writing-learning .compact-check{flex-direction:row;align-items:center}
+#writingSampleText{min-height:150px;width:100%;resize:vertical}.writing-sample-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.writing-actions{display:flex;gap:8px;flex-wrap:wrap}.writing-examples{padding:0;list-style:none}.writing-examples li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.preview-panel:has(.writing-learning[open]){height:auto;min-height:620px}
+.preview-panel:has(.writing-learning[open]) #articlePreview{flex:none;height:240px;min-height:200px}
+.writing-learning[open]{max-height:none;overflow:visible}
+.mobile-article-preview{flex:1;min-height:240px;overflow:auto;border:1px solid var(--border);border-radius:10px;background:#f2f4f6;padding:16px;margin-top:10px;color:#222}
+.mobile-article-paper{max-width:390px;margin:0 auto;background:white;padding:28px 20px;box-shadow:0 2px 12px #0001;font-family:"Malgun Gothic",sans-serif;font-size:16px;line-height:1.8;overflow-wrap:break-word}
+.mobile-article-paper p{margin:0 0 20px;white-space:pre-line}.mobile-article-paper blockquote{margin:38px 0 25px;padding:14px 12px;border-left:3px solid #657b76;font-size:19px;line-height:1.6;font-weight:600;white-space:pre-line}
+.mobile-article-paper.center{text-align:center}.mobile-article-paper .underline{border-left:0;border-bottom:2px solid #829c91;padding:12px 0}
+.mobile-article-paper .preview-image-slot{margin:24px 0;padding:28px 12px;background:#eef3f1;color:#63766f;font-size:13px;border-radius:8px}.mobile-article-paper img{width:100%;height:auto;display:block;margin:24px 0}
+.preview-panel:has(.writing-learning[open]) .mobile-article-preview{flex:none;max-height:650px}
