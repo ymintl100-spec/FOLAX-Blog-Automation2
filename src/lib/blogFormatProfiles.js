@@ -8,8 +8,8 @@ const profiles={
 function normalizeProfile(value){return value==='off'||Object.hasOwn(profiles,value)?value:'balanced';}
 function guidance(value){
  const id=normalizeProfile(value);if(id==='off')return null;
- return {version:1,id,flow:profiles[id].flow,
-  layout:'도입에서 제목의 답을 짧게 제시한다. 내용이 바뀌는 지점에 짧고 구체적인 소제목을 둔다. 문단은 한 가지 의미와 1~3문장을 기본으로 하되 승인 문체와 내용에 맞춘다. 설명이 필요한 곳에만 이미지 계획을 배치하고 설정한 이미지 최대치를 지킨다. 마지막은 같은 요약을 반복하지 않고 독자에게 필요한 판단이나 행동으로 끝낸다.',
+ return {version:2,id,label:profiles[id].label,flow:profiles[id].flow,
+  layout:'소제목 없는 짧은 도입에서 독자의 상황과 핵심 답을 연결한다. 본론은 서로 다른 질문을 해결하는 소제목 3~5개를 보통 사용하며 내용에 맞춰 조정하되 2개 이상으로 나눈다. 소제목은 목차 항목 나열 대신 해당 부분에서 알게 될 차이·이유·방법을 구체적으로 표현한다. 한 문단에 한 가지 의미와 1~3문장을 담고 문단 사이를 빈 줄로 구분한다. 긴 문장은 의미 단위 줄바꿈을 허용하며 승인 예시의 문단·줄 길이를 우선한다. 설명 주변에 설정 최대치 안에서 이미지를 배치한다. 마지막은 소제목 뒤의 짧은 적용 기준 또는 행동으로 끝내며 같은 요약을 반복하지 않는다.',
   boundaries:'참고한 것은 전개와 배치뿐이다. 참고 블로그의 문장·고유 인사·전문가 자격·경험·건강 주장·광고 문구·사진은 재사용하지 않는다. 문체와 표현은 사용자가 수정·승인한 예시를 우선하며 근거·주제·필수 조건을 보존한다. 목차·FAQ·소제목 수·짧은 줄바꿈을 기계적으로 강제하지 않는다.'};
 }
 module.exports={normalizeProfile,guidance};

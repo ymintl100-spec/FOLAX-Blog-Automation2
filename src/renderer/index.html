@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header class="titlebar"><img src="../assets/app-icon.png" alt="" /><span>네이버 블로그 자동화 <span class="titlebar-credit">by @복사장의생존발악</span></span></header>
+    <header class="titlebar"><img src="../assets/app-icon.png" alt="" /><span>네이버 블로그 자동화 <span class="titlebar-credit">by @복사장의생존발악</span> <span id="appVersion" class="titlebar-credit"></span></span></header>
     <div class="app-shell">
       <p id="runtimePath" hidden>런타임 폴더 확인 중</p>
       <header class="topbar">
@@ -290,10 +290,11 @@
           </div>
           <textarea id="articlePreview" readonly placeholder="선택한 주제로 생성된 본문이 이곳에 표시됩니다.
 왼쪽에서 블로그와 주제를 선택하고 작업을 시작하세요."></textarea>
+          <p id="writingApplicationStatus" class="hint" role="status">글 생성 후 적용한 형식과 승인 예시 수를 표시합니다.</p>
           <details id="writingLearning" class="writing-learning">
             <summary>내 글 문체 학습 · <span id="writingLearningStatus">계정을 선택하세요</span></summary>
             <p class="hint" id="writingLearningAccount"></p>
-            <p class="hint">수정 전 원고와 직접 수정·승인한 최종 글을 비교해 설명 방식과 문장 리듬을 참고합니다. 수정 없는 원고나 승인하지 않은 글은 학습하지 않습니다. 다음 새 글부터 적용하며, 여기서 편집해도 현재 원고나 게시글은 바뀌지 않습니다.</p>
+            <p class="hint">수정 전 원고와 직접 수정·승인한 최종 글을 비교해 설명 방식·줄바꿈·문단 형식을 참고합니다. 수정 없는 원고나 승인하지 않은 글은 학습하지 않습니다. 다음 새 글부터 적용하며, 여기서 편집해도 현재 원고나 게시글은 바뀌지 않습니다.</p>
             <p class="hint">예시는 이 PC에 저장됩니다. 문체를 적용할 때 짧은 발췌만 Codex에 전달하며, 학습을 위한 추가 AI 호출은 없습니다.</p>
             <label>벤치마크 형식<select id="writingFormatProfile"><option value="balanced">공통 형식 · 주제에 맞게</option><option value="explanation">설명 중심 · 고민에서 판단 기준으로</option><option value="practical">실행 중심 · 원리에서 순서로</option><option value="off">벤치마크 형식 끄기</option></select></label>
             <p class="hint">doctorkidney·yogawarm의 공개 글에서 전개·소제목·이미지 배치만 참고했습니다. 문체와 표현은 내가 수정·승인한 글을 우선합니다.</p>

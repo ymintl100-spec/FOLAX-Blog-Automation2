@@ -29,7 +29,7 @@ test('learning requires actual edits and rejects unedited, whitespace-only, and 
  const input=sample();
  assert.throws(()=>memory.add(root,'edits',{...input,originalArticle:undefined}),/수정 전/);
  assert.throws(()=>memory.add(root,'edits',{...input,originalArticle:input.article}),/같습니다/);
- assert.throws(()=>memory.add(root,'edits',{...input,originalArticle:input.article.replace(/ /g,'\n\n')}),/같습니다/);
+ assert.throws(()=>memory.add(root,'edits',{...input,originalArticle:input.article.replace(/ /g,'  ')}),/같습니다/);
  assert.throws(()=>memory.add(root,'edits',{...input,source:'own'}),/수정·승인/);
  assert.equal(memory.guidance(root,'edits'),null);
  const saved=memory.add(root,'edits',input);assert.equal(saved.eligibleCount,1);
@@ -53,4 +53,17 @@ test('benchmark format is account-specific and independent of approved style app
  memory.add(root,'format-a',sample());memory.savePreferences(root,'format-a',{enabled:true,avoidPhrases:[],formatProfile:'off'});
  assert.equal(memory.formatGuidance(root,'format-a'),null);assert.equal(memory.guidance(root,'format-a').exampleCount,1);
  assert.throws(()=>memory.savePreferences(root,'format-a',{enabled:true,avoidPhrases:[],formatProfile:'unknown'}),/형식/);
+});
+test('approved paragraph-only edits retain line breaks and headings in compact guidance',()=>{
+ const first='자주 쓰는 도구를 먼저 한쪽에 모아 둡니다. 찾을 때 필요한 순서가 분명해지기 때문입니다.';
+ const second='물건을 옮기기 전에는 실제로 손이 닿는지 살펴봅니다. 공간에 맞춰 기준을 조정할 수 있습니다.';
+ const original=first+' '+second+' '+first+' '+second+' '+first;
+ const article=first+'\n\n[SECTION - 도구를 놓는 기준]\n'+second+'\n\n'+first+'\n\n[SECTION - 공간에 맞춰 바꾸기]\n'+second+'\n\n'+first;
+ const saved=memory.add(root,'layout-only',{...sample(),originalArticle:original,article});assert.equal(saved.eligibleCount,1);
+ const guide=memory.guidance(root,'layout-only');assert(guide.styleFragments[0].includes('\n\n'));assert(guide.styleFragments[0].includes('[SECTION - 도구를 놓는 기준]'));
+ assert(guide.typicalParagraphCharacters<original.length/2);assert(guide.typicalLineCharacters>0);assert(guide.approvedEdits[0].after.includes('\n'));
+ assert.equal(memory.add(root,'layout-only',{...sample(),originalArticle:original,article:article.replace(/ /g,'  ')}).duplicate,true);
+ const reflowed=original.replaceAll('. ','.\n\n');assert.equal(reflowed.replace(/\s/g,''),original.replace(/\s/g,''));
+ assert.equal(memory.add(root,'line-break-only',{...sample(),originalArticle:original,article:reflowed}).eligibleCount,1);
+ assert(memory.guidance(root,'line-break-only').typicalParagraphCharacters<original.length/2);
 });

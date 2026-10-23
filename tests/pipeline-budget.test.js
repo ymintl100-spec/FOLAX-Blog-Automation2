@@ -10,13 +10,13 @@ const article=opening+'\n\n[SECTION - 실제로 쓰는 물건]\n'+help+'\n\n'+Ar
 const writer={status:'success',title,article,citations:[],tags:[],bodyImages:[],titleImagePrompt:'',titleImageText:[],titleImagePath:'',imageOmissions:[]};
 const goodReview=()=>({status:'PASS',failureReason:'',articleAnswersTitle:true,topicPreserved:true,factualityPass:true,sourceUsePass:true,riskExpressionPass:true,publishable:true,naturalnessPass:true,naverReadabilityPass:true,readerValueAssessment:{openingAnswer:opening,decisionHelp:help},humanizerDecisions:[],revisionInstructions:[],issues:[]});
 let index=0;
-function harness({review,blockResearch=false,options={}}={}){
+function harness({review,blockResearch=false,options={},writerResult=writer}={}){
  const calls=[],checkpoints=[];let reviews=0;
  const opts={jobDir:path.join(root,String(++index)),topicMode:'auto',includeTitleImage:false,maxBodyImages:0,...options,onGenerationCheckpoint:c=>checkpoints.push(JSON.parse(JSON.stringify(c)))};
  const deps={
   runTask:async args=>{calls.push(args);let result;
    if(args.agent==='research')result=blockResearch?{status:'BLOCK',failureReason:'핵심 원문 미확보',factBased:true,factChecks:[]}:{status:'PASS',finalTitle:title,novelty:{duplicate:false,reason:'새로운 구체적 질문'},factBased:false,factChecks:[],searchNeed:'skip'};
-   else if(args.agent==='writer')result=writer;
+   else if(args.agent==='writer')result=writerResult;
    else if(args.agent==='humanizer')result={status:'success',edits:[]};
    else if(args.agent==='main')result=review?review(++reviews):goodReview();
    else throw Error('Unexpected extra model stage: '+args.agent);
@@ -57,4 +57,30 @@ test('review evidence is checked after restoring meaning-changing humanizer edit
   return original(args);
  };
  const r=await h.run();assert.equal(r.publishable,true);assert(r.article.includes(opening));
+});
+const benchmarkGuide=require('../src/lib/blogFormatProfiles').guidance('balanced');
+const closing='매일 쓰는 도구를 가까이 두고 며칠 사용해 본 뒤 불편했던 자리부터 조정해 보세요.';
+const headings=['자주 쓰는 도구부터 남기는 이유','공간과 쓰임을 함께 나누는 방법','사용한 뒤 바꿀 자리'];
+const benchmarkWriter={...writer,article:opening+'\n\n'+headings.map((h,i)=>'[SECTION - '+h+']\n'+help+'\n\n'+(i===2?closing:'분류 기준 '+i+'에서는 물건을 꺼내고 돌려놓는 위치를 함께 살펴봅니다.')).join('\n\n')};
+const benchmarkReview=()=>({...goodReview(),benchmarkFormatPass:true,benchmarkFormatEvidence:{openingQuote:opening,sectionHeadings:headings,closingQuote:closing,reason:'고민의 답과 판단 기준, 적용 순서가 실제 원고에 있습니다.'}});
+test('benchmark mode stops an old unsegmented template before publishing within the existing correction budget',async()=>{
+ const h=harness({options:{formatGuidance:benchmarkGuide}});const result=await h.run();
+ assert.equal(result.status,'failed');assert.equal(result.failurePhase,'writer');assert.match(result.failureReason,/벤치마크 형식/);
+ assert.equal(h.calls.filter(c=>c.agent==='writer').length,2);assert(!h.calls.some(c=>c.agent==='image'));
+});
+test('real benchmark structure and evidence pass with three calls and report the settings actually used',async()=>{
+ const applied=[];const h=harness({writerResult:benchmarkWriter,review:benchmarkReview,options:{formatGuidance:benchmarkGuide,writingGuidance:{exampleCount:2,typicalParagraphCharacters:80},onWritingApplication:a=>applied.push(a)}});
+ const result=await h.run();assert.equal(result.publishable,true);assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main']);
+ assert.equal(result.writingApplication.profileId,'balanced');assert.equal(result.writingApplication.guideVersion,2);assert.equal(result.writingApplication.sectionCount,3);assert.equal(result.writingApplication.approvedExamples,2);assert.equal(applied[0].approvedExamples,2);
+ assert(h.calls[0].prompt.includes('formatGuide'));assert(h.calls[1].prompt.includes('빈 줄로 구분'));
+});
+test('missing benchmark verdict preserves writer and retries only the review on resume',async()=>{
+ const h=harness({writerResult:benchmarkWriter,review:n=>n===1?goodReview():benchmarkReview(),options:{formatGuidance:benchmarkGuide}});
+ const first=await h.run();assert.equal(first.failureKind,'execution');assert.match(first.failureReason,/벤치마크 형식 검수/);
+ h.calls.length=0;const second=await generate({...h.opts,generationCheckpoint:h.checkpoints.at(-1)},()=>{},h.deps);
+ assert.equal(second.publishable,true);assert.deepEqual(h.calls.map(c=>c.agent),['main']);
+});
+test('a failed benchmark flow gets one targeted correction even when generic quality booleans pass',async()=>{
+ const h=harness({writerResult:benchmarkWriter,review:()=>({...benchmarkReview(),benchmarkFormatPass:false,revisionInstructions:['도입의 고민과 소제목별 설명을 연결하세요.']}),options:{formatGuidance:benchmarkGuide}});
+ const result=await h.run();assert.equal(result.status,'failed');assert.equal(result.failurePhase,'main_review');assert.equal(h.calls.filter(c=>c.agent==='writer').length,2);
 });

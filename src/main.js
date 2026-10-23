@@ -345,6 +345,8 @@ function buildPendingNaverPublishDraft({
     publishScheduleMode,
     reserveAfterHours,
     breakSentencesInBody,
+    preserveParagraphs:agentResult.writingApplication?.guideVersion>=2,
+    writingApplication:agentResult.writingApplication,
     publishToTistoryAfterNaver,
     tistoryBlogId,
     keywordLane: keywordLaneResultPayload(latestLaneResult),
@@ -1040,6 +1042,7 @@ async function startJob(form) {
         qualityPolicyVersion: 1,
         writingGuidance: require('./lib/writingMemory').guidance(runtimeRoot,account.id),
         formatGuidance: require('./lib/writingMemory').formatGuidance(runtimeRoot,account.id),
+        onWritingApplication: applied=>safeLog(jobId,`실제 생성 설정: ${applied.label} · 형식 v${applied.guideVersion} · 수정·승인 예시 ${applied.approvedExamples}개${applied.resumed?' · 재개 작업의 기존 설정 사용':''}`),
         topic,
         keyword,
         category,
@@ -1082,7 +1085,7 @@ async function startJob(form) {
         onArticleReady: (draft) => {
           // Preview only: unreviewed text is never a resumable publish draft.
           emit("job:preview", {jobId,title:draft.title,article:draft.article,
-            previewStage:draft.previewStage,writerAttempt:draft.writerAttempt,
+            previewStage:draft.previewStage,writerAttempt:draft.writerAttempt,writingApplication:draft.writingApplication,
             images:[],imageNotes:[],tags:draft.tags || []});
         },
         onResearchTitle: (researchResult) => {
@@ -1307,6 +1310,7 @@ async function startJob(form) {
       currentDateLabel,
       result: codexResult
     });
+    agentResult.writingApplication=codexResult.writingApplication;
     latestAgentResultForResume = agentResult;
     if(codexResult.publishable===false || agentResult.imageWarnings?.length){
       throw Object.assign(new Error([...(codexResult.notes || []),...(agentResult.imageWarnings || [])].join(' / ') || '이미지 생성을 완료하지 못했습니다. 본문을 보존하고 자동 진행을 중지합니다.'),{failureKind:'execution',failurePhase:'image'});
@@ -1325,6 +1329,7 @@ async function startJob(form) {
       jobId,
       title: agentResult.title,
       article: agentResult.article,
+      writingApplication:codexResult.writingApplication,
       images: getPreviewImages(agentResult),
       imageNotes: [...(agentResult.imageWarnings || []),...(codexResult.publishable===false ? codexResult.notes || [] : [])],
       tokenUsage: jobTokenUsage,
@@ -1511,6 +1516,7 @@ app.whenReady().then(async () => {
     const settings = readSettings(runtimeRoot);
     return {
       runtimeRoot,
+      appVersion:require('../package.json').version,
       codexCmdPath: resolveCodexCmdPath(settings.codexCmdPath),
       codexInstallation: require('./lib/codexPlatform').detectCodexInstallation(settings.codexCmdPath),
       chrome: detectChromeInstall(),

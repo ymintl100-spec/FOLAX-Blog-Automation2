@@ -1277,6 +1277,7 @@ function setTargetProgress(target,status,detail=''){
 function resetJobPreview(target){
   state.currentJobId='';
   $('#articlePreview').value='';$('#selectedTitle').textContent='주제 선정 중';
+  $('#writingApplicationStatus').textContent='새 작업의 형식 적용 준비 중';
   $('#articleMeta').textContent=accountDisplayName(target.account)+' · '+target.category.name+' · 새 작업 시작';
   renderImages([]);renderImageNotes([]);clearAgentLogs();
 }
@@ -1385,6 +1386,7 @@ async function startTistoryTestPublish() {
 
 async function boot() {
   const initial = await window.blogAuto.getInitialData();
+  $('#appVersion').textContent=initial.appVersion?'v'+initial.appVersion:'';
   $("#runtimePath").textContent = initial.runtimeRoot;
   renderCodexInstallation(initial.codexInstallation);
   state.chrome = initial.chrome || state.chrome;
@@ -1438,6 +1440,8 @@ async function boot() {
   });
   window.blogAuto.onPreview((payload) => {
     $("#articlePreview").value = payload.article || "";
+    const applied=payload.writingApplication;
+    $('#writingApplicationStatus').textContent=applied?`${applied.label} v${applied.guideVersion} · 소제목 ${applied.sectionCount}개 · 문단 ${applied.paragraphCount}개 · 수정·승인 예시 ${applied.approvedExamples}개 적용`:'본문 형식 점검 전 · 기존 원고를 불러온 경우 새 형식으로 재작성하지 않습니다.';
     $("#articleMeta").textContent = payload.previewStage === 'humanizing'
       ? `본문 ${payload.writerAttempt}차 작성 완료 · 문장 다듬는 중`
       : payload.previewStage === 'reviewing'

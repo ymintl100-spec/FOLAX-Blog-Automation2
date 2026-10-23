@@ -38,7 +38,7 @@ test('benchmarking adds compact structure guidance without source text, extra re
  const payload=JSON.parse(prompts.writerPrompt(options).split('\n').find(line=>line.startsWith('{"brief":')));
  assert.equal(payload.formatGuide.id,'balanced');assert.deepEqual(payload.sources,[]);
  assert(!JSON.stringify(payload).includes('doctorkidney'));assert(!JSON.stringify(payload).includes('yogawarm'));
- const research=prompts.researchPrompt(options);assert(!research.includes('승인한 설명'));assert(!research.includes('formatGuide'));
+ const research=prompts.researchPrompt(options);assert(!research.includes('승인한 설명'));assert(research.includes('formatGuide'));
  const review=prompts.reviewPrompt(options);assert(review.includes('formatGuide'));assert(!review.includes('승인 전 문장'));
  assert(prompts.writerPrompt(options).includes('단어·주장·숫자 교체를 일반 규칙으로 학습하지'));
 });

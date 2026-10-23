@@ -144,7 +144,7 @@ async function saveNaverDraft(task,resumeOnly=false) {
 async function publish(task) {
   if(task.platform==='tistory')return publishTistory(task);
   const tabId=task.tabId, p=task.payload;
-  const plan=articlePlan(p.article);
+  const plan=articlePlan(p.article,{preserveParagraphs:p.preserveParagraphs===true});
   const steps=[{type:'title',text:p.title},{type:'quote',text:p.title,style:'default'}];
   if(p.titleImageIndex!==null)steps.push({type:'image',index:p.titleImageIndex,name:p.titleImageName || 'blog_img_title.png'});
   for(const block of plan){
@@ -158,7 +158,7 @@ async function publish(task) {
         const {connection}=await stored();const response=await fetch(API+'/asset?task='+task.id+'&index='+block.index,{headers:{Authorization:'Bearer '+connection.token},signal:AbortSignal.timeout(15000)});
         if(!response.ok)throw new Error('이미지를 가져오지 못했습니다.');return command(tabId,'image',{...await response.json(),...anchor});
       }
-      return command(tabId,block.type,{...block,...anchor,breakSentences:p.breakSentencesInBody});
+      return command(tabId,block.type,{...block,...anchor,breakSentences:p.breakSentencesInBody,preserveParagraphs:p.preserveParagraphs===true});
     },
     save:checkpoint=>chrome.storage.local.set({authoringCheckpoint:{...checkpoint,blogId:task.blogId,title:p.title,taskId:task.id}}),
     onProgress:(done,total,type)=>type==='paragraph' && done!==total ? undefined : api('/progress',{id:task.id,message:`네이버 ${done}/${total} · ${type==='image'?'이미지':type==='quote'?'제목·섹션':'본문'} 입력 확인 완료`}),

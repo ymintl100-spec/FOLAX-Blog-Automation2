@@ -1,9 +1,16 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const MAX_EXAMPLES=12;
 const formats=require('./blogFormatProfiles');
+const {inspect}=require('./blogLayout');
 const normalize=value=>value.normalize('NFC').replace(/^\[SECTION\s*-\s*([^\]]+)\]\s*$/gm,'$1').replace(/\[IMAGE INSERT[^\]]*\]/g,'').replace(/[\s\u200b]+/g,'');
 const digest=value=>crypto.createHash('sha256').update(normalize(value)).digest('hex');
-function eligible(example){return example.source==='edited' && example.approvalVersion===2 && typeof example.originalHash==='string' && /^[a-f0-9]{64}$/.test(example.originalHash) && example.originalHash!==digest(example.article) && example.approvedHash===digest(example.article) && typeof example.approvedAt==='string' && Number.isFinite(Date.parse(example.approvedAt));}
+const layoutText=value=>value.normalize('NFC').replace(/\r\n?/g,'\n').replace(/[\u200b\ufeff]/g,'').split('\n').map(line=>line.replace(/[^\S\n]+/g,' ').trim()).join('\n').replace(/\n{3,}/g,'\n\n').trim();
+const layoutDigest=value=>crypto.createHash('sha256').update(layoutText(value)).digest('hex');
+function eligible(example){
+ if(example.source!=='edited'||typeof example.approvedAt!=='string'||!Number.isFinite(Date.parse(example.approvedAt)))return false;
+ const expected=example.approvalVersion===3?layoutDigest(example.article):digest(example.article);
+ return [2,3].includes(example.approvalVersion)&&typeof example.originalHash==='string'&&/^[a-f0-9]{64}$/.test(example.originalHash)&&example.originalHash!==expected&&example.approvedHash===expected;
+}
 function accountFile(root,id){
  if(typeof id!=='string' || !id || id.length>200)throw new Error('문체 학습 계정을 확인하세요.');
  return path.join(root,'writing-memory',crypto.createHash('sha256').update(id).digest('hex')+'.json');
@@ -33,14 +40,14 @@ function add(root,id,input){
  if(typeof input.title!=='string'||input.title.length>120)throw new Error('예시 제목은 120자 이내로 입력하세요.');
  if(input.source!=='edited')throw new Error('수정·승인한 글 종류만 학습할 수 있습니다.');
  if(typeof input.originalArticle!=='string'||input.originalArticle.trim().length<200||input.originalArticle.length>12000)throw new Error('수정 전 원고도 200~12,000자로 입력하세요.');
- const article=input.article.trim(),original=input.originalArticle.trim(),hash=digest(article),originalHash=digest(original);
- if(hash===originalHash)throw new Error('수정 전후의 내용이 같습니다. 공백·줄바꿈 변경만으로는 학습하지 않습니다.');
+ const article=input.article.trim(),original=input.originalArticle.trim(),hash=layoutDigest(article),originalHash=layoutDigest(original);
+ if(hash===originalHash)throw new Error('수정 전후의 내용과 문단 형식이 같습니다. 표현 또는 의미 있는 줄바꿈·문단 구성을 수정하세요.');
  const data=read(root,id);
- const existing=data.examples.find(e=>digest(e.article)===hash);
+ const existing=data.examples.find(e=>layoutDigest(e.article)===hash);
  if(existing&&eligible(existing))return {...summary(data),duplicate:true};
  if(!existing&&data.examples.length>=MAX_EXAMPLES)throw new Error('계정당 예시는 최대 12개입니다. 이전 예시를 삭제한 뒤 추가하세요.');
  const now=new Date().toISOString();
- const example={id:existing?.id||crypto.randomUUID(),title:input.title.trim()||'수정·승인 예시',article,hash,source:'edited',createdAt:existing?.createdAt||now,approvalVersion:2,originalHash,approvedHash:hash,approvedAt:now,editComparison:editComparison(original,article)};
+ const example={id:existing?.id||crypto.randomUUID(),title:input.title.trim()||'수정·승인 예시',article,hash,source:'edited',createdAt:existing?.createdAt||now,approvalVersion:3,originalHash,approvedHash:hash,approvedAt:now,editComparison:editComparison(original,article)};
  if(existing)data.examples[data.examples.indexOf(existing)]=example;else data.examples.push(example);
  write(root,id,data);return {...summary(data),duplicate:false};
 }
@@ -48,7 +55,8 @@ function remove(root,id,exampleId){
  if(typeof exampleId!=='string')throw new Error('삭제할 예시를 확인하세요.');
  const data=read(root,id);data.examples=data.examples.filter(e=>e.id!==exampleId);write(root,id,data);return summary(data);
 }
-function cleanExcerpt(value){return value.replace(/^\[SECTION[^\]]*\]\s*/gm,'').replace(/\[IMAGE INSERT[^\]]*\]/g,'').replace(/https?:\/\/\S+/g,'[링크]').replace(/\d[\d,./:%~-]*/g,'[숫자]').replace(/\s+/g,' ').trim();}
+function cleanExcerpt(value){return layoutText(referenceBody(value).replace(/\[IMAGE INSERT[^\]]*\]/g,'').replace(/https?:\/\/\S+/g,'[링크]').replace(/\d[\d,./:%~-]*/g,'[숫자]'));}
+function referenceBody(value){return require('./publicationFormat').referenceParts(value).body;}
 function editComparison(original,article){
  const before=cleanExcerpt(original),after=cleanExcerpt(article);let start=0,end=0;
  while(start<Math.min(before.length,after.length)&&before[start]===after[start])start++;
@@ -60,12 +68,13 @@ function editComparison(original,article){
 function guidance(root,id){
  const data=read(root,id);if(data.enabled===false)return null;
  const approved=data.examples.filter(eligible),chosen=approved.slice(-3);if(!chosen.length && !(data.avoidPhrases||[]).length)return null;
- const paragraphs=chosen.flatMap(e=>e.article.split(/\n\s*\n/).map(p=>p.trim()).filter(p=>p.length>20&&!p.startsWith('[SECTION')));
- const mean=paragraphs.length?Math.round(paragraphs.reduce((n,p)=>n+p.length,0)/paragraphs.length):0;
+ const layouts=chosen.map(e=>inspect(e.article));
+ const paragraphs=layouts.flatMap(l=>l.paragraphs);
+ const mean=paragraphs.length?Math.round(paragraphs.reduce((n,p)=>n+p.replace(/\s/g,'').length,0)/paragraphs.length):0;
  // Only compact style fragments are sent; full articles stay in local memory.
  const examples=chosen.slice(-2).map(e=>cleanExcerpt(e.article).slice(0,260));
  const approvedEdits=chosen.slice(-2).map(e=>e.editComparison).filter(e=>e&&typeof e.before==='string'&&typeof e.after==='string').map(e=>({before:cleanExcerpt(e.before).slice(0,220),after:cleanExcerpt(e.after).slice(0,220)}));
- const result={version:2,exampleCount:approved.length,typicalParagraphCharacters:mean,avoidPhrases:(data.avoidPhrases||[]).slice(0,12),styleFragments:examples,approvedEdits};
+ const result={version:3,exampleCount:approved.length,typicalParagraphCharacters:mean,typicalLineCharacters:layouts.length?Math.round(layouts.reduce((n,l)=>n+l.stats.typicalLineCharacters,0)/layouts.length):0,avoidPhrases:(data.avoidPhrases||[]).slice(0,12),styleFragments:examples,approvedEdits};
  result.fingerprint=crypto.createHash('sha256').update(JSON.stringify(result)).digest('hex');
  return result;
 }

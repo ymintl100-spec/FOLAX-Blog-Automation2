@@ -1,6 +1,6 @@
 // This function runs only inside the editor's isolated world. No debugger or remote control.
 async function editorCommand(command, args = {}) {
-  const build='20261007.2';let step='locate';
+  const build='20261023.1';let step='locate';
   try {
   const visible = el => Boolean(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
   const find = selector => [...document.querySelectorAll(selector)].find(visible);
@@ -272,7 +272,8 @@ async function editorCommand(command, args = {}) {
     const beforeText=bodyText();
     await lastBody();
     const value=String(args.text),lines=[];
-    if(args.breakSentences){
+    if(args.preserveParagraphs)lines.push(...value.split(/\r?\n/));
+    else if(args.breakSentences){
       let start=0;
       for(const boundary of value.matchAll(/[.!?。！？](?:\s*\[참고\s*\d+\])*\s+/gu)){
         const end=boundary.index+boundary[0].length;
@@ -284,14 +285,14 @@ async function editorCommand(command, args = {}) {
       const tail=value.slice(start).trim();if(tail)lines.push(tail);
     } else lines.push(value);
     for(let i=0;i<lines.length;i++){
-      if(i){await insertParagraph();await insertParagraph();}
+      if(i){await insertParagraph();if(!args.preserveParagraphs)await insertParagraph();}
       insertText(lines[i]);
       // Wait for the editor model to commit before Enter or a toolbar action.
       if(!await waitFor(()=>bodyText()===beforeText+normalize(lines.slice(0,i+1).join(''))))throw new Error('본문 입력이 원문과 일치하지 않아 다음 요소 삽입을 중지했습니다.');
     }
     // Keep the caret created by insertText, before any new click can reset it.
     await insertParagraph();
-    if(args.breakSentences && /[.!?。！？]$/.test(value.trim()))await insertParagraph();
+    if(args.preserveParagraphs || (args.breakSentences && /[.!?。！？]$/.test(value.trim())))await insertParagraph();
     const emptyTail=()=>!readText(paragraphs().at(-1)).trim() && bodyText()===beforeText+normalize(lines.join(''));
     if(!await waitFor(emptyTail)){
       // SmartEditor consumes the first Enter to recognize a standalone URL.
@@ -300,7 +301,7 @@ async function editorCommand(command, args = {}) {
     }
     // A link has no sentence-ending punctuation. Reserve its blank separator
     // explicitly, whether SmartEditor creates a preview card or plain text.
-    if(/^https?:\/\/\S+$/.test(value.trim())){
+    if(!args.preserveParagraphs && /^https?:\/\/\S+$/.test(value.trim())){
       await insertParagraph();
       if(!await waitFor(emptyTail))throw new Error('참고 링크 뒤 빈 줄 생성이 완료되지 않았습니다.');
     }
