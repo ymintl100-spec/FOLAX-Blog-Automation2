@@ -1086,19 +1086,18 @@ function writerOutputIssueReason(writerResult, options={}) {
   if (!String(writerResult?.article || "").trim()) {
     return "Writer Agent가 본문(article)을 비워 반환했습니다.";
   }
-  const {cleanSourceUrl,referenceParts,isBlogCitation}=require('./publicationFormat');
+  const {cleanSourceUrl,referenceParts}=require('./publicationFormat');
   const parts=referenceParts(writerResult.article);
-  if(/\[(?:(?:참고|출처)\s*)?\d{1,3}(?:\s*[,–-]\s*\d{1,3})*\]/.test(parts.body))return '본문에는 참고 번호를 넣지 마세요. 출처는 맨 아래 [SECTION - 참고자료]에만 모으세요.';
-  if(parts.count>1 || (parts.count && /^\[SECTION\s*-/m.test(parts.references)))return '참고자료는 글 맨 아래 한 번만 배치하세요.';
+  if(/\[(?:(?:참고|출처)\s*)?\d{1,3}(?:\s*[,–-]\s*\d{1,3})*\]/.test(parts.body))return '본문에는 참고 번호를 넣지 마세요. 출처 연결은 내부 citations에만 보존하세요.';
+  if(parts.count)return '공개 원고에는 참고자료·출처 목록을 넣지 마세요. 내부 citations는 유지하세요.';
   if(options.researchTitleResult?.factBased===true || options.researchTitleResult?.factChecks?.some(f=>f.essential===true) || (options.researchTitleResult?.searchNeed && options.researchTitleResult.searchNeed!=='skip')) {
     const {sourcesFor}=require('./generationPrompts');
     const sources=new Map(sourcesFor(options).map(s=>[s.sourceId,s]));
     const citations=writerResult.citations;
-    if(!Array.isArray(citations) || !citations.length)return '출처 의존 글의 본문 참고자료와 citations가 없습니다. 실제 사용한 원문을 표시하세요.';
+    if(!Array.isArray(citations) || !citations.length)return '출처 의존 글의 내부 citations가 없습니다. 실제 사용한 sourceId와 URL을 연결하세요.';
     for(const citation of citations){
       const source=sources.get(citation.sourceId);
       if(!source || ![source.url,source.fetchedUrl].filter(Boolean).map(cleanSourceUrl).includes(cleanSourceUrl(citation.url)))return '본문 출처가 전달한 원문과 일치하지 않습니다. 제공된 sourceId와 URL을 사용하세요.';
-      if(!isBlogCitation(citation) && !parts.references.includes(cleanSourceUrl(citation.url)))return '참고자료 URL이 본문에 표시되지 않았습니다. 맨 아래 [SECTION - 참고자료]에 실제 사용한 원문 링크를 모으세요.';
     }
   }
   return require('./articleRequirements').articleLengthIssue(writerResult,options);

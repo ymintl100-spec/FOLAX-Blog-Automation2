@@ -1,3 +1,5 @@
+> 후속 반영: [100편 계측과 짧은 글 개선](blog-benchmark-concise-2026-10-23.md). 아래는 v3 조사·구현 기록이며 최신 v4는 본문 분량을 줄이고 공개 참고자료를 생략합니다.
+
 # 건강 정보와 일상·경험을 함께 운영하기 위한 형식 벤치마크
 
 관찰일: 2026-10-23, 한국 시간. 참고: [doctorkidney](https://blog.naver.com/doctorkidney), [yogawarm](https://blog.naver.com/yogawarm).

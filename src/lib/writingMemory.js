@@ -2,6 +2,7 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const MAX_EXAMPLES=12;
 const formats=require('./blogFormatProfiles');
 const {inspect}=require('./blogLayout');
+const {articleCharacterCount}=require('./articleRequirements');
 const normalize=value=>value.normalize('NFC').replace(/^\[SECTION\s*-\s*([^\]]+)\]\s*$/gm,'$1').replace(/\[IMAGE INSERT[^\]]*\]/g,'').replace(/[\s\u200b]+/g,'');
 const digest=value=>crypto.createHash('sha256').update(normalize(value)).digest('hex');
 const layoutText=value=>value.normalize('NFC').replace(/\r\n?/g,'\n').replace(/[\u200b\ufeff]/g,'').split('\n').map(line=>line.replace(/[^\S\n]+/g,' ').trim()).join('\n').replace(/\n{3,}/g,'\n\n').trim();
@@ -87,7 +88,7 @@ function guidance(root,id){
  const examples=chosen.slice(-2).flatMap(e=>{const value=cleanExcerpt(e.article);return [value.slice(0,130),value.slice(-130)];});
  const edits=chosen.flatMap(e=>Array.isArray(e.editComparisons)?e.editComparisons:e.editComparison?[e.editComparison]:[]);
  const approvedEdits=edits.slice(-3).filter(e=>e&&typeof e.before==='string'&&typeof e.after==='string').map(e=>({before:cleanExcerpt(e.before).slice(0,120),after:cleanExcerpt(e.after).slice(0,120)}));
- const result={version:4,exampleCount:approved.length,typicalParagraphCharacters:mean,typicalLineCharacters:median(approved.flatMap(e=>referenceBody(e.article).split('\n').filter(s=>s.trim()&&!/^\[(?:SECTION|IMAGE)/.test(s)).map(s=>s.trim().length))),avoidPhrases:(data.avoidPhrases||[]).slice(0,12),styleFragments:examples,approvedEdits};
+ const result={version:5,exampleCount:approved.length,typicalArticleCharacters:median(approved.map(e=>articleCharacterCount(e.article))),typicalSectionCount:median(layouts.map(l=>l.sections.length)),typicalOpeningCharacters:median(layouts.map(l=>articleCharacterCount(l.sections.length?l.opening:l.paragraphs[0]))),typicalClosingCharacters:median(layouts.map(l=>articleCharacterCount(l.paragraphs.at(-1)))),typicalParagraphCharacters:mean,typicalLineCharacters:median(approved.flatMap(e=>referenceBody(e.article).split('\n').filter(s=>s.trim()&&!/^\[(?:SECTION|IMAGE)/.test(s)).map(s=>s.trim().length))),avoidPhrases:(data.avoidPhrases||[]).slice(0,12),styleFragments:examples,approvedEdits};
  while(JSON.stringify(result).length>2300){
   const edit=result.approvedEdits.find(e=>e.before.length>60||e.after.length>60);
   if(edit){edit.before=edit.before.slice(0,Math.max(60,edit.before.length-20));edit.after=edit.after.slice(0,Math.max(60,edit.after.length-20));}

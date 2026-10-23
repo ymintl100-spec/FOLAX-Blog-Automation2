@@ -1,5 +1,5 @@
 const { getBridge } = require('./extensionBridge');
-const MIN_EDITOR_BUILD = '20261023.2';
+const MIN_EDITOR_BUILD = '20261023.3';
 function naverScheduledAt(hours, now = Date.now()) {
   const delay = Number(hours ?? 3);
   if (!Number.isFinite(delay) || delay <= 0) throw new Error('예약 시간은 0보다 큰 숫자여야 합니다.');
@@ -25,7 +25,7 @@ async function checkNaverSession(options={}) {
 async function publishToNaver(options={}) {
   const bridge=getBridge(), id=accountId(options);
   const result=await bridge.request(id,'publish',{
-    title:options.title,article:options.article,titleImagePath:options.titleImagePath,
+    title:options.title,article:require('./publicationFormat').omitReferences(options.article),titleImagePath:options.titleImagePath,
     bodyImages:options.bodyImages || [],tags:options.tags || [], category:options.category || '',
     publishVisibility:options.publishVisibility || (options.publishPrivate===false?'public':'private'),
     publishScheduleMode:options.publishVisibility==='draft'?'now':options.publishScheduleMode || 'now',reserveAfterHours:options.reserveAfterHours || 3,

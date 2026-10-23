@@ -40,8 +40,8 @@ test('invalid review evidence retries only review on resume and freezes the orig
  const h=harness({options:{writingGuidance:{fingerprint:'style-before',styleFragments:['차분한 설명']},formatGuidance:{id:'explanation',flow:'고민에서 판단으로'}},review:n=>n===1?{...goodReview(),readerValueAssessment:{openingAnswer:'원고에 없는 검수 인용을 새로 작성합니다.',decisionHelp:help}}:goodReview()});
  const first=await h.run();assert.equal(first.failureKind,'execution');assert.equal(first.failurePhase,'main_review');
  const checkpoint=h.checkpoints.at(-1);h.calls.length=0;
- const second=await generate({...h.opts,generationCheckpoint:checkpoint,writingGuidance:{fingerprint:'style-after'},formatGuidance:{id:'practical'},experienceNotes:'다음 새 글에만 쓰려던 경험',experienceNotesId:'next-job-memo'},()=>{},h.deps);
- assert.equal(second.publishable,true);assert.deepEqual(h.calls.map(c=>c.agent),['main']);assert.equal(h.calls[0].options.writingGuidance.fingerprint,'style-before');assert.equal(h.calls[0].options.formatGuidance.id,'explanation');assert.equal(h.calls[0].options.experienceNotes,undefined);assert.equal(h.calls[0].options.experienceNotesId,undefined);
+ const second=await generate({...h.opts,generationCheckpoint:checkpoint,writingGuidance:{fingerprint:'style-after'},formatGuidance:{id:'practical'},experienceNotes:'다음 새 글에만 쓰려던 경험',experienceNotesId:'next-job-memo',compactWriting:true},()=>{},h.deps);
+ assert.equal(second.publishable,true);assert.deepEqual(h.calls.map(c=>c.agent),['main']);assert.equal(h.calls[0].options.writingGuidance.fingerprint,'style-before');assert.equal(h.calls[0].options.formatGuidance.id,'explanation');assert.equal(h.calls[0].options.experienceNotes,undefined);assert.equal(h.calls[0].options.experienceNotesId,undefined);assert.equal(h.calls[0].options.compactWriting,undefined);
 });
 test('missing essential evidence stops before writer and token-saving mode avoids whole-topic retries',async()=>{
  const h=harness({blockResearch:true});const r=await h.run();assert.equal(r.status,'failed');assert.deepEqual(h.calls.map(c=>c.agent),['research']);
@@ -64,14 +64,14 @@ const headings=['자주 쓰는 도구부터 남기는 이유','공간과 쓰임�
 const benchmarkWriter={...writer,article:opening+'\n\n'+headings.map((h,i)=>'[SECTION - '+h+']\n'+help+'\n\n'+(i===2?closing:'분류 기준 '+i+'에서는 물건을 꺼내고 돌려놓는 위치를 함께 살펴봅니다.')).join('\n\n')};
 const benchmarkReview=()=>({...goodReview(),benchmarkFormatPass:true,benchmarkFormatEvidence:{openingQuote:opening,sectionHeadings:headings,closingQuote:closing,arcQuote:help,reason:'고민의 답과 판단 기준, 적용 순서가 실제 원고에 있습니다.'}});
 test('benchmark mode stops an old unsegmented template before publishing within the existing correction budget',async()=>{
- const h=harness({options:{formatGuidance:benchmarkGuide}});const result=await h.run();
+ const h=harness({writerResult:{...writer,article:article.replace(/^\[SECTION[^\]]+\]\s*$/gm,'')},options:{formatGuidance:benchmarkGuide}});const result=await h.run();
  assert.equal(result.status,'failed');assert.equal(result.failurePhase,'writer');assert.match(result.failureReason,/벤치마크 형식/);
  assert.equal(h.calls.filter(c=>c.agent==='writer').length,2);assert(!h.calls.some(c=>c.agent==='image'));
 });
 test('real benchmark structure and evidence pass with three calls and report the settings actually used',async()=>{
  const applied=[];const h=harness({writerResult:benchmarkWriter,review:benchmarkReview,options:{formatGuidance:benchmarkGuide,writingGuidance:{exampleCount:2,typicalParagraphCharacters:80},onWritingApplication:a=>applied.push(a)}});
  const result=await h.run();assert.equal(result.publishable,true);assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main']);
- assert.equal(result.writingApplication.profileId,'explanation');assert.equal(result.writingApplication.guideVersion,3);assert.equal(result.writingApplication.sectionCount,3);assert.equal(result.writingApplication.approvedExamples,2);assert.equal(applied[0].approvedExamples,2);
+ assert.equal(result.writingApplication.profileId,'explanation');assert.equal(result.writingApplication.guideVersion,4);assert.equal(result.writingApplication.sectionCount,3);assert.equal(result.writingApplication.approvedExamples,2);assert.equal(applied[0].approvedExamples,2);
  assert(h.calls[0].prompt.includes('formatGuide'));assert(h.calls[1].prompt.includes('작은 문단'));
 });
 test('missing benchmark verdict preserves writer and retries only the review on resume',async()=>{

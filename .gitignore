@@ -80,3 +80,6 @@ packages/blog-humanizer/SKILL.md
 docs/*
 !docs/blog-benchmark-2026-10-23.md
 !docs/blog-benchmark-samples.json
+
+!docs/blog-benchmark-concise-2026-10-23.md
+!docs/blog-benchmark-100-samples.json

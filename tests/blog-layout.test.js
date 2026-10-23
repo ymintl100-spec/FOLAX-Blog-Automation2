@@ -21,10 +21,10 @@ test('benchmark evidence must cite real opening, closing, and distinct actual he
 test('authoring plan keeps approved lines together and preserves text and URLs without generating content',()=>{
  const plan=articlePlan(article,{preserveParagraphs:true});
  assert(plan.some(p=>p.type==='paragraph'&&p.text===body+'\n그 이유도 함께 설명합니다.'));
- assert.equal(plan.filter(p=>p.type==='section').length,3);
- const source=article.replace(/^\[SECTION\s*-\s*([^\]]+)\]\s*$/gm,'$1').replace(/\[IMAGE INSERT[^\]]*\]/g,'').replace(/\s/g,'');
+ assert.equal(plan.filter(p=>p.type==='section').length,2);
+ const source=require('../src/lib/publicationFormat').omitReferences(article).replace(/^\[SECTION\s*-\s*([^\]]+)\]\s*$/gm,'$1').replace(/\[IMAGE INSERT[^\]]*\]/g,'').replace(/\s/g,'');
  assert.equal(plan.filter(p=>p.type!=='image').map(p=>p.text).join('').replace(/\s/g,''),source);
- const doc=tistoryDocument('새 글',plan,{1:'<img src="own-image.png">'});assert(doc.html.includes('<br>그 이유도 함께 설명합니다.'));assert(doc.html.includes('https://example.com/source'));
+ const doc=tistoryDocument('새 글',plan,{1:'<img src="own-image.png">'});assert(doc.html.includes('<br>그 이유도 함께 설명합니다.'));assert(!doc.html.includes('https://example.com/source'));
  const legacy=articlePlan(article);assert(legacy.some(p=>p.type==='paragraph'&&p.text==='그 이유도 함께 설명합니다.'));
 });
 test('publish payload transports paragraph preservation and blocks old extensions before new generation',async()=>{
@@ -35,8 +35,8 @@ test('publish payload transports paragraph preservation and blocks old extension
   const naver=require('../src/lib/naverPublisher');
   await naver.publishToNaver({accountId:'test-account',article,title:'테스트 원고',preserveParagraphs:true});
   await require('../src/lib/tistoryPublisher').publishToTistory({tistoryBlogId:'test-blog',article,title:'테스트 원고',preserveParagraphs:true});
-  for(const payload of sent){assert.equal(payload.article,article);assert.equal(payload.preserveParagraphs,true);assert.equal(payload.breakSentencesInBody,false);}
+  for(const payload of sent){assert.equal(payload.article,require('../src/lib/publicationFormat').omitReferences(article));assert.equal(payload.preserveParagraphs,true);assert.equal(payload.breakSentencesInBody,false);}
   assert.throws(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261007.2'},'test-blog'),/구버전/);
-  assert.doesNotThrow(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261023.2'},'test-blog'));
+  assert.doesNotThrow(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261023.3'},'test-blog'));
  }finally{bridge.stop();fs.rmSync(root,{recursive:true,force:true});}
 });

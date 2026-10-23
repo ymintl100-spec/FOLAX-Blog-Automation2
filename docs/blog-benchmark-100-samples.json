@@ -1,0 +1,3813 @@
+{
+  "observedDate": "2026-10-23",
+  "sampleMethod": "두 RSS에 노출된 최근 50편씩 100편의 공개 본문 HTML을 계측. 기존 40편 외 60편 추가. 그중 짧은 일상·생활형과 모집·후기 등 12편의 전개를 별도 재독. 전체 운영·성과 통계가 아니며 원문 의료 주장을 검증하지 않음.",
+  "textMetric": "일반 본문 및 인용 블록의 공백 제외 문자 수. 표·사진·일부 캡션은 제외하며 제목·해시태그·자기소개·본문 링크가 섞일 수 있음. 앱의 생성 글자수와 완전히 같지 않음.",
+  "samples": [
+    {
+      "blogId": "doctorkidney",
+      "postId": "224451331292",
+      "url": "https://blog.naver.com/doctorkidney/224451331292",
+      "title": "[의사의 식탁] 나만 건강해지는 우리 집 밥상의 함정, 당근 라페",
+      "publishedAt": "Fri, 23 Oct 2026 15:16:21 +0900",
+      "measurement": {
+        "textChars": 1050,
+        "lineCount": 76,
+        "lineChars": {
+          "min": 4,
+          "median": 13.5,
+          "max": 48
+        },
+        "paragraphCount": 34,
+        "paragraphChars": {
+          "min": 7,
+          "median": 31.0,
+          "max": 80
+        },
+        "centeredLines": 2,
+        "boldLines": 3,
+        "fontSizes": {
+          "fs19": 3
+        },
+        "imageBlocks": 7,
+        "quoteBlocks": 0,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 92,
+        "quoteStyles": {}
+      },
+      "proseAndQuoteCharactersNoSpaces": 851,
+      "closeReading": "한 가지 음식에서 일상 장면, 무소제목"
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224449125586",
+      "url": "https://blog.naver.com/doctorkidney/224449125586",
+      "title": "콩팥 기능이 절반? 먹는 것조차 두려웠던 환자 이야기",
+      "publishedAt": "Wed, 21 Oct 2026 16:36:49 +0900",
+      "measurement": {
+        "textChars": 1947,
+        "lineCount": 122,
+        "lineChars": {
+          "min": 3,
+          "median": 14.5,
+          "max": 86
+        },
+        "paragraphCount": 50,
+        "paragraphChars": {
+          "min": 16,
+          "median": 36.5,
+          "max": 102
+        },
+        "centeredLines": 2,
+        "boldLines": 13,
+        "fontSizes": {
+          "fs19": 8,
+          "fs16": 39
+        },
+        "imageBlocks": 3,
+        "quoteBlocks": 3,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 34,
+        "quoteStyles": {
+          "default": 1,
+          "quotation_postit": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1658
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224446728850",
+      "url": "https://blog.naver.com/doctorkidney/224446728850",
+      "title": "건강한 줄 알고 먹었는데? 내과 의사가 포장 뒷면을 보고 생각이 달라진 식품 3가지",
+      "publishedAt": "Mon, 19 Oct 2026 16:53:17 +0900",
+      "measurement": {
+        "textChars": 1681,
+        "lineCount": 103,
+        "lineChars": {
+          "min": 4,
+          "median": 16,
+          "max": 48
+        },
+        "paragraphCount": 42,
+        "paragraphChars": {
+          "min": 6,
+          "median": 38.0,
+          "max": 70
+        },
+        "centeredLines": 2,
+        "boldLines": 14,
+        "fontSizes": {
+          "fs19": 1
+        },
+        "imageBlocks": 11,
+        "quoteBlocks": 4,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 196,
+        "quoteStyles": {
+          "quotation_line": 3,
+          "quotation_bubble": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1410
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224444553048",
+      "url": "https://blog.naver.com/doctorkidney/224444553048",
+      "title": "꼭 숨이 차게 달려야 운동이 될까? 내과 의사가 말하는 달리지 않아도 괜찮은 이유",
+      "publishedAt": "Sat, 17 Oct 2026 11:36:06 +0900",
+      "measurement": {
+        "textChars": 1574,
+        "lineCount": 101,
+        "lineChars": {
+          "min": 3,
+          "median": 15,
+          "max": 48
+        },
+        "paragraphCount": 43,
+        "paragraphChars": {
+          "min": 6,
+          "median": 39,
+          "max": 64
+        },
+        "centeredLines": 2,
+        "boldLines": 20,
+        "fontSizes": {
+          "fs19": 11
+        },
+        "imageBlocks": 7,
+        "quoteBlocks": 5,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 62,
+        "quoteStyles": {
+          "quotation_bubble": 2,
+          "quotation_line": 3
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1357
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224443810141",
+      "url": "https://blog.naver.com/doctorkidney/224443810141",
+      "title": "[의사의 식탁] 실컷 먹고 돌아온 일상, 식단 관리는 두부 샐러드로",
+      "publishedAt": "Fri, 16 Oct 2026 15:43:59 +0900",
+      "measurement": {
+        "textChars": 1369,
+        "lineCount": 108,
+        "lineChars": {
+          "min": 4,
+          "median": 12.0,
+          "max": 48
+        },
+        "paragraphCount": 47,
+        "paragraphChars": {
+          "min": 7,
+          "median": 31,
+          "max": 65
+        },
+        "centeredLines": 2,
+        "boldLines": 2,
+        "fontSizes": {
+          "fs19": 2
+        },
+        "imageBlocks": 15,
+        "quoteBlocks": 0,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 45,
+        "quoteStyles": {}
+      },
+      "proseAndQuoteCharactersNoSpaces": 1126
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224441544256",
+      "url": "https://blog.naver.com/doctorkidney/224441544256",
+      "title": "배고픈거 못 참는 내과의사, 진료실에서 몰래 먹는 간식 BEST 3",
+      "publishedAt": "Wed, 14 Oct 2026 16:20:49 +0900",
+      "measurement": {
+        "textChars": 1730,
+        "lineCount": 117,
+        "lineChars": {
+          "min": 4,
+          "median": 14,
+          "max": 48
+        },
+        "paragraphCount": 46,
+        "paragraphChars": {
+          "min": 11,
+          "median": 40.5,
+          "max": 72
+        },
+        "centeredLines": 3,
+        "boldLines": 5,
+        "fontSizes": {
+          "fs19": 3
+        },
+        "imageBlocks": 16,
+        "quoteBlocks": 5,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 142,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 4
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1478
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224441178091",
+      "url": "https://blog.naver.com/doctorkidney/224441178091",
+      "title": "돈카츠만 먹고 올 줄 알았던 편식쟁이 딸과의 도쿄 미식 여행",
+      "publishedAt": "Wed, 14 Oct 2026 10:49:47 +0900",
+      "measurement": {
+        "textChars": 2396,
+        "lineCount": 188,
+        "lineChars": {
+          "min": 4,
+          "median": 12.0,
+          "max": 41
+        },
+        "paragraphCount": 81,
+        "paragraphChars": {
+          "min": 5,
+          "median": 30,
+          "max": 76
+        },
+        "centeredLines": 0,
+        "boldLines": 4,
+        "fontSizes": {
+          "fs19": 4
+        },
+        "imageBlocks": 22,
+        "quoteBlocks": 0,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 258,
+        "quoteStyles": {}
+      },
+      "proseAndQuoteCharactersNoSpaces": 1984
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224436323894",
+      "url": "https://blog.naver.com/doctorkidney/224436323894",
+      "title": "여행 중에도 놓칠 수 없었던 내과 의사의 아침 습관",
+      "publishedAt": "Fri, 09 Oct 2026 16:22:59 +0900",
+      "measurement": {
+        "textChars": 1193,
+        "lineCount": 69,
+        "lineChars": {
+          "min": 4,
+          "median": 15,
+          "max": 186
+        },
+        "paragraphCount": 32,
+        "paragraphChars": {
+          "min": 7,
+          "median": 36.0,
+          "max": 186
+        },
+        "centeredLines": 0,
+        "boldLines": 0,
+        "fontSizes": {},
+        "imageBlocks": 7,
+        "quoteBlocks": 0,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 79,
+        "quoteStyles": {}
+      },
+      "proseAndQuoteCharactersNoSpaces": 998
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224429462492",
+      "url": "https://blog.naver.com/doctorkidney/224429462492",
+      "title": "한식은 정말 건강식일까? 내과 의사가 알려주는 건강한 한식의 3가지 조건",
+      "publishedAt": "Fri, 02 Oct 2026 15:29:56 +0900",
+      "measurement": {
+        "textChars": 2048,
+        "lineCount": 133,
+        "lineChars": {
+          "min": 3,
+          "median": 15,
+          "max": 48
+        },
+        "paragraphCount": 50,
+        "paragraphChars": {
+          "min": 6,
+          "median": 46.0,
+          "max": 80
+        },
+        "centeredLines": 2,
+        "boldLines": 6,
+        "fontSizes": {},
+        "imageBlocks": 10,
+        "quoteBlocks": 10,
+        "tableBlocks": 0,
+        "ruleBlocks": 2,
+        "firstImageAfterChars": 126,
+        "quoteStyles": {
+          "quotation_postit": 2,
+          "quotation_bubble": 2,
+          "quotation_line": 6
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1854
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224427083915",
+      "url": "https://blog.naver.com/doctorkidney/224427083915",
+      "title": "추석 연휴 후 몸무게를 되돌리기 위해 내과 의사가 지키는 5가지 습관",
+      "publishedAt": "Wed, 30 Sep 2026 14:37:24 +0900",
+      "measurement": {
+        "textChars": 2036,
+        "lineCount": 130,
+        "lineChars": {
+          "min": 5,
+          "median": 15.0,
+          "max": 48
+        },
+        "paragraphCount": 52,
+        "paragraphChars": {
+          "min": 6,
+          "median": 41.5,
+          "max": 97
+        },
+        "centeredLines": 2,
+        "boldLines": 5,
+        "fontSizes": {
+          "fs19": 5
+        },
+        "imageBlocks": 6,
+        "quoteBlocks": 5,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 63,
+        "quoteStyles": {
+          "quotation_line": 5
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1707
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224424945376",
+      "url": "https://blog.naver.com/doctorkidney/224424945376",
+      "title": "아이와 대체 등산은 왜 하는 건데? 7살도 해낸 인왕산 첫 등산",
+      "publishedAt": "Mon, 28 Sep 2026 16:39:37 +0900",
+      "measurement": {
+        "textChars": 2248,
+        "lineCount": 169,
+        "lineChars": {
+          "min": 3,
+          "median": 13,
+          "max": 48
+        },
+        "paragraphCount": 69,
+        "paragraphChars": {
+          "min": 6,
+          "median": 34,
+          "max": 66
+        },
+        "centeredLines": 0,
+        "boldLines": 0,
+        "fontSizes": {},
+        "imageBlocks": 24,
+        "quoteBlocks": 0,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 183,
+        "quoteStyles": {}
+      },
+      "proseAndQuoteCharactersNoSpaces": 1856
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224421774439",
+      "url": "https://blog.naver.com/doctorkidney/224421774439",
+      "title": "[의사의 식탁] 내과 의사가 지키는 식사 원칙 5가지, 장보기부터 아침 식사까지",
+      "publishedAt": "Thu, 24 Sep 2026 14:22:09 +0900",
+      "measurement": {
+        "textChars": 2505,
+        "lineCount": 151,
+        "lineChars": {
+          "min": 3,
+          "median": 17,
+          "max": 48
+        },
+        "paragraphCount": 63,
+        "paragraphChars": {
+          "min": 6,
+          "median": 37,
+          "max": 173
+        },
+        "centeredLines": 0,
+        "boldLines": 0,
+        "fontSizes": {},
+        "imageBlocks": 20,
+        "quoteBlocks": 7,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 299,
+        "quoteStyles": {
+          "quotation_line": 5,
+          "quotation_bubble": 1,
+          "quotation_postit": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2154
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224413877488",
+      "url": "https://blog.naver.com/doctorkidney/224413877488",
+      "title": "[의사의 식탁] 제철 무화과를 더 건강하고 맛있게 먹는 3가지 방법",
+      "publishedAt": "Wed, 16 Sep 2026 16:32:08 +0900",
+      "measurement": {
+        "textChars": 3242,
+        "lineCount": 178,
+        "lineChars": {
+          "min": 2,
+          "median": 18.0,
+          "max": 48
+        },
+        "paragraphCount": 62,
+        "paragraphChars": {
+          "min": 5,
+          "median": 53.0,
+          "max": 141
+        },
+        "centeredLines": 2,
+        "boldLines": 16,
+        "fontSizes": {
+          "fs19": 13
+        },
+        "imageBlocks": 15,
+        "quoteBlocks": 6,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 119,
+        "quoteStyles": {
+          "quotation_bubble": 3,
+          "quotation_line": 3
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2690
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224411372424",
+      "url": "https://blog.naver.com/doctorkidney/224411372424",
+      "title": "먹는 거 좋아하는 내과 의사가 식욕을 조절하는 5가지 방법",
+      "publishedAt": "Mon, 14 Sep 2026 16:19:07 +0900",
+      "measurement": {
+        "textChars": 2039,
+        "lineCount": 123,
+        "lineChars": {
+          "min": 4,
+          "median": 16,
+          "max": 48
+        },
+        "paragraphCount": 45,
+        "paragraphChars": {
+          "min": 7,
+          "median": 44,
+          "max": 111
+        },
+        "centeredLines": 2,
+        "boldLines": 0,
+        "fontSizes": {},
+        "imageBlocks": 6,
+        "quoteBlocks": 5,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 305,
+        "quoteStyles": {
+          "quotation_line": 5
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1731
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224408503488",
+      "url": "https://blog.naver.com/doctorkidney/224408503488",
+      "title": "내과 의사 추천 하루 10분으로 체력 높이는 법",
+      "publishedAt": "Fri, 11 Sep 2026 17:19:02 +0900",
+      "measurement": {
+        "textChars": 2125,
+        "lineCount": 120,
+        "lineChars": {
+          "min": 5,
+          "median": 18.0,
+          "max": 48
+        },
+        "paragraphCount": 54,
+        "paragraphChars": {
+          "min": 5,
+          "median": 38.0,
+          "max": 104
+        },
+        "centeredLines": 2,
+        "boldLines": 19,
+        "fontSizes": {
+          "fs19": 8
+        },
+        "imageBlocks": 9,
+        "quoteBlocks": 5,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 354,
+        "quoteStyles": {
+          "quotation_line": 4,
+          "quotation_bubble": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1798
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224406206552",
+      "url": "https://blog.naver.com/doctorkidney/224406206552",
+      "title": "살 빼는 주사, 콩팥병에도 도움이 될까?",
+      "publishedAt": "Wed, 09 Sep 2026 17:35:07 +0900",
+      "measurement": {
+        "textChars": 2421,
+        "lineCount": 142,
+        "lineChars": {
+          "min": 3,
+          "median": 17.0,
+          "max": 48
+        },
+        "paragraphCount": 47,
+        "paragraphChars": {
+          "min": 20,
+          "median": 54,
+          "max": 126
+        },
+        "centeredLines": 2,
+        "boldLines": 7,
+        "fontSizes": {
+          "fs19": 3
+        },
+        "imageBlocks": 11,
+        "quoteBlocks": 6,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "default": 1,
+          "quotation_line": 3,
+          "quotation_bubble": 1,
+          "quotation_postit": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2087
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224403851635",
+      "url": "https://blog.naver.com/doctorkidney/224403851635",
+      "title": "먹어도 먹어도 배가 고픈 이유, 내과의사의 습관 처방전",
+      "publishedAt": "Mon, 07 Sep 2026 17:30:13 +0900",
+      "measurement": {
+        "textChars": 2267,
+        "lineCount": 138,
+        "lineChars": {
+          "min": 3,
+          "median": 16.0,
+          "max": 48
+        },
+        "paragraphCount": 53,
+        "paragraphChars": {
+          "min": 18,
+          "median": 44,
+          "max": 104
+        },
+        "centeredLines": 2,
+        "boldLines": 0,
+        "fontSizes": {},
+        "imageBlocks": 11,
+        "quoteBlocks": 9,
+        "tableBlocks": 1,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 77,
+        "quoteStyles": {
+          "default": 1,
+          "quotation_bubble": 2,
+          "quotation_line": 6
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2018
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224401706972",
+      "url": "https://blog.naver.com/doctorkidney/224401706972",
+      "title": "오늘도 운동할 시간이 없다는 당신에게, 완벽한 2시간 보다 필요한 것",
+      "publishedAt": "Sat, 05 Sep 2026 11:43:26 +0900",
+      "measurement": {
+        "textChars": 1779,
+        "lineCount": 104,
+        "lineChars": {
+          "min": 3,
+          "median": 15.0,
+          "max": 166
+        },
+        "paragraphCount": 43,
+        "paragraphChars": {
+          "min": 6,
+          "median": 38,
+          "max": 174
+        },
+        "centeredLines": 10,
+        "boldLines": 11,
+        "fontSizes": {
+          "fs19": 8
+        },
+        "imageBlocks": 7,
+        "quoteBlocks": 5,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 282,
+        "quoteStyles": {
+          "quotation_postit": 1,
+          "quotation_line": 4
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1591
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224400953991",
+      "url": "https://blog.naver.com/doctorkidney/224400953991",
+      "title": "[의사의 식탁] 내과 의사가 냉장고 1열에 두는 음식 3가지",
+      "publishedAt": "Fri, 04 Sep 2026 15:36:54 +0900",
+      "measurement": {
+        "textChars": 1365,
+        "lineCount": 78,
+        "lineChars": {
+          "min": 6,
+          "median": 16.5,
+          "max": 48
+        },
+        "paragraphCount": 36,
+        "paragraphChars": {
+          "min": 6,
+          "median": 37.0,
+          "max": 78
+        },
+        "centeredLines": 2,
+        "boldLines": 3,
+        "fontSizes": {
+          "fs19": 3
+        },
+        "imageBlocks": 14,
+        "quoteBlocks": 5,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 233,
+        "quoteStyles": {
+          "quotation_bubble": 2,
+          "quotation_line": 3
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1148
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224391042558",
+      "url": "https://blog.naver.com/doctorkidney/224391042558",
+      "title": "비만 주사로 살을 빼면, 내 노력은 실패한 걸까요?",
+      "publishedAt": "Wed, 26 Aug 2026 17:05:32 +0900",
+      "measurement": {
+        "textChars": 1500,
+        "lineCount": 91,
+        "lineChars": {
+          "min": 6,
+          "median": 17,
+          "max": 30
+        },
+        "paragraphCount": 39,
+        "paragraphChars": {
+          "min": 7,
+          "median": 36,
+          "max": 87
+        },
+        "centeredLines": 1,
+        "boldLines": 9,
+        "fontSizes": {
+          "fs19": 5
+        },
+        "imageBlocks": 6,
+        "quoteBlocks": 6,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 20,
+        "quoteStyles": {
+          "quotation_line": 4,
+          "quotation_postit": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1327
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224389491809",
+      "url": "https://blog.naver.com/doctorkidney/224389491809",
+      "title": "[모두의 회고] 너무나 다른 너와 나의 회고",
+      "publishedAt": "Tue, 25 Aug 2026 11:39:21 +0900",
+      "measurement": {
+        "textChars": 959,
+        "lineCount": 68,
+        "lineChars": {
+          "min": 6,
+          "median": 13.0,
+          "max": 28
+        },
+        "paragraphCount": 26,
+        "paragraphChars": {
+          "min": 9,
+          "median": 39.0,
+          "max": 66
+        },
+        "centeredLines": 0,
+        "boldLines": 3,
+        "fontSizes": {
+          "fs19": 1
+        },
+        "imageBlocks": 3,
+        "quoteBlocks": 0,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 244,
+        "quoteStyles": {}
+      },
+      "proseAndQuoteCharactersNoSpaces": 780,
+      "closeReading": "대조에서 회고, 무소제목"
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224388636789",
+      "url": "https://blog.naver.com/doctorkidney/224388636789",
+      "title": "[의사의 식탁] 내과 의사가 멸치볶음에 소금을 더하지 않는 이유",
+      "publishedAt": "Mon, 24 Aug 2026 16:28:33 +0900",
+      "measurement": {
+        "textChars": 2174,
+        "lineCount": 129,
+        "lineChars": {
+          "min": 6,
+          "median": 16,
+          "max": 48
+        },
+        "paragraphCount": 58,
+        "paragraphChars": {
+          "min": 6,
+          "median": 36.0,
+          "max": 104
+        },
+        "centeredLines": 3,
+        "boldLines": 14,
+        "fontSizes": {
+          "fs19": 12
+        },
+        "imageBlocks": 11,
+        "quoteBlocks": 2,
+        "tableBlocks": 1,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 615,
+        "quoteStyles": {
+          "default": 1,
+          "quotation_bubble": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1792
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224385719538",
+      "url": "https://blog.naver.com/doctorkidney/224385719538",
+      "title": "[의사의 식탁] 빵만 먹지 마세요! 빵순이 내과 의사는 이렇게 먹습니다",
+      "publishedAt": "Fri, 21 Aug 2026 15:50:16 +0900",
+      "measurement": {
+        "textChars": 1869,
+        "lineCount": 113,
+        "lineChars": {
+          "min": 5,
+          "median": 17,
+          "max": 48
+        },
+        "paragraphCount": 48,
+        "paragraphChars": {
+          "min": 6,
+          "median": 38.5,
+          "max": 78
+        },
+        "centeredLines": 2,
+        "boldLines": 10,
+        "fontSizes": {
+          "fs19": 9
+        },
+        "imageBlocks": 10,
+        "quoteBlocks": 3,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 161,
+        "quoteStyles": {
+          "default": 1,
+          "quotation_bubble": 1,
+          "quotation_postit": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1542
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224383453929",
+      "url": "https://blog.naver.com/doctorkidney/224383453929",
+      "title": "장이 예민한 날, 장트러블러 내과 의사의 집밥 원칙",
+      "publishedAt": "Wed, 19 Aug 2026 16:27:48 +0900",
+      "measurement": {
+        "textChars": 2048,
+        "lineCount": 116,
+        "lineChars": {
+          "min": 5,
+          "median": 16.0,
+          "max": 48
+        },
+        "paragraphCount": 51,
+        "paragraphChars": {
+          "min": 6,
+          "median": 38,
+          "max": 102
+        },
+        "centeredLines": 4,
+        "boldLines": 21,
+        "fontSizes": {
+          "fs19": 7,
+          "fs15": 2
+        },
+        "imageBlocks": 6,
+        "quoteBlocks": 5,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 203,
+        "quoteStyles": {
+          "quotation_bubble": 3,
+          "default": 1,
+          "quotation_postit": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1751
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224381217656",
+      "url": "https://blog.naver.com/doctorkidney/224381217656",
+      "title": "건강식 좋아하는 내과 의사 엄마 VS 편식하는 아이, 둘 다 만족한 메뉴는?",
+      "publishedAt": "Mon, 17 Aug 2026 16:16:23 +0900",
+      "measurement": {
+        "textChars": 1859,
+        "lineCount": 110,
+        "lineChars": {
+          "min": 4,
+          "median": 16.0,
+          "max": 34
+        },
+        "paragraphCount": 48,
+        "paragraphChars": {
+          "min": 7,
+          "median": 38.0,
+          "max": 80
+        },
+        "centeredLines": 0,
+        "boldLines": 0,
+        "fontSizes": {},
+        "imageBlocks": 14,
+        "quoteBlocks": 2,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_postit": 1,
+          "quotation_line": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1551
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224379501826",
+      "url": "https://blog.naver.com/doctorkidney/224379501826",
+      "title": "걷기는 정말 효과가 없을까? 10년차 내과 의사가 걷기를 추천하는 이유",
+      "publishedAt": "Sat, 15 Aug 2026 15:18:23 +0900",
+      "measurement": {
+        "textChars": 2333,
+        "lineCount": 136,
+        "lineChars": {
+          "min": 6,
+          "median": 16.0,
+          "max": 51
+        },
+        "paragraphCount": 66,
+        "paragraphChars": {
+          "min": 6,
+          "median": 35.5,
+          "max": 81
+        },
+        "centeredLines": 0,
+        "boldLines": 7,
+        "fontSizes": {
+          "fs19": 5
+        },
+        "imageBlocks": 11,
+        "quoteBlocks": 3,
+        "tableBlocks": 0,
+        "ruleBlocks": 2,
+        "firstImageAfterChars": 195,
+        "quoteStyles": {
+          "quotation_postit": 1,
+          "quotation_bubble": 1,
+          "quotation_line": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1909
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224378301943",
+      "url": "https://blog.naver.com/doctorkidney/224378301943",
+      "title": "[의사의 식탁] 실패한 복숭아를 살리는 두 가지 방법",
+      "publishedAt": "Fri, 14 Aug 2026 11:03:48 +0900",
+      "measurement": {
+        "textChars": 1725,
+        "lineCount": 118,
+        "lineChars": {
+          "min": 2,
+          "median": 14.0,
+          "max": 28
+        },
+        "paragraphCount": 45,
+        "paragraphChars": {
+          "min": 9,
+          "median": 39,
+          "max": 86
+        },
+        "centeredLines": 0,
+        "boldLines": 2,
+        "fontSizes": {
+          "fs19": 1
+        },
+        "imageBlocks": 8,
+        "quoteBlocks": 3,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 157,
+        "quoteStyles": {
+          "quotation_line": 3
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1436,
+      "closeReading": "실패한 상황에서 관점 변화"
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224376138689",
+      "url": "https://blog.naver.com/doctorkidney/224376138689",
+      "title": "[의사의 식탁] 냉장고에 늘 쟁여두는 이것, 구운 계란",
+      "publishedAt": "Wed, 12 Aug 2026 12:29:11 +0900",
+      "measurement": {
+        "textChars": 1380,
+        "lineCount": 81,
+        "lineChars": {
+          "min": 2,
+          "median": 17,
+          "max": 48
+        },
+        "paragraphCount": 40,
+        "paragraphChars": {
+          "min": 5,
+          "median": 34.0,
+          "max": 87
+        },
+        "centeredLines": 3,
+        "boldLines": 11,
+        "fontSizes": {
+          "fs19": 2
+        },
+        "imageBlocks": 10,
+        "quoteBlocks": 2,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 208,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1134,
+      "closeReading": "생활 원칙에서 준비·실행으로"
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224373769036",
+      "url": "https://blog.naver.com/doctorkidney/224373769036",
+      "title": "[의사의 식탁] 불 없이 간단하게 두부로 만드는 진한 콩국수",
+      "publishedAt": "Mon, 10 Aug 2026 11:24:05 +0900",
+      "measurement": {
+        "textChars": 2342,
+        "lineCount": 118,
+        "lineChars": {
+          "min": 2,
+          "median": 19.0,
+          "max": 48
+        },
+        "paragraphCount": 56,
+        "paragraphChars": {
+          "min": 5,
+          "median": 39.0,
+          "max": 116
+        },
+        "centeredLines": 2,
+        "boldLines": 20,
+        "fontSizes": {
+          "fs19": 6,
+          "fs15": 2
+        },
+        "imageBlocks": 9,
+        "quoteBlocks": 3,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 239,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1901
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224368885588",
+      "url": "https://blog.naver.com/doctorkidney/224368885588",
+      "title": "[의사의 식탁] 닭가슴살 보다 더? 의외의 고단백 간식, 황태채 버터구이",
+      "publishedAt": "Wed, 05 Aug 2026 14:30:09 +0900",
+      "measurement": {
+        "textChars": 1820,
+        "lineCount": 113,
+        "lineChars": {
+          "min": 5,
+          "median": 15,
+          "max": 48
+        },
+        "paragraphCount": 49,
+        "paragraphChars": {
+          "min": 5,
+          "median": 38,
+          "max": 118
+        },
+        "centeredLines": 3,
+        "boldLines": 6,
+        "fontSizes": {
+          "fs19": 2
+        },
+        "imageBlocks": 13,
+        "quoteBlocks": 5,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 196,
+        "quoteStyles": {
+          "quotation_line": 4,
+          "quotation_bubble": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1577
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224364045779",
+      "url": "https://blog.naver.com/doctorkidney/224364045779",
+      "title": "[모두의 회고] 내과 전문의 12년 차에 돌아본 전공의 시절 회고",
+      "publishedAt": "Fri, 31 Jul 2026 17:16:56 +0900",
+      "measurement": {
+        "textChars": 1076,
+        "lineCount": 82,
+        "lineChars": {
+          "min": 3,
+          "median": 13.0,
+          "max": 23
+        },
+        "paragraphCount": 30,
+        "paragraphChars": {
+          "min": 11,
+          "median": 36.0,
+          "max": 67
+        },
+        "centeredLines": 0,
+        "boldLines": 0,
+        "fontSizes": {},
+        "imageBlocks": 10,
+        "quoteBlocks": 0,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {}
+      },
+      "proseAndQuoteCharactersNoSpaces": 870
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224363933257",
+      "url": "https://blog.naver.com/doctorkidney/224363933257",
+      "title": "[의사의 식탁] 입맛 까다로운 아이도 찾는 엄마표 치킨",
+      "publishedAt": "Fri, 31 Jul 2026 15:34:03 +0900",
+      "measurement": {
+        "textChars": 1693,
+        "lineCount": 111,
+        "lineChars": {
+          "min": 2,
+          "median": 15,
+          "max": 29
+        },
+        "paragraphCount": 47,
+        "paragraphChars": {
+          "min": 6,
+          "median": 36,
+          "max": 94
+        },
+        "centeredLines": 0,
+        "boldLines": 8,
+        "fontSizes": {
+          "fs19": 2
+        },
+        "imageBlocks": 14,
+        "quoteBlocks": 2,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 210,
+        "quoteStyles": {
+          "quotation_bubble": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1389
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224361885279",
+      "url": "https://blog.naver.com/doctorkidney/224361885279",
+      "title": "[의사의 식탁] 냉장고 털어 만든 라구 소스 한 솥",
+      "publishedAt": "Wed, 29 Jul 2026 17:02:11 +0900",
+      "measurement": {
+        "textChars": 1130,
+        "lineCount": 88,
+        "lineChars": {
+          "min": 3,
+          "median": 13.0,
+          "max": 22
+        },
+        "paragraphCount": 40,
+        "paragraphChars": {
+          "min": 8,
+          "median": 27.5,
+          "max": 60
+        },
+        "centeredLines": 0,
+        "boldLines": 2,
+        "fontSizes": {
+          "fs19": 2,
+          "fs15": 2
+        },
+        "imageBlocks": 14,
+        "quoteBlocks": 0,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {}
+      },
+      "proseAndQuoteCharactersNoSpaces": 911,
+      "closeReading": "조리 장면과 활용, 무소제목"
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224359365657",
+      "url": "https://blog.naver.com/doctorkidney/224359365657",
+      "title": "[의사의 식탁] 블루베리 요거트 바크 만들기｜아이스크림 대신 먹는 아이 여름 간식",
+      "publishedAt": "Mon, 27 Jul 2026 15:16:26 +0900",
+      "measurement": {
+        "textChars": 2040,
+        "lineCount": 112,
+        "lineChars": {
+          "min": 4,
+          "median": 17.0,
+          "max": 48
+        },
+        "paragraphCount": 47,
+        "paragraphChars": {
+          "min": 8,
+          "median": 44,
+          "max": 98
+        },
+        "centeredLines": 2,
+        "boldLines": 11,
+        "fontSizes": {
+          "fs19": 7
+        },
+        "imageBlocks": 15,
+        "quoteBlocks": 1,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1687
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224357386034",
+      "url": "https://blog.naver.com/doctorkidney/224357386034",
+      "title": "해보지 않는 운동을 한다는 건 ㅣ비 오는 날 아이와 실내 클라이밍",
+      "publishedAt": "Sat, 25 Jul 2026 12:29:28 +0900",
+      "measurement": {
+        "textChars": 1339,
+        "lineCount": 98,
+        "lineChars": {
+          "min": 4,
+          "median": 13.0,
+          "max": 26
+        },
+        "paragraphCount": 43,
+        "paragraphChars": {
+          "min": 7,
+          "median": 33,
+          "max": 54
+        },
+        "centeredLines": 0,
+        "boldLines": 0,
+        "fontSizes": {},
+        "imageBlocks": 10,
+        "quoteBlocks": 0,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 52,
+        "quoteStyles": {}
+      },
+      "proseAndQuoteCharactersNoSpaces": 1082
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224349439326",
+      "url": "https://blog.naver.com/doctorkidney/224349439326",
+      "title": "걷기만 해도 포인트가? 내과 의사가 매일 확인하는 건강앱",
+      "publishedAt": "Fri, 17 Jul 2026 14:54:26 +0900",
+      "measurement": {
+        "textChars": 1727,
+        "lineCount": 104,
+        "lineChars": {
+          "min": 3,
+          "median": 16.0,
+          "max": 96
+        },
+        "paragraphCount": 39,
+        "paragraphChars": {
+          "min": 6,
+          "median": 41,
+          "max": 104
+        },
+        "centeredLines": 2,
+        "boldLines": 0,
+        "fontSizes": {},
+        "imageBlocks": 14,
+        "quoteBlocks": 0,
+        "tableBlocks": 0,
+        "ruleBlocks": 2,
+        "firstImageAfterChars": 39,
+        "quoteStyles": {}
+      },
+      "proseAndQuoteCharactersNoSpaces": 1392
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224348271428",
+      "url": "https://blog.naver.com/doctorkidney/224348271428",
+      "title": "단백질 쉐이크 없이 하루 단백질 채울 수 있을까? 직접 계산해봤습니다",
+      "publishedAt": "Thu, 16 Jul 2026 11:02:54 +0900",
+      "measurement": {
+        "textChars": 2698,
+        "lineCount": 149,
+        "lineChars": {
+          "min": 6,
+          "median": 18,
+          "max": 48
+        },
+        "paragraphCount": 62,
+        "paragraphChars": {
+          "min": 14,
+          "median": 40.0,
+          "max": 101
+        },
+        "centeredLines": 2,
+        "boldLines": 20,
+        "fontSizes": {
+          "fs19": 5
+        },
+        "imageBlocks": 8,
+        "quoteBlocks": 3,
+        "tableBlocks": 2,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 772,
+        "quoteStyles": {
+          "quotation_line": 3
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2216
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224347238998",
+      "url": "https://blog.naver.com/doctorkidney/224347238998",
+      "title": "내과 의사가 1년 동안 지킨 혈당 관리 습관 4가지",
+      "publishedAt": "Wed, 15 Jul 2026 11:45:52 +0900",
+      "measurement": {
+        "textChars": 2342,
+        "lineCount": 138,
+        "lineChars": {
+          "min": 5,
+          "median": 16.0,
+          "max": 48
+        },
+        "paragraphCount": 58,
+        "paragraphChars": {
+          "min": 10,
+          "median": 41.0,
+          "max": 82
+        },
+        "centeredLines": 3,
+        "boldLines": 14,
+        "fontSizes": {
+          "fs19": 4
+        },
+        "imageBlocks": 8,
+        "quoteBlocks": 2,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 107,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1946
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224345362339",
+      "url": "https://blog.naver.com/doctorkidney/224345362339",
+      "title": "[의사의 식탁] 여름 김장, 방울토마토 마리네이드",
+      "publishedAt": "Mon, 13 Jul 2026 17:50:23 +0900",
+      "measurement": {
+        "textChars": 2316,
+        "lineCount": 108,
+        "lineChars": {
+          "min": 2,
+          "median": 20.0,
+          "max": 50
+        },
+        "paragraphCount": 53,
+        "paragraphChars": {
+          "min": 6,
+          "median": 36,
+          "max": 139
+        },
+        "centeredLines": 17,
+        "boldLines": 21,
+        "fontSizes": {
+          "fs19": 9,
+          "fs15": 1
+        },
+        "imageBlocks": 23,
+        "quoteBlocks": 4,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 2,
+          "quotation_line": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1941
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224339007181",
+      "url": "https://blog.naver.com/doctorkidney/224339007181",
+      "title": "완벽하지 않은 날의 완벽한 운동",
+      "publishedAt": "Tue, 07 Jul 2026 11:24:28 +0900",
+      "measurement": {
+        "textChars": 626,
+        "lineCount": 54,
+        "lineChars": {
+          "min": 3,
+          "median": 11.5,
+          "max": 23
+        },
+        "paragraphCount": 21,
+        "paragraphChars": {
+          "min": 5,
+          "median": 30,
+          "max": 52
+        },
+        "centeredLines": 0,
+        "boldLines": 7,
+        "fontSizes": {
+          "fs19": 7
+        },
+        "imageBlocks": 4,
+        "quoteBlocks": 0,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {}
+      },
+      "proseAndQuoteCharactersNoSpaces": 513,
+      "closeReading": "장면·선택·조건 재해석, 무소제목"
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224337977916",
+      "url": "https://blog.naver.com/doctorkidney/224337977916",
+      "title": "당뇨 있어도 단호박 먹어도 괜찮을까? 내과 의사가 추천하는 단호박 에그슬럿",
+      "publishedAt": "Mon, 06 Jul 2026 13:34:24 +0900",
+      "measurement": {
+        "textChars": 2200,
+        "lineCount": 133,
+        "lineChars": {
+          "min": 2,
+          "median": 16,
+          "max": 48
+        },
+        "paragraphCount": 57,
+        "paragraphChars": {
+          "min": 6,
+          "median": 36,
+          "max": 92
+        },
+        "centeredLines": 3,
+        "boldLines": 14,
+        "fontSizes": {
+          "fs19": 5
+        },
+        "imageBlocks": 16,
+        "quoteBlocks": 5,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 47,
+        "quoteStyles": {
+          "quotation_bubble": 3,
+          "quotation_line": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1884
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224332161020",
+      "url": "https://blog.naver.com/doctorkidney/224332161020",
+      "title": "당뇨는 지방과 근육의 싸움, 허벅지 근육을 지켜야 하는 이유",
+      "publishedAt": "Tue, 30 Jun 2026 20:31:35 +0900",
+      "measurement": {
+        "textChars": 2195,
+        "lineCount": 126,
+        "lineChars": {
+          "min": 5,
+          "median": 17.0,
+          "max": 61
+        },
+        "paragraphCount": 56,
+        "paragraphChars": {
+          "min": 7,
+          "median": 39.0,
+          "max": 92
+        },
+        "centeredLines": 2,
+        "boldLines": 15,
+        "fontSizes": {
+          "fs19": 9
+        },
+        "imageBlocks": 18,
+        "quoteBlocks": 3,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 74,
+        "quoteStyles": {
+          "quotation_postit": 1,
+          "quotation_line": 1,
+          "quotation_underline": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1803
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224330771144",
+      "url": "https://blog.naver.com/doctorkidney/224330771144",
+      "title": "혈당 관리 식단? 빼기보다 더하기 전략으로 시작해보세요",
+      "publishedAt": "Mon, 29 Jun 2026 16:51:26 +0900",
+      "measurement": {
+        "textChars": 2414,
+        "lineCount": 150,
+        "lineChars": {
+          "min": 3,
+          "median": 16.0,
+          "max": 48
+        },
+        "paragraphCount": 63,
+        "paragraphChars": {
+          "min": 8,
+          "median": 37,
+          "max": 95
+        },
+        "centeredLines": 117,
+        "boldLines": 17,
+        "fontSizes": {
+          "fs19": 8
+        },
+        "imageBlocks": 8,
+        "quoteBlocks": 2,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 319,
+        "quoteStyles": {
+          "quotation_line": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2004
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224329735519",
+      "url": "https://blog.naver.com/doctorkidney/224329735519",
+      "title": "러닝화부터 사야 할까요? 6년째 새벽마다 달리는 내과 의사의 초보 러닝 준비물",
+      "publishedAt": "Sun, 28 Jun 2026 17:36:59 +0900",
+      "measurement": {
+        "textChars": 2751,
+        "lineCount": 165,
+        "lineChars": {
+          "min": 6,
+          "median": 16,
+          "max": 32
+        },
+        "paragraphCount": 68,
+        "paragraphChars": {
+          "min": 11,
+          "median": 38.0,
+          "max": 89
+        },
+        "centeredLines": 0,
+        "boldLines": 12,
+        "fontSizes": {
+          "fs19": 12
+        },
+        "imageBlocks": 8,
+        "quoteBlocks": 1,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 35,
+        "quoteStyles": {
+          "quotation_bubble": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2240
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224328780682",
+      "url": "https://blog.naver.com/doctorkidney/224328780682",
+      "title": "아프지 않아도 검진이 필요한 이유, 내과 의사도 매년 받습니다",
+      "publishedAt": "Sat, 27 Jun 2026 11:52:21 +0900",
+      "measurement": {
+        "textChars": 4172,
+        "lineCount": 229,
+        "lineChars": {
+          "min": 5,
+          "median": 19,
+          "max": 48
+        },
+        "paragraphCount": 97,
+        "paragraphChars": {
+          "min": 9,
+          "median": 40,
+          "max": 90
+        },
+        "centeredLines": 2,
+        "boldLines": 15,
+        "fontSizes": {
+          "fs19": 5
+        },
+        "imageBlocks": 10,
+        "quoteBlocks": 10,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 228,
+        "quoteStyles": {
+          "quotation_line": 9,
+          "quotation_bubble": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 3495
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224326022842",
+      "url": "https://blog.naver.com/doctorkidney/224326022842",
+      "title": "대체 등산은 왜 하는 건데 ? 아이와 함께 오른 북한산 비봉코스",
+      "publishedAt": "Wed, 24 Jun 2026 18:15:31 +0900",
+      "measurement": {
+        "textChars": 2961,
+        "lineCount": 194,
+        "lineChars": {
+          "min": 3,
+          "median": 15.0,
+          "max": 48
+        },
+        "paragraphCount": 81,
+        "paragraphChars": {
+          "min": 5,
+          "median": 35,
+          "max": 77
+        },
+        "centeredLines": 0,
+        "boldLines": 1,
+        "fontSizes": {},
+        "imageBlocks": 29,
+        "quoteBlocks": 0,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {}
+      },
+      "proseAndQuoteCharactersNoSpaces": 2413
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224323526475",
+      "url": "https://blog.naver.com/doctorkidney/224323526475",
+      "title": "[의사의 식탁] 입맛 없는 여름 아침, 밥 대신 순두부 계란찜",
+      "publishedAt": "Mon, 22 Jun 2026 15:48:26 +0900",
+      "measurement": {
+        "textChars": 2663,
+        "lineCount": 138,
+        "lineChars": {
+          "min": 5,
+          "median": 18.0,
+          "max": 101
+        },
+        "paragraphCount": 55,
+        "paragraphChars": {
+          "min": 8,
+          "median": 50,
+          "max": 121
+        },
+        "centeredLines": 5,
+        "boldLines": 14,
+        "fontSizes": {
+          "fs19": 12,
+          "fs15": 2
+        },
+        "imageBlocks": 27,
+        "quoteBlocks": 5,
+        "tableBlocks": 1,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 75,
+        "quoteStyles": {
+          "default": 1,
+          "quotation_bubble": 2,
+          "quotation_line": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2195
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224317477021",
+      "url": "https://blog.naver.com/doctorkidney/224317477021",
+      "title": "내가 에너지를 채우는 방법, 눈 뜨자마자 달리기",
+      "publishedAt": "Tue, 16 Jun 2026 12:03:16 +0900",
+      "measurement": {
+        "textChars": 1125,
+        "lineCount": 77,
+        "lineChars": {
+          "min": 3,
+          "median": 15,
+          "max": 26
+        },
+        "paragraphCount": 39,
+        "paragraphChars": {
+          "min": 5,
+          "median": 29,
+          "max": 58
+        },
+        "centeredLines": 0,
+        "boldLines": 8,
+        "fontSizes": {
+          "fs19": 7
+        },
+        "imageBlocks": 6,
+        "quoteBlocks": 0,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 24,
+        "quoteStyles": {}
+      },
+      "proseAndQuoteCharactersNoSpaces": 913
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224316508372",
+      "url": "https://blog.naver.com/doctorkidney/224316508372",
+      "title": "[모두의 회고] 즐겁지 않으면, 잘못되고 있는 거다",
+      "publishedAt": "Mon, 15 Jun 2026 15:01:31 +0900",
+      "measurement": {
+        "textChars": 1883,
+        "lineCount": 128,
+        "lineChars": {
+          "min": 3,
+          "median": 13.0,
+          "max": 50
+        },
+        "paragraphCount": 52,
+        "paragraphChars": {
+          "min": 13,
+          "median": 37.5,
+          "max": 89
+        },
+        "centeredLines": 0,
+        "boldLines": 3,
+        "fontSizes": {
+          "fs19": 3
+        },
+        "imageBlocks": 24,
+        "quoteBlocks": 0,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 92,
+        "quoteStyles": {}
+      },
+      "proseAndQuoteCharactersNoSpaces": 1553
+    },
+    {
+      "blogId": "doctorkidney",
+      "postId": "224311895285",
+      "url": "https://blog.naver.com/doctorkidney/224311895285",
+      "title": "[의사의 식탁] 여름 붓기 관리 식단, 오이 방울토마토 샐러드",
+      "publishedAt": "Wed, 10 Jun 2026 16:51:25 +0900",
+      "measurement": {
+        "textChars": 1906,
+        "lineCount": 106,
+        "lineChars": {
+          "min": 2,
+          "median": 17.0,
+          "max": 48
+        },
+        "paragraphCount": 37,
+        "paragraphChars": {
+          "min": 5,
+          "median": 57,
+          "max": 111
+        },
+        "centeredLines": 5,
+        "boldLines": 10,
+        "fontSizes": {
+          "fs13": 1,
+          "fs19": 3
+        },
+        "imageBlocks": 17,
+        "quoteBlocks": 7,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 35,
+        "quoteStyles": {
+          "quotation_line": 5,
+          "quotation_bubble": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1657
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224450770624",
+      "url": "https://blog.naver.com/yogawarm/224450770624",
+      "title": "임신 중기, 순산과 허리 통증 완화를 위해 꼭 챙겨야 하는 골반 운동 루틴",
+      "publishedAt": "Fri, 23 Oct 2026 02:27:48 +0900",
+      "measurement": {
+        "textChars": 2951,
+        "lineCount": 154,
+        "lineChars": {
+          "min": 6,
+          "median": 19.0,
+          "max": 33
+        },
+        "paragraphCount": 62,
+        "paragraphChars": {
+          "min": 12,
+          "median": 49.0,
+          "max": 115
+        },
+        "centeredLines": 154,
+        "boldLines": 59,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 128,
+          "fs19": 18,
+          "fs24": 2,
+          "fs13": 4
+        },
+        "imageBlocks": 16,
+        "quoteBlocks": 6,
+        "tableBlocks": 3,
+        "ruleBlocks": 20,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_underline": 4,
+          "default": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2494
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224450082575",
+      "url": "https://blog.naver.com/yogawarm/224450082575",
+      "title": "육아와 일을 함께하는 구조를 만들 수 있을까? 블로그 2년차, 내가 배운 것.",
+      "publishedAt": "Thu, 22 Oct 2026 13:53:15 +0900",
+      "measurement": {
+        "textChars": 4049,
+        "lineCount": 204,
+        "lineChars": {
+          "min": 9,
+          "median": 20.0,
+          "max": 53
+        },
+        "paragraphCount": 76,
+        "paragraphChars": {
+          "min": 15,
+          "median": 54.0,
+          "max": 107
+        },
+        "centeredLines": 204,
+        "boldLines": 10,
+        "fontSizes": {
+          "fs16": 200,
+          "fs19": 4
+        },
+        "imageBlocks": 11,
+        "quoteBlocks": 8,
+        "tableBlocks": 0,
+        "ruleBlocks": 6,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_underline": 6,
+          "default": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 3402
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224450015368",
+      "url": "https://blog.naver.com/yogawarm/224450015368",
+      "title": "저녁마다 다리가 붓는다면? 꽉 막힌 하체 혈액순환 뻥 뚫어주는 1분 스트레칭",
+      "publishedAt": "Thu, 22 Oct 2026 12:46:26 +0900",
+      "measurement": {
+        "textChars": 1713,
+        "lineCount": 91,
+        "lineChars": {
+          "min": 3,
+          "median": 18,
+          "max": 59
+        },
+        "paragraphCount": 36,
+        "paragraphChars": {
+          "min": 17,
+          "median": 49.0,
+          "max": 89
+        },
+        "centeredLines": 91,
+        "boldLines": 33,
+        "fontSizes": {
+          "fs28": 3,
+          "fs16": 77,
+          "fs19": 7,
+          "fs13": 3
+        },
+        "imageBlocks": 10,
+        "quoteBlocks": 6,
+        "tableBlocks": 3,
+        "ruleBlocks": 12,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_underline": 4,
+          "default": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1450
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224449978780",
+      "url": "https://blog.naver.com/yogawarm/224449978780",
+      "title": "\"진작 이렇게 풀걸…\" 6년 차 요가 강사가 매일 10분씩 하는 골반 교정법",
+      "publishedAt": "Thu, 22 Oct 2026 12:06:31 +0900",
+      "measurement": {
+        "textChars": 2969,
+        "lineCount": 157,
+        "lineChars": {
+          "min": 6,
+          "median": 19,
+          "max": 34
+        },
+        "paragraphCount": 54,
+        "paragraphChars": {
+          "min": 18,
+          "median": 55.5,
+          "max": 109
+        },
+        "centeredLines": 157,
+        "boldLines": 73,
+        "fontSizes": {
+          "fs28": 3,
+          "fs16": 127,
+          "fs19": 19,
+          "fs13": 6
+        },
+        "imageBlocks": 12,
+        "quoteBlocks": 6,
+        "tableBlocks": 3,
+        "ruleBlocks": 15,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_underline": 4,
+          "default": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2484
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224447634525",
+      "url": "https://blog.naver.com/yogawarm/224447634525",
+      "title": "지극히 평범하지만 늘 활력 있는 엄마들의 특징",
+      "publishedAt": "Tue, 20 Oct 2026 12:58:30 +0900",
+      "measurement": {
+        "textChars": 1591,
+        "lineCount": 92,
+        "lineChars": {
+          "min": 1,
+          "median": 18.0,
+          "max": 28
+        },
+        "paragraphCount": 35,
+        "paragraphChars": {
+          "min": 16,
+          "median": 46,
+          "max": 80
+        },
+        "centeredLines": 92,
+        "boldLines": 33,
+        "fontSizes": {
+          "fs16": 90,
+          "fs28": 2
+        },
+        "imageBlocks": 13,
+        "quoteBlocks": 6,
+        "tableBlocks": 1,
+        "ruleBlocks": 8,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_underline": 4,
+          "default": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1377,
+      "closeReading": "노력·갈등·균형의 회고"
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224447369759",
+      "url": "https://blog.naver.com/yogawarm/224447369759",
+      "title": "\"매일 10분 요가하면 병원비만 100만원 절약?\" 만성 통증 걱정 끝이라는데",
+      "publishedAt": "Tue, 20 Oct 2026 08:47:18 +0900",
+      "measurement": {
+        "textChars": 1797,
+        "lineCount": 92,
+        "lineChars": {
+          "min": 6,
+          "median": 20.0,
+          "max": 47
+        },
+        "paragraphCount": 30,
+        "paragraphChars": {
+          "min": 18,
+          "median": 56.5,
+          "max": 139
+        },
+        "centeredLines": 92,
+        "boldLines": 47,
+        "fontSizes": {
+          "fs16": 77,
+          "fs28": 3,
+          "fs19": 8,
+          "fs13": 4
+        },
+        "imageBlocks": 12,
+        "quoteBlocks": 5,
+        "tableBlocks": 1,
+        "ruleBlocks": 7,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_underline": 4
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1571
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224447314440",
+      "url": "https://blog.naver.com/yogawarm/224447314440",
+      "title": "이 정도가 출산 후 1년 지난 엄마들의 평균 체중 변화입니다",
+      "publishedAt": "Tue, 20 Oct 2026 07:23:38 +0900",
+      "measurement": {
+        "textChars": 1557,
+        "lineCount": 82,
+        "lineChars": {
+          "min": 7,
+          "median": 19.0,
+          "max": 32
+        },
+        "paragraphCount": 27,
+        "paragraphChars": {
+          "min": 25,
+          "median": 61,
+          "max": 99
+        },
+        "centeredLines": 82,
+        "boldLines": 21,
+        "fontSizes": {
+          "fs16": 80,
+          "fs19": 2
+        },
+        "imageBlocks": 7,
+        "quoteBlocks": 2,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_underline": 1,
+          "quotation_postit": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1364,
+      "closeReading": "건강 수치와 실제 경험 혼합, 주장은 별도 검증 필요"
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224444355429",
+      "url": "https://blog.naver.com/yogawarm/224444355429",
+      "title": "매일 1분 플랭크로 코어 깨우기, 11월 습관 만들기 챌린지(임산부·초보자 환영)",
+      "publishedAt": "Sat, 17 Oct 2026 05:07:49 +0900",
+      "measurement": {
+        "textChars": 1066,
+        "lineCount": 61,
+        "lineChars": {
+          "min": 5,
+          "median": 17,
+          "max": 30
+        },
+        "paragraphCount": 23,
+        "paragraphChars": {
+          "min": 10,
+          "median": 43,
+          "max": 102
+        },
+        "centeredLines": 61,
+        "boldLines": 24,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 52,
+          "fs19": 4,
+          "fs15": 1,
+          "fs13": 1
+        },
+        "imageBlocks": 5,
+        "quoteBlocks": 4,
+        "tableBlocks": 0,
+        "ruleBlocks": 5,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_underline": 2,
+          "default": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 928,
+      "closeReading": "챌린지 모집, 일반 글에 신청 유도 복사하지 않음"
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224444337516",
+      "url": "https://blog.naver.com/yogawarm/224444337516",
+      "title": "플랭크, 무작정 버티기 전에 꼭 알아야 할 기본 원리 3가지(+운동 루틴)",
+      "publishedAt": "Sat, 17 Oct 2026 04:01:01 +0900",
+      "measurement": {
+        "textChars": 2797,
+        "lineCount": 156,
+        "lineChars": {
+          "min": 6,
+          "median": 18.0,
+          "max": 31
+        },
+        "paragraphCount": 64,
+        "paragraphChars": {
+          "min": 13,
+          "median": 40.5,
+          "max": 104
+        },
+        "centeredLines": 156,
+        "boldLines": 70,
+        "fontSizes": {
+          "fs28": 3,
+          "fs16": 130,
+          "fs19": 19,
+          "fs13": 6
+        },
+        "imageBlocks": 17,
+        "quoteBlocks": 6,
+        "tableBlocks": 3,
+        "ruleBlocks": 23,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_underline": 4,
+          "default": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2356
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224440380941",
+      "url": "https://blog.naver.com/yogawarm/224440380941",
+      "title": "임신 중기 운동 시작! 안전하게 운동하기 위해 기억해야 할 3가지",
+      "publishedAt": "Tue, 13 Oct 2026 16:23:38 +0900",
+      "measurement": {
+        "textChars": 2307,
+        "lineCount": 123,
+        "lineChars": {
+          "min": 5,
+          "median": 18,
+          "max": 43
+        },
+        "paragraphCount": 42,
+        "paragraphChars": {
+          "min": 18,
+          "median": 52.5,
+          "max": 124
+        },
+        "centeredLines": 123,
+        "boldLines": 62,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 113,
+          "fs13": 4,
+          "fs19": 4
+        },
+        "imageBlocks": 16,
+        "quoteBlocks": 6,
+        "tableBlocks": 2,
+        "ruleBlocks": 11,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_underline": 4,
+          "default": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2003
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224440131914",
+      "url": "https://blog.naver.com/yogawarm/224440131914",
+      "title": "틀어진 골반 균형 잡는 벽 운동 3가지, 집에서 따라 해보세요",
+      "publishedAt": "Tue, 13 Oct 2026 12:52:37 +0900",
+      "measurement": {
+        "textChars": 2038,
+        "lineCount": 110,
+        "lineChars": {
+          "min": 1,
+          "median": 18.0,
+          "max": 43
+        },
+        "paragraphCount": 37,
+        "paragraphChars": {
+          "min": 18,
+          "median": 53,
+          "max": 112
+        },
+        "centeredLines": 110,
+        "boldLines": 45,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 97,
+          "fs13": 4,
+          "fs19": 7
+        },
+        "imageBlocks": 9,
+        "quoteBlocks": 6,
+        "tableBlocks": 2,
+        "ruleBlocks": 15,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_underline": 4,
+          "default": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1732
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224439776753",
+      "url": "https://blog.naver.com/yogawarm/224439776753",
+      "title": "[11월 온라인 임산부 요가] 함께 요가하고 이야기 나눌 엄마들을 기다려요 ",
+      "publishedAt": "Tue, 13 Oct 2026 06:07:56 +0900",
+      "measurement": {
+        "textChars": 1027,
+        "lineCount": 56,
+        "lineChars": {
+          "min": 3,
+          "median": 18.5,
+          "max": 40
+        },
+        "paragraphCount": 17,
+        "paragraphChars": {
+          "min": 18,
+          "median": 67,
+          "max": 125
+        },
+        "centeredLines": 56,
+        "boldLines": 10,
+        "fontSizes": {
+          "fs28": 3,
+          "fs16": 49,
+          "fs13": 1
+        },
+        "imageBlocks": 4,
+        "quoteBlocks": 4,
+        "tableBlocks": 0,
+        "ruleBlocks": 5,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_underline": 2,
+          "quotation_line": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 872,
+      "closeReading": "모집 안내, 일반 건강 글과 구분"
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224439734020",
+      "url": "https://blog.naver.com/yogawarm/224439734020",
+      "title": "임산부 요가, 임신 몇 주부터 가능할까? 막달까지 수련한 요가 강사의 경험",
+      "publishedAt": "Tue, 13 Oct 2026 03:55:09 +0900",
+      "measurement": {
+        "textChars": 4759,
+        "lineCount": 238,
+        "lineChars": {
+          "min": 6,
+          "median": 20.0,
+          "max": 55
+        },
+        "paragraphCount": 80,
+        "paragraphChars": {
+          "min": 14,
+          "median": 61.0,
+          "max": 137
+        },
+        "centeredLines": 238,
+        "boldLines": 92,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 214,
+          "fs13": 8,
+          "fs19": 14
+        },
+        "imageBlocks": 15,
+        "quoteBlocks": 8,
+        "tableBlocks": 1,
+        "ruleBlocks": 25,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_underline": 6,
+          "default": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 3982
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224435833153",
+      "url": "https://blog.naver.com/yogawarm/224435833153",
+      "title": "잘 쉬고 잘 움직이는 사람들의 컨디션 관리법 4가지",
+      "publishedAt": "Fri, 09 Oct 2026 01:41:38 +0900",
+      "measurement": {
+        "textChars": 2205,
+        "lineCount": 116,
+        "lineChars": {
+          "min": 8,
+          "median": 19.0,
+          "max": 38
+        },
+        "paragraphCount": 44,
+        "paragraphChars": {
+          "min": 18,
+          "median": 51.0,
+          "max": 88
+        },
+        "centeredLines": 116,
+        "boldLines": 33,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 108,
+          "fs19": 4
+        },
+        "imageBlocks": 16,
+        "quoteBlocks": 7,
+        "tableBlocks": 2,
+        "ruleBlocks": 10,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "default": 1,
+          "quotation_line": 5
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1864
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224435782499",
+      "url": "https://blog.naver.com/yogawarm/224435782499",
+      "title": "환절기 일교차 큰 요즘, 편하게 입는 가을 데일리룩",
+      "publishedAt": "Fri, 09 Oct 2026 00:15:30 +0900",
+      "measurement": {
+        "textChars": 2403,
+        "lineCount": 122,
+        "lineChars": {
+          "min": 4,
+          "median": 20.0,
+          "max": 62
+        },
+        "paragraphCount": 43,
+        "paragraphChars": {
+          "min": 18,
+          "median": 57,
+          "max": 94
+        },
+        "centeredLines": 122,
+        "boldLines": 21,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 108,
+          "fs13": 10
+        },
+        "imageBlocks": 21,
+        "quoteBlocks": 6,
+        "tableBlocks": 2,
+        "ruleBlocks": 9,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 5
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2001
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224428870136",
+      "url": "https://blog.naver.com/yogawarm/224428870136",
+      "title": "머리 지끈거리고 무거운 날, 딱 10분으로 끝내는 두통 마사지",
+      "publishedAt": "Fri, 02 Oct 2026 01:24:26 +0900",
+      "measurement": {
+        "textChars": 2214,
+        "lineCount": 122,
+        "lineChars": {
+          "min": 5,
+          "median": 17.5,
+          "max": 40
+        },
+        "paragraphCount": 52,
+        "paragraphChars": {
+          "min": 8,
+          "median": 46.5,
+          "max": 88
+        },
+        "centeredLines": 122,
+        "boldLines": 31,
+        "fontSizes": {
+          "fs28": 2,
+          "fs19": 14,
+          "fs16": 103,
+          "fs13": 1,
+          "fs24": 1
+        },
+        "imageBlocks": 20,
+        "quoteBlocks": 3,
+        "tableBlocks": 1,
+        "ruleBlocks": 16,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1835
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224427048480",
+      "url": "https://blog.naver.com/yogawarm/224427048480",
+      "title": "운동용품 정리함 추천｜요가강사가 직접 써본 홈트 운동기구 정리",
+      "publishedAt": "Wed, 30 Sep 2026 14:07:26 +0900",
+      "measurement": {
+        "textChars": 2368,
+        "lineCount": 122,
+        "lineChars": {
+          "min": 8,
+          "median": 18.0,
+          "max": 57
+        },
+        "paragraphCount": 41,
+        "paragraphChars": {
+          "min": 18,
+          "median": 58,
+          "max": 149
+        },
+        "centeredLines": 122,
+        "boldLines": 43,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 114,
+          "fs19": 4
+        },
+        "imageBlocks": 19,
+        "quoteBlocks": 6,
+        "tableBlocks": 1,
+        "ruleBlocks": 12,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 5
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1998
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224426888592",
+      "url": "https://blog.naver.com/yogawarm/224426888592",
+      "title": "건강도 챙기고, 살림도 잘하고 싶은 엄마의 장보기ㅣ두 달 써본 SSG7CLUB",
+      "publishedAt": "Wed, 30 Sep 2026 11:40:33 +0900",
+      "measurement": {
+        "textChars": 2093,
+        "lineCount": 100,
+        "lineChars": {
+          "min": 5,
+          "median": 19.5,
+          "max": 57
+        },
+        "paragraphCount": 34,
+        "paragraphChars": {
+          "min": 18,
+          "median": 60.0,
+          "max": 111
+        },
+        "centeredLines": 100,
+        "boldLines": 29,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 92,
+          "fs19": 5
+        },
+        "imageBlocks": 13,
+        "quoteBlocks": 5,
+        "tableBlocks": 1,
+        "ruleBlocks": 10,
+        "firstImageAfterChars": 57,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 4
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1726
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224426833142",
+      "url": "https://blog.naver.com/yogawarm/224426833142",
+      "title": "2주 가정보육 끝! 엄마의 휴식법 & 저렴하게 티빙 보는 꿀팁 <쓱7클럽 X 티빙>",
+      "publishedAt": "Wed, 30 Sep 2026 10:55:55 +0900",
+      "measurement": {
+        "textChars": 1384,
+        "lineCount": 70,
+        "lineChars": {
+          "min": 5,
+          "median": 20.0,
+          "max": 49
+        },
+        "paragraphCount": 23,
+        "paragraphChars": {
+          "min": 18,
+          "median": 63,
+          "max": 155
+        },
+        "centeredLines": 70,
+        "boldLines": 9,
+        "fontSizes": {
+          "fs28": 4,
+          "fs16": 63
+        },
+        "imageBlocks": 9,
+        "quoteBlocks": 3,
+        "tableBlocks": 1,
+        "ruleBlocks": 5,
+        "firstImageAfterChars": 49,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1194
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224426806677",
+      "url": "https://blog.naver.com/yogawarm/224426806677",
+      "title": "운동하는 엄마의 일주일 건강식, 이렇게 장봅니다",
+      "publishedAt": "Wed, 30 Sep 2026 10:34:10 +0900",
+      "measurement": {
+        "textChars": 2021,
+        "lineCount": 102,
+        "lineChars": {
+          "min": 6,
+          "median": 20.0,
+          "max": 49
+        },
+        "paragraphCount": 33,
+        "paragraphChars": {
+          "min": 18,
+          "median": 61,
+          "max": 119
+        },
+        "centeredLines": 102,
+        "boldLines": 25,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 91,
+          "fs19": 2,
+          "fs15": 4
+        },
+        "imageBlocks": 11,
+        "quoteBlocks": 8,
+        "tableBlocks": 1,
+        "ruleBlocks": 8,
+        "firstImageAfterChars": 49,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 5,
+          "default": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1751
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224425386447",
+      "url": "https://blog.naver.com/yogawarm/224425386447",
+      "title": "환절기 몸이 굳고 뻐근한 날, 무작정 눕지 말고 이렇게 쉬어보세요",
+      "publishedAt": "Tue, 29 Sep 2026 01:06:37 +0900",
+      "measurement": {
+        "textChars": 1801,
+        "lineCount": 97,
+        "lineChars": {
+          "min": 7,
+          "median": 18,
+          "max": 46
+        },
+        "paragraphCount": 38,
+        "paragraphChars": {
+          "min": 18,
+          "median": 51.5,
+          "max": 100
+        },
+        "centeredLines": 97,
+        "boldLines": 36,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 86,
+          "fs19": 7
+        },
+        "imageBlocks": 15,
+        "quoteBlocks": 4,
+        "tableBlocks": 2,
+        "ruleBlocks": 12,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 3
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1511
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224409815772",
+      "url": "https://blog.naver.com/yogawarm/224409815772",
+      "title": "오랜만에 운동한다면? 뻐근하고 굳은 몸 풀어내는 5가지 루틴",
+      "publishedAt": "Sun, 13 Sep 2026 03:24:26 +0900",
+      "measurement": {
+        "textChars": 2563,
+        "lineCount": 142,
+        "lineChars": {
+          "min": 4,
+          "median": 17.0,
+          "max": 59
+        },
+        "paragraphCount": 45,
+        "paragraphChars": {
+          "min": 14,
+          "median": 57,
+          "max": 168
+        },
+        "centeredLines": 142,
+        "boldLines": 47,
+        "fontSizes": {
+          "fs28": 3,
+          "fs16": 126,
+          "fs19": 8,
+          "fs24": 3
+        },
+        "imageBlocks": 11,
+        "quoteBlocks": 8,
+        "tableBlocks": 2,
+        "ruleBlocks": 16,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "default": 2,
+          "quotation_line": 5
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2205
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224405468799",
+      "url": "https://blog.naver.com/yogawarm/224405468799",
+      "title": "좋은 엄마가 되고 싶어서, 저는 이것부터 지키기로 했습니다",
+      "publishedAt": "Wed, 09 Sep 2026 02:59:17 +0900",
+      "measurement": {
+        "textChars": 2184,
+        "lineCount": 75,
+        "lineChars": {
+          "min": 6,
+          "median": 24,
+          "max": 92
+        },
+        "paragraphCount": 46,
+        "paragraphChars": {
+          "min": 9,
+          "median": 44.5,
+          "max": 114
+        },
+        "centeredLines": 0,
+        "boldLines": 41,
+        "fontSizes": {
+          "fs30": 2
+        },
+        "imageBlocks": 7,
+        "quoteBlocks": 5,
+        "tableBlocks": 0,
+        "ruleBlocks": 1,
+        "firstImageAfterChars": 48,
+        "quoteStyles": {
+          "default": 4,
+          "quotation_line": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1828
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224403037904",
+      "url": "https://blog.naver.com/yogawarm/224403037904",
+      "title": "육아하면서 나를 잃지 않으려고 시작한 블로그, 제 삶이 달라졌습니다.",
+      "publishedAt": "Sun, 06 Sep 2026 23:55:57 +0900",
+      "measurement": {
+        "textChars": 2820,
+        "lineCount": 40,
+        "lineChars": {
+          "min": 5,
+          "median": 73.0,
+          "max": 119
+        },
+        "paragraphCount": 36,
+        "paragraphChars": {
+          "min": 18,
+          "median": 77.5,
+          "max": 119
+        },
+        "centeredLines": 0,
+        "boldLines": 34,
+        "fontSizes": {
+          "fs30": 4
+        },
+        "imageBlocks": 10,
+        "quoteBlocks": 8,
+        "tableBlocks": 0,
+        "ruleBlocks": 0,
+        "firstImageAfterChars": 55,
+        "quoteStyles": {
+          "default": 8
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2293
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224396630553",
+      "url": "https://blog.naver.com/yogawarm/224396630553",
+      "title": "쉬운데 효과는 대박! 운동 초보도 쉽게 따라 하는 짐볼 운동 4가지",
+      "publishedAt": "Mon, 31 Aug 2026 23:16:50 +0900",
+      "measurement": {
+        "textChars": 2109,
+        "lineCount": 118,
+        "lineChars": {
+          "min": 7,
+          "median": 18.0,
+          "max": 31
+        },
+        "paragraphCount": 44,
+        "paragraphChars": {
+          "min": 8,
+          "median": 50.5,
+          "max": 80
+        },
+        "centeredLines": 118,
+        "boldLines": 36,
+        "fontSizes": {
+          "fs28": 3,
+          "fs16": 107,
+          "fs19": 6
+        },
+        "imageBlocks": 12,
+        "quoteBlocks": 4,
+        "tableBlocks": 1,
+        "ruleBlocks": 11,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 3
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1749
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224396556116",
+      "url": "https://blog.naver.com/yogawarm/224396556116",
+      "title": "6년 차 요가강사의 내돈내산 홈트 도구 TOP 3",
+      "publishedAt": "Mon, 31 Aug 2026 22:06:32 +0900",
+      "measurement": {
+        "textChars": 1492,
+        "lineCount": 85,
+        "lineChars": {
+          "min": 7,
+          "median": 17,
+          "max": 30
+        },
+        "paragraphCount": 29,
+        "paragraphChars": {
+          "min": 18,
+          "median": 48,
+          "max": 103
+        },
+        "centeredLines": 85,
+        "boldLines": 36,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 75,
+          "fs19": 6
+        },
+        "imageBlocks": 13,
+        "quoteBlocks": 5,
+        "tableBlocks": 2,
+        "ruleBlocks": 8,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 4
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1279
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224396170976",
+      "url": "https://blog.naver.com/yogawarm/224396170976",
+      "title": "나이 들수록 굽는 척추, 하루 10분 이렇게 관리하세요",
+      "publishedAt": "Mon, 31 Aug 2026 17:00:00 +0900",
+      "measurement": {
+        "textChars": 1915,
+        "lineCount": 104,
+        "lineChars": {
+          "min": 5,
+          "median": 18.0,
+          "max": 55
+        },
+        "paragraphCount": 47,
+        "paragraphChars": {
+          "min": 5,
+          "median": 41,
+          "max": 85
+        },
+        "centeredLines": 104,
+        "boldLines": 29,
+        "fontSizes": {
+          "fs24": 2,
+          "fs16": 91,
+          "fs19": 8,
+          "fs13": 1
+        },
+        "imageBlocks": 14,
+        "quoteBlocks": 5,
+        "tableBlocks": 2,
+        "ruleBlocks": 17,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "default": 1,
+          "quotation_line": 3
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1621
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224396084759",
+      "url": "https://blog.naver.com/yogawarm/224396084759",
+      "title": "10년 후 멋진 엄마가 되려고 오늘 버린 습관 3가지",
+      "publishedAt": "Mon, 31 Aug 2026 16:00:00 +0900",
+      "measurement": {
+        "textChars": 2273,
+        "lineCount": 121,
+        "lineChars": {
+          "min": 8,
+          "median": 19,
+          "max": 53
+        },
+        "paragraphCount": 44,
+        "paragraphChars": {
+          "min": 15,
+          "median": 55.0,
+          "max": 107
+        },
+        "centeredLines": 121,
+        "boldLines": 50,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 111,
+          "fs19": 6
+        },
+        "imageBlocks": 19,
+        "quoteBlocks": 7,
+        "tableBlocks": 2,
+        "ruleBlocks": 13,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "default": 1,
+          "quotation_line": 5
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1907
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224396035037",
+      "url": "https://blog.naver.com/yogawarm/224396035037",
+      "title": "엄마에게 필요한 건 다이어트가 아니다? 육아 체력 키우는 3대 맨몸운동",
+      "publishedAt": "Mon, 31 Aug 2026 14:21:13 +0900",
+      "measurement": {
+        "textChars": 2103,
+        "lineCount": 112,
+        "lineChars": {
+          "min": 7,
+          "median": 18.0,
+          "max": 31
+        },
+        "paragraphCount": 41,
+        "paragraphChars": {
+          "min": 18,
+          "median": 48,
+          "max": 98
+        },
+        "centeredLines": 112,
+        "boldLines": 36,
+        "fontSizes": {
+          "fs28": 3,
+          "fs16": 91,
+          "fs19": 15,
+          "fs13": 1
+        },
+        "imageBlocks": 14,
+        "quoteBlocks": 5,
+        "tableBlocks": 2,
+        "ruleBlocks": 15,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 4
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1818
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224395530831",
+      "url": "https://blog.naver.com/yogawarm/224395530831",
+      "title": "아이 등원 후 1시간, 엄마가 운동을 시작하자 가장 먼저 달라진 것",
+      "publishedAt": "Mon, 31 Aug 2026 02:41:38 +0900",
+      "measurement": {
+        "textChars": 2675,
+        "lineCount": 140,
+        "lineChars": {
+          "min": 1,
+          "median": 20.0,
+          "max": 32
+        },
+        "paragraphCount": 54,
+        "paragraphChars": {
+          "min": 13,
+          "median": 49.5,
+          "max": 105
+        },
+        "centeredLines": 140,
+        "boldLines": 50,
+        "fontSizes": {
+          "fs28": 3,
+          "fs16": 123,
+          "fs19": 12
+        },
+        "imageBlocks": 18,
+        "quoteBlocks": 6,
+        "tableBlocks": 2,
+        "ruleBlocks": 15,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 5
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2294
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224391862807",
+      "url": "https://blog.naver.com/yogawarm/224391862807",
+      "title": "목·어깨 아프고 굽은등이라면? 하루 1분, 매일 하는 삼각자세",
+      "publishedAt": "Thu, 27 Aug 2026 12:08:17 +0900",
+      "measurement": {
+        "textChars": 1425,
+        "lineCount": 78,
+        "lineChars": {
+          "min": 8,
+          "median": 18.0,
+          "max": 42
+        },
+        "paragraphCount": 30,
+        "paragraphChars": {
+          "min": 16,
+          "median": 52.0,
+          "max": 97
+        },
+        "centeredLines": 78,
+        "boldLines": 37,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 66,
+          "fs13": 1,
+          "fs19": 7
+        },
+        "imageBlocks": 12,
+        "quoteBlocks": 5,
+        "tableBlocks": 2,
+        "ruleBlocks": 12,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 2,
+          "quotation_line": 3
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1286
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224391103686",
+      "url": "https://blog.naver.com/yogawarm/224391103686",
+      "title": "운동 후 홈스파 힐링 루틴! SSG.COM 록시땅 샤워오일 & 룸 슬리퍼 (SSG7CLUB 9월 단독 혜택)",
+      "publishedAt": "Wed, 26 Aug 2026 18:01:22 +0900",
+      "measurement": {
+        "textChars": 1502,
+        "lineCount": 78,
+        "lineChars": {
+          "min": 6,
+          "median": 19.0,
+          "max": 44
+        },
+        "paragraphCount": 27,
+        "paragraphChars": {
+          "min": 12,
+          "median": 52,
+          "max": 103
+        },
+        "centeredLines": 78,
+        "boldLines": 15,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 70,
+          "fs19": 2
+        },
+        "imageBlocks": 10,
+        "quoteBlocks": 5,
+        "tableBlocks": 1,
+        "ruleBlocks": 7,
+        "firstImageAfterChars": 48,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 4
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1348
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224385679981",
+      "url": "https://blog.naver.com/yogawarm/224385679981",
+      "title": "오래 입을 클래식, 가을맞이 랄프로렌 가디건 알뜰하게 득템!",
+      "publishedAt": "Fri, 21 Aug 2026 15:18:17 +0900",
+      "measurement": {
+        "textChars": 1776,
+        "lineCount": 101,
+        "lineChars": {
+          "min": 1,
+          "median": 18,
+          "max": 32
+        },
+        "paragraphCount": 33,
+        "paragraphChars": {
+          "min": 18,
+          "median": 56,
+          "max": 91
+        },
+        "centeredLines": 101,
+        "boldLines": 15,
+        "fontSizes": {
+          "fs13": 2,
+          "fs28": 3,
+          "fs16": 86
+        },
+        "imageBlocks": 12,
+        "quoteBlocks": 4,
+        "tableBlocks": 1,
+        "ruleBlocks": 8,
+        "firstImageAfterChars": 48,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 3
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1550
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224383218332",
+      "url": "https://blog.naver.com/yogawarm/224383218332",
+      "title": "“저는 다이어트를 하지 않습니다” 6년 차 요가강사가 자주 먹는 집밥",
+      "publishedAt": "Wed, 19 Aug 2026 13:02:59 +0900",
+      "measurement": {
+        "textChars": 2417,
+        "lineCount": 128,
+        "lineChars": {
+          "min": 6,
+          "median": 18.5,
+          "max": 34
+        },
+        "paragraphCount": 53,
+        "paragraphChars": {
+          "min": 13,
+          "median": 47,
+          "max": 112
+        },
+        "centeredLines": 128,
+        "boldLines": 44,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 107,
+          "fs19": 16,
+          "fs13": 1
+        },
+        "imageBlocks": 16,
+        "quoteBlocks": 6,
+        "tableBlocks": 1,
+        "ruleBlocks": 16,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 4,
+          "default": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2060
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224378415088",
+      "url": "https://blog.naver.com/yogawarm/224378415088",
+      "title": "기분이 태도가 될 때, 요가가 필요한 이유",
+      "publishedAt": "Fri, 14 Aug 2026 12:58:10 +0900",
+      "measurement": {
+        "textChars": 2048,
+        "lineCount": 114,
+        "lineChars": {
+          "min": 6,
+          "median": 18.0,
+          "max": 33
+        },
+        "paragraphCount": 43,
+        "paragraphChars": {
+          "min": 15,
+          "median": 48,
+          "max": 86
+        },
+        "centeredLines": 114,
+        "boldLines": 48,
+        "fontSizes": {
+          "fs13": 1,
+          "fs28": 2,
+          "fs16": 104,
+          "fs19": 6
+        },
+        "imageBlocks": 14,
+        "quoteBlocks": 8,
+        "tableBlocks": 2,
+        "ruleBlocks": 15,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "default": 3,
+          "quotation_line": 4
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1949
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224377275472",
+      "url": "https://blog.naver.com/yogawarm/224377275472",
+      "title": "매일 먹는 음식이 나를 만든다! 건강한 식재료 채우는 첫 SSG7CLUB 장보기",
+      "publishedAt": "Thu, 13 Aug 2026 12:20:51 +0900",
+      "measurement": {
+        "textChars": 2037,
+        "lineCount": 106,
+        "lineChars": {
+          "min": 4,
+          "median": 19.0,
+          "max": 50
+        },
+        "paragraphCount": 39,
+        "paragraphChars": {
+          "min": 18,
+          "median": 55,
+          "max": 102
+        },
+        "centeredLines": 106,
+        "boldLines": 14,
+        "fontSizes": {
+          "fs13": 2,
+          "fs28": 3,
+          "fs16": 93,
+          "fs19": 3,
+          "fs15": 3
+        },
+        "imageBlocks": 14,
+        "quoteBlocks": 6,
+        "tableBlocks": 1,
+        "ruleBlocks": 10,
+        "firstImageAfterChars": 48,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 5
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1758
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224369953359",
+      "url": "https://blog.naver.com/yogawarm/224369953359",
+      "title": "밥 먹고 졸리고 허기진다면? 혈당 관리 시작하세요",
+      "publishedAt": "Thu, 06 Aug 2026 13:35:02 +0900",
+      "measurement": {
+        "textChars": 2550,
+        "lineCount": 132,
+        "lineChars": {
+          "min": 5,
+          "median": 19.0,
+          "max": 51
+        },
+        "paragraphCount": 41,
+        "paragraphChars": {
+          "min": 17,
+          "median": 64,
+          "max": 133
+        },
+        "centeredLines": 132,
+        "boldLines": 46,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 118,
+          "fs19": 10
+        },
+        "imageBlocks": 18,
+        "quoteBlocks": 6,
+        "tableBlocks": 1,
+        "ruleBlocks": 16,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 5
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2152
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224367644511",
+      "url": "https://blog.naver.com/yogawarm/224367644511",
+      "title": "골스튜디오 러닝화 쿠샤 후기, 유명 러닝화보다 더 편했던 이유 3가지",
+      "publishedAt": "Tue, 04 Aug 2026 11:59:06 +0900",
+      "measurement": {
+        "textChars": 2070,
+        "lineCount": 107,
+        "lineChars": {
+          "min": 8,
+          "median": 19,
+          "max": 43
+        },
+        "paragraphCount": 40,
+        "paragraphChars": {
+          "min": 17,
+          "median": 52.0,
+          "max": 155
+        },
+        "centeredLines": 107,
+        "boldLines": 11,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 99,
+          "fs24": 1,
+          "fs19": 3
+        },
+        "imageBlocks": 18,
+        "quoteBlocks": 6,
+        "tableBlocks": 1,
+        "ruleBlocks": 11,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 5
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1794
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224366601287",
+      "url": "https://blog.naver.com/yogawarm/224366601287",
+      "title": "러닝양말 그냥 양말이랑 뭐가 다를까? 5km 달려보고 느낀 차이",
+      "publishedAt": "Mon, 03 Aug 2026 13:18:10 +0900",
+      "measurement": {
+        "textChars": 1394,
+        "lineCount": 73,
+        "lineChars": {
+          "min": 5,
+          "median": 19,
+          "max": 29
+        },
+        "paragraphCount": 23,
+        "paragraphChars": {
+          "min": 17,
+          "median": 63,
+          "max": 126
+        },
+        "centeredLines": 73,
+        "boldLines": 5,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 63,
+          "fs24": 2,
+          "fs19": 4
+        },
+        "imageBlocks": 14,
+        "quoteBlocks": 5,
+        "tableBlocks": 2,
+        "ruleBlocks": 11,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 4
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1200
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224355545133",
+      "url": "https://blog.naver.com/yogawarm/224355545133",
+      "title": "여행 가서 운동 어떻게 해요? 휴가지에서도 하는 틈새 운동 루틴",
+      "publishedAt": "Thu, 23 Jul 2026 15:53:11 +0900",
+      "measurement": {
+        "textChars": 2480,
+        "lineCount": 151,
+        "lineChars": {
+          "min": 5,
+          "median": 17,
+          "max": 29
+        },
+        "paragraphCount": 55,
+        "paragraphChars": {
+          "min": 10,
+          "median": 44,
+          "max": 95
+        },
+        "centeredLines": 151,
+        "boldLines": 72,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 133,
+          "fs19": 13,
+          "fs13": 1
+        },
+        "imageBlocks": 20,
+        "quoteBlocks": 5,
+        "tableBlocks": 2,
+        "ruleBlocks": 17,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 3,
+          "default": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2076
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224354416537",
+      "url": "https://blog.naver.com/yogawarm/224354416537",
+      "title": "건강한 첫끼는 완벽한 식단보다 이것이 중요합니다.",
+      "publishedAt": "Wed, 22 Jul 2026 15:37:22 +0900",
+      "measurement": {
+        "textChars": 1586,
+        "lineCount": 84,
+        "lineChars": {
+          "min": 7,
+          "median": 18.0,
+          "max": 57
+        },
+        "paragraphCount": 34,
+        "paragraphChars": {
+          "min": 18,
+          "median": 43.0,
+          "max": 89
+        },
+        "centeredLines": 84,
+        "boldLines": 34,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 71,
+          "fs19": 8,
+          "fs13": 1
+        },
+        "imageBlocks": 16,
+        "quoteBlocks": 4,
+        "tableBlocks": 2,
+        "ruleBlocks": 13,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 3
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1342
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224351309843",
+      "url": "https://blog.naver.com/yogawarm/224351309843",
+      "title": "여성 래쉬가드 추천｜아기랑 물놀이하기 좋은 심플한 스윔웨어 후기",
+      "publishedAt": "Sun, 19 Jul 2026 21:59:23 +0900",
+      "measurement": {
+        "textChars": 1146,
+        "lineCount": 62,
+        "lineChars": {
+          "min": 5,
+          "median": 18.5,
+          "max": 29
+        },
+        "paragraphCount": 23,
+        "paragraphChars": {
+          "min": 5,
+          "median": 49,
+          "max": 91
+        },
+        "centeredLines": 62,
+        "boldLines": 15,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 57,
+          "fs15": 1
+        },
+        "imageBlocks": 14,
+        "quoteBlocks": 4,
+        "tableBlocks": 3,
+        "ruleBlocks": 9,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 3
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 992,
+      "closeReading": "한 사용 상황과 선택 기준"
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224347310552",
+      "url": "https://blog.naver.com/yogawarm/224347310552",
+      "title": "달릴 때 이건 꼭 챙기세요. 직접 써본 러닝템 추천",
+      "publishedAt": "Wed, 15 Jul 2026 13:00:09 +0900",
+      "measurement": {
+        "textChars": 1178,
+        "lineCount": 64,
+        "lineChars": {
+          "min": 8,
+          "median": 18.0,
+          "max": 39
+        },
+        "paragraphCount": 22,
+        "paragraphChars": {
+          "min": 18,
+          "median": 53.0,
+          "max": 88
+        },
+        "centeredLines": 64,
+        "boldLines": 21,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 60
+        },
+        "imageBlocks": 10,
+        "quoteBlocks": 5,
+        "tableBlocks": 2,
+        "ruleBlocks": 8,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 3,
+          "default": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1048,
+      "closeReading": "불편과 도구별 선택 기준"
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224344948844",
+      "url": "https://blog.naver.com/yogawarm/224344948844",
+      "title": "단백질 쉐이크, 아무거나 먹으면 안 되는 이유 | 캄프 단백레시피",
+      "publishedAt": "Mon, 13 Jul 2026 11:41:52 +0900",
+      "measurement": {
+        "textChars": 2461,
+        "lineCount": 129,
+        "lineChars": {
+          "min": 4,
+          "median": 20,
+          "max": 31
+        },
+        "paragraphCount": 49,
+        "paragraphChars": {
+          "min": 13,
+          "median": 50,
+          "max": 106
+        },
+        "centeredLines": 129,
+        "boldLines": 48,
+        "fontSizes": {
+          "fs11": 2,
+          "fs28": 3,
+          "fs16": 111,
+          "fs19": 9,
+          "fs13": 1,
+          "fs24": 1
+        },
+        "imageBlocks": 17,
+        "quoteBlocks": 5,
+        "tableBlocks": 2,
+        "ruleBlocks": 16,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 4
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2061
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224342044431",
+      "url": "https://blog.naver.com/yogawarm/224342044431",
+      "title": "러닝 기록, 요즘 사람들이 달리기에 빠지는 이유",
+      "publishedAt": "Fri, 10 Jul 2026 02:41:54 +0900",
+      "measurement": {
+        "textChars": 2180,
+        "lineCount": 122,
+        "lineChars": {
+          "min": 4,
+          "median": 17.5,
+          "max": 35
+        },
+        "paragraphCount": 46,
+        "paragraphChars": {
+          "min": 12,
+          "median": 49.0,
+          "max": 90
+        },
+        "centeredLines": 122,
+        "boldLines": 50,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 110,
+          "fs19": 7,
+          "fs13": 1
+        },
+        "imageBlocks": 21,
+        "quoteBlocks": 6,
+        "tableBlocks": 1,
+        "ruleBlocks": 11,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 4,
+          "default": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1853
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224341920362",
+      "url": "https://blog.naver.com/yogawarm/224341920362",
+      "title": "필라테스 vs 요가, 대부분 이 차이를 모르고 시작합니다",
+      "publishedAt": "Thu, 09 Jul 2026 22:56:50 +0900",
+      "measurement": {
+        "textChars": 2625,
+        "lineCount": 144,
+        "lineChars": {
+          "min": 2,
+          "median": 18.0,
+          "max": 39
+        },
+        "paragraphCount": 54,
+        "paragraphChars": {
+          "min": 10,
+          "median": 50.5,
+          "max": 102
+        },
+        "centeredLines": 144,
+        "boldLines": 76,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 118,
+          "fs19": 17,
+          "fs24": 6,
+          "fs13": 1
+        },
+        "imageBlocks": 11,
+        "quoteBlocks": 6,
+        "tableBlocks": 2,
+        "ruleBlocks": 20,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 5
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2192
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224336642015",
+      "url": "https://blog.naver.com/yogawarm/224336642015",
+      "title": "유연해야 요가를 한다? 사실 이런 사람에게 가장 필요합니다",
+      "publishedAt": "Sun, 05 Jul 2026 02:18:47 +0900",
+      "measurement": {
+        "textChars": 3222,
+        "lineCount": 180,
+        "lineChars": {
+          "min": 5,
+          "median": 18.0,
+          "max": 33
+        },
+        "paragraphCount": 59,
+        "paragraphChars": {
+          "min": 17,
+          "median": 52,
+          "max": 107
+        },
+        "centeredLines": 180,
+        "boldLines": 77,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 165,
+          "fs19": 6,
+          "fs13": 5
+        },
+        "imageBlocks": 19,
+        "quoteBlocks": 5,
+        "tableBlocks": 1,
+        "ruleBlocks": 12,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 4
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2730
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224329473691",
+      "url": "https://blog.naver.com/yogawarm/224329473691",
+      "title": "아기 앞에서 울 수는 없으니까 매트 위로 올라갔습니다.",
+      "publishedAt": "Sun, 28 Jun 2026 10:42:38 +0900",
+      "measurement": {
+        "textChars": 2228,
+        "lineCount": 130,
+        "lineChars": {
+          "min": 4,
+          "median": 17.0,
+          "max": 30
+        },
+        "paragraphCount": 48,
+        "paragraphChars": {
+          "min": 13,
+          "median": 50.0,
+          "max": 96
+        },
+        "centeredLines": 130,
+        "boldLines": 54,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 122,
+          "fs24": 1,
+          "fs13": 1,
+          "fs19": 2
+        },
+        "imageBlocks": 15,
+        "quoteBlocks": 9,
+        "tableBlocks": 1,
+        "ruleBlocks": 14,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 6,
+          "default": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1938
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224329205919",
+      "url": "https://blog.naver.com/yogawarm/224329205919",
+      "title": "오래 앉아있는 몸, 골반이 부드러워지면 일상에서 달라지는 5가지",
+      "publishedAt": "Sat, 27 Jun 2026 23:25:33 +0900",
+      "measurement": {
+        "textChars": 2726,
+        "lineCount": 142,
+        "lineChars": {
+          "min": 2,
+          "median": 19.0,
+          "max": 37
+        },
+        "paragraphCount": 46,
+        "paragraphChars": {
+          "min": 17,
+          "median": 59.0,
+          "max": 111
+        },
+        "centeredLines": 142,
+        "boldLines": 66,
+        "fontSizes": {
+          "fs28": 3,
+          "fs16": 124,
+          "fs19": 12,
+          "fs13": 1
+        },
+        "imageBlocks": 13,
+        "quoteBlocks": 7,
+        "tableBlocks": 1,
+        "ruleBlocks": 16,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 4,
+          "default": 2
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 2332
+    },
+    {
+      "blogId": "yogawarm",
+      "postId": "224328067661",
+      "url": "https://blog.naver.com/yogawarm/224328067661",
+      "title": "예민한 엄마가 되지 않으려고 시작한 생존 운동",
+      "publishedAt": "Fri, 26 Jun 2026 15:47:25 +0900",
+      "measurement": {
+        "textChars": 1680,
+        "lineCount": 106,
+        "lineChars": {
+          "min": 5,
+          "median": 15.0,
+          "max": 29
+        },
+        "paragraphCount": 43,
+        "paragraphChars": {
+          "min": 8,
+          "median": 43,
+          "max": 86
+        },
+        "centeredLines": 106,
+        "boldLines": 48,
+        "fontSizes": {
+          "fs28": 2,
+          "fs16": 90,
+          "fs19": 11,
+          "fs13": 1
+        },
+        "imageBlocks": 13,
+        "quoteBlocks": 6,
+        "tableBlocks": 1,
+        "ruleBlocks": 12,
+        "firstImageAfterChars": 0,
+        "quoteStyles": {
+          "quotation_bubble": 1,
+          "quotation_line": 4,
+          "default": 1
+        }
+      },
+      "proseAndQuoteCharactersNoSpaces": 1472
+    }
+  ]
+}

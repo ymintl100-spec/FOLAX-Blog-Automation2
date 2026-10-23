@@ -1,11 +1,13 @@
 // Mechanical layout only. Keep every text line; move a section's images before its body.
 function articlePlan(article,{preserveParagraphs=false,presentation={}}={}) {
   const groups=[[]];
-  let paragraph=[];
+  let paragraph=[],inReferences=false;
   const flush=()=>{if(paragraph.length){groups.at(-1).push({type:'paragraph',text:paragraph.join('\n')});paragraph=[];}};
   for(const raw of String(article || '').split(/\r?\n/)){
     const text=raw.trim();if(!text){if(preserveParagraphs)flush();continue;}
     const section=text.match(/^\[SECTION\s*-\s*(.+)\]$/i);
+    if(/^(?:\[SECTION\s*-\s*(?:참고\s*자료|참고\s*문헌|출처(?:\s*및\s*참고자료)?|References|Sources)\]|(?:#{1,6}\s*)?(?:참고\s*자료|참고\s*문헌|출처|References|Sources)\s*[:：]?)$/i.test(text)){flush();inReferences=true;continue;}
+    if(inReferences){if(!section)continue;inReferences=false;}
     const image=text.match(/^\[IMAGE INSERT\s*-\s*(\d+)\]$/i);
     if(section){flush();groups.push([{type:'section',text:section[1],style:presentation.headingStyle==='quotation_underline'?'quotation_underline':'quotation_line'}]);}
     else if(image){flush();groups.at(-1).push({type:'image',sequence:Number(image[1])});}

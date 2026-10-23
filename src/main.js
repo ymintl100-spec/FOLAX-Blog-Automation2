@@ -906,7 +906,7 @@ async function startJob(form) {
   if (shouldPublish && pendingDraftMatches(pendingDraft, { account, blogId, category })) {
     const resumeAgentResult = {
       title: pendingDraft.title || "",
-      article: pendingDraft.article || "",
+      article: require("./lib/publicationFormat").omitReferences(pendingDraft.article),
       titleImagePath: pendingDraft.titleImagePath || "",
       bodyImages: Array.isArray(pendingDraft.bodyImages) ? pendingDraft.bodyImages : [],
       imageWarnings: []
@@ -1041,6 +1041,7 @@ async function startJob(form) {
         codexModel,
         tokenSaving: (form.tokenSaving ?? settings.tokenSaving) !== false,
         qualityPolicyVersion: 1,
+        compactWriting:true,
         writingGuidance: require('./lib/writingMemory').guidance(runtimeRoot,account.id),
         formatGuidance: require('./lib/writingMemory').formatGuidance(runtimeRoot,account.id),
         blogDirection:require('./lib/writingMemory').direction(runtimeRoot,account.id),
@@ -1530,7 +1531,7 @@ app.whenReady().then(async () => {
       settings,
       accountStore: connectionStore(),
       bridgeError,
-      pendingPreview:settings.pendingNaverPublishDraft ? {...settings.pendingNaverPublishDraft,images:getPreviewImages(settings.pendingNaverPublishDraft)} : null,
+      pendingPreview:settings.pendingNaverPublishDraft ? {...settings.pendingNaverPublishDraft,article:require("./lib/publicationFormat").omitReferences(settings.pendingNaverPublishDraft.article),images:getPreviewImages(settings.pendingNaverPublishDraft)} : null,
       history: historyForUi(runtimeRoot)
     };
   });

@@ -1454,7 +1454,7 @@ async function boot() {
   window.blogAuto.onPreview((payload) => {
     $("#articlePreview").value = payload.article || "";
     const applied=payload.writingApplication;
-    $('#writingApplicationStatus').textContent=applied?`${applied.label} v${applied.guideVersion} · 소제목 ${applied.sectionCount}개 · 문단 ${applied.paragraphCount}개 · 수정·승인 예시 ${applied.approvedExamples}개${applied.presentation?' · 줄 '+applied.presentation.lineTarget+'자 안팎 / '+(applied.presentation.alignment==='center'?'중앙':'왼쪽')+' 정렬':''}`:'본문 형식 점검 전 · 기존 원고를 불러온 경우 새 형식으로 재작성하지 않습니다.';
+    $('#writingApplicationStatus').textContent=applied?`${applied.label} v${applied.guideVersion} · 본문 ${applied.articleCharacters??'?'}자${applied.lengthBudget?.target?' / 목표 '+applied.lengthBudget.target+'자 안팎':''} · 참고자료 미표시 · 소제목 ${applied.sectionCount}개 · 문단 ${applied.paragraphCount}개 · 수정·승인 예시 ${applied.approvedExamples}개${applied.presentation?' · 줄 '+applied.presentation.lineTarget+'자 안팎 / '+(applied.presentation.alignment==='center'?'중앙':'왼쪽')+' 정렬':''}`:'본문 형식 점검 전 · 기존 원고를 불러온 경우 새 형식으로 재작성하지 않습니다.';
     renderFormattedArticle(payload);
     $("#articleMeta").textContent = payload.previewStage === 'humanizing'
       ? `본문 ${payload.writerAttempt}차 작성 완료 · 문장 다듬는 중`
