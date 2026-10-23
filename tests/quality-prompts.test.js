@@ -31,3 +31,14 @@ test('image limits honor the selected count instead of silently expanding every 
  for(const n of [0,2,3,5,10])assert.equal(normalizeMaxBodyImages(n),n);
  assert.equal(normalizeMaxBodyImages(undefined),3);assert.equal(normalizeMaxBodyImages('bad'),3);assert.equal(normalizeMaxBodyImages(100),10);
 });
+test('benchmarking adds compact structure guidance without source text, extra retrieval, or example leakage into research',()=>{
+ const format=require('../src/lib/blogFormatProfiles').guidance('balanced');
+ assert(JSON.stringify(format).length<900);
+ const options={jobDir:'/tmp/job',formatGuidance:format,writingGuidance:{approvedEdits:[{before:'승인 전 문장',after:'승인한 설명'}]},writerResult:writer};
+ const payload=JSON.parse(prompts.writerPrompt(options).split('\n').find(line=>line.startsWith('{"brief":')));
+ assert.equal(payload.formatGuide.id,'balanced');assert.deepEqual(payload.sources,[]);
+ assert(!JSON.stringify(payload).includes('doctorkidney'));assert(!JSON.stringify(payload).includes('yogawarm'));
+ const research=prompts.researchPrompt(options);assert(!research.includes('승인한 설명'));assert(!research.includes('formatGuide'));
+ const review=prompts.reviewPrompt(options);assert(review.includes('formatGuide'));assert(!review.includes('승인 전 문장'));
+ assert(prompts.writerPrompt(options).includes('단어·주장·숫자 교체를 일반 규칙으로 학습하지'));
+});

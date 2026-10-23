@@ -1039,6 +1039,7 @@ async function startJob(form) {
         tokenSaving: (form.tokenSaving ?? settings.tokenSaving) !== false,
         qualityPolicyVersion: 1,
         writingGuidance: require('./lib/writingMemory').guidance(runtimeRoot,account.id),
+        formatGuidance: require('./lib/writingMemory').formatGuidance(runtimeRoot,account.id),
         topic,
         keyword,
         category,

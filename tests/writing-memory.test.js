@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const memory=require('../src/lib/writingMemory');
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'blogauto-learning-'));test.after(()=>fs.rmSync(root,{recursive:true,force:true}));
-const sample=(extra='')=>({title:'직접 쓴 설명',source:'own',approved:true,article:('선택할 때 먼저 필요한 조건을 따져보는 편이에요. 이유가 다른 부분은 문단을 나눠 설명해요.\n\n').repeat(8)+extra});
+const sample=(extra='')=>({title:'직접 쓴 설명',source:'edited',approved:true,originalArticle:('원래 원고는 필요한 조건을 먼저 확인하여 선택하여야 한다는 내용을 반복적으로 설명하고 있습니다.\n\n').repeat(8),article:('선택할 때 먼저 필요한 조건을 따져보는 편이에요. 이유가 다른 부분은 문단을 나눠 설명해요.\n\n').repeat(8)+extra});
 test('learning requires explicit review and does not create a sample from an unapproved draft',()=>{assert.throws(()=>memory.add(root,'unapproved',{...sample(),approved:false}),/승인/);assert.equal(memory.list(root,'unapproved').examples.length,0)});
 test('samples are isolated by account, deduplicated, and deleted without affecting another account',()=>{
  const a=memory.add(root,'account-a',sample()),b=memory.add(root,'account-b',sample('다른 글'));
@@ -21,7 +21,36 @@ test('untrusted input cannot grow memory indefinitely or supply an unsupported s
  assert.throws(()=>memory.savePreferences(root,'limits',{enabled:true,avoidPhrases:['x'.repeat(51)]}),/50자/);
 });
 test('corrupt memory is reported and preserved rather than silently reset',()=>{
- memory.add(root,'corrupt',sample());const files=fs.readdirSync(path.join(root,'writing-memory'));
+ memory.add(root,'corrupt',sample());
  const crypto=require('node:crypto');const file=path.join(root,'writing-memory',crypto.createHash('sha256').update('corrupt').digest('hex')+'.json');
  fs.writeFileSync(file,'broken-data');assert.throws(()=>memory.list(root,'corrupt'));assert.equal(fs.readFileSync(file,'utf8'),'broken-data');
+});
+test('learning requires actual edits and rejects unedited, whitespace-only, and missing originals',()=>{
+ const input=sample();
+ assert.throws(()=>memory.add(root,'edits',{...input,originalArticle:undefined}),/수정 전/);
+ assert.throws(()=>memory.add(root,'edits',{...input,originalArticle:input.article}),/같습니다/);
+ assert.throws(()=>memory.add(root,'edits',{...input,originalArticle:input.article.replace(/ /g,'\n\n')}),/같습니다/);
+ assert.throws(()=>memory.add(root,'edits',{...input,source:'own'}),/수정·승인/);
+ assert.equal(memory.guidance(root,'edits'),null);
+ const saved=memory.add(root,'edits',input);assert.equal(saved.eligibleCount,1);
+ const guide=memory.guidance(root,'edits');assert.equal(guide.approvedEdits.length,1);assert.notEqual(guide.approvedEdits[0].before,guide.approvedEdits[0].after);
+});
+test('legacy samples stay stored but are excluded until their before/after edit is explicitly approved',()=>{
+ const crypto=require('node:crypto');const input=sample();memory.add(root,'legacy',input);
+ const file=path.join(root,'writing-memory',crypto.createHash('sha256').update('legacy').digest('hex')+'.json');
+ const data=JSON.parse(fs.readFileSync(file));data.examples[0].source='own';delete data.examples[0].approvalVersion;
+ fs.writeFileSync(file,JSON.stringify(data));
+ assert.equal(memory.guidance(root,'legacy'),null);assert.equal(memory.list(root,'legacy').examples.length,1);assert.equal(memory.list(root,'legacy').eligibleCount,0);
+ const reapproved=memory.add(root,'legacy',input);assert.equal(reapproved.examples.length,1);assert.equal(reapproved.eligibleCount,1);
+ const changed=JSON.parse(fs.readFileSync(file));changed.examples[0].article+='승인 후 몰래 변경한 내용';fs.writeFileSync(file,JSON.stringify(changed));
+ assert.equal(memory.guidance(root,'legacy'),null);
+});
+test('benchmark format is account-specific and independent of approved style application',()=>{
+ assert.equal(memory.formatGuidance(root,'format-a').id,'balanced');
+ memory.savePreferences(root,'format-a',{enabled:false,avoidPhrases:[],formatProfile:'practical'});
+ assert.equal(memory.guidance(root,'format-a'),null);assert.equal(memory.formatGuidance(root,'format-a').id,'practical');
+ assert.equal(memory.formatGuidance(root,'format-b').id,'balanced');
+ memory.add(root,'format-a',sample());memory.savePreferences(root,'format-a',{enabled:true,avoidPhrases:[],formatProfile:'off'});
+ assert.equal(memory.formatGuidance(root,'format-a'),null);assert.equal(memory.guidance(root,'format-a').exampleCount,1);
+ assert.throws(()=>memory.savePreferences(root,'format-a',{enabled:true,avoidPhrases:[],formatProfile:'unknown'}),/형식/);
 });

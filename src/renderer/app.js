@@ -1877,12 +1877,13 @@ function renderWritingProfile(profile,account){
   $('#writingLearningAccount').textContent='선택 계정: '+accountDisplayName(account);
   $('#saveWritingExample').disabled=false;$('#saveWritingPreferences').disabled=false;
   $('#writingStyleEnabled').checked=profile.enabled;
+  $('#writingFormatProfile').value=profile.formatProfile;
   $('#writingAvoidPhrases').value=profile.avoidPhrases.join(', ');
-  writingStatus(profile.examples.length+'개 예시');
+  writingStatus(profile.eligibleCount+'개 수정·승인 예시 적용 / '+profile.examples.length+'개 보관');
   const list=$('#writingExamples');list.replaceChildren();
   for(const example of profile.examples){
     const row=document.createElement('li'),label=document.createElement('span'),button=document.createElement('button');
-    label.textContent=example.title+' · '+example.characters+'자';
+    label.textContent=example.title+' · '+example.characters+'자'+(example.eligible?' · 수정·승인됨':' · 학습 제외 (수정 전후 확인 필요)');
     button.type='button';button.className='ghost small';button.textContent='삭제';
     button.addEventListener('click',async()=>{button.disabled=true;try{await window.blogAuto.removeWritingExample({accountId:account.id,id:example.id});await refreshWritingLearning();}catch(error){writingStatus(error.message);button.disabled=false;}});
     row.append(label,button);list.appendChild(row);
@@ -1895,25 +1896,30 @@ async function refreshWritingLearning(){
   $('#saveWritingExample').disabled=true;$('#saveWritingPreferences').disabled=true;
   $('#writingExamples').replaceChildren();$('#writingAvoidPhrases').value='';
   writingStatus('불러오는 중');
-  $('#writingSampleText').value='';$('#writingSampleTitle').value='';$('#writingSampleApproved').checked=false;
+  $('#writingSampleText').value='';$('#writingOriginalText').value='';$('#writingSampleTitle').value='';$('#writingSampleApproved').checked=false;
+  $('#writingFormatProfile').value='balanced';
   if(!account){writingStatus('계정을 선택하세요');$('#writingLearningAccount').textContent='';$('#writingExamples').replaceChildren();return;}
   try{const profile=await window.blogAuto.getWritingProfile(account.id);if(request===writingRequestSequence&&selectedAccount()?.id===account.id)renderWritingProfile(profile,account);}catch(error){if(request===writingRequestSequence)writingStatus(error.message);}
 }
 function initializeWritingLearning(){
+  for(const id of ['writingOriginalText','writingSampleText','writingSampleTitle'])$('#'+id).addEventListener('input',()=>{$('#writingSampleApproved').checked=false;});
   $('#loadCurrentWriting').addEventListener('click',()=>{
-    $('#writingSampleText').value=$('#articlePreview').value.slice(0,12000);
+    const article=$('#articlePreview').value;
+    if(article.length>12000){writingStatus('현재 원고가 12,000자를 넘습니다. 수정 전후에 대응하는 부분을 각각 200~12,000자로 붙여넣으세요.');return;}
+    $('#writingOriginalText').value=article;$('#writingSampleText').value=article;
     $('#writingSampleTitle').value=$('#selectedTitle').textContent.slice(0,120);
-    $('#writingSampleSource').value='edited';$('#writingSampleApproved').checked=false;
+    $('#writingSampleApproved').checked=false;
+    writingStatus('최종 글 칸을 직접 수정한 뒤 승인하세요.');
   });
   $('#saveWritingExample').addEventListener('click',async()=>{
     const account=selectedAccount();if(!account)return;const button=$('#saveWritingExample');button.disabled=true;
-    try{const profile=await window.blogAuto.addWritingExample({accountId:account.id,title:$('#writingSampleTitle').value,article:$('#writingSampleText').value,source:$('#writingSampleSource').value,approved:$('#writingSampleApproved').checked});
-      if(selectedAccount()?.id===account.id){await refreshWritingLearning();writingStatus(profile.duplicate?'이미 저장된 예시입니다.':profile.examples.length+'개 예시 · 다음 새 글부터 반영');}
+    try{const profile=await window.blogAuto.addWritingExample({accountId:account.id,title:$('#writingSampleTitle').value,originalArticle:$('#writingOriginalText').value,article:$('#writingSampleText').value,source:'edited',approved:$('#writingSampleApproved').checked});
+      if(selectedAccount()?.id===account.id){await refreshWritingLearning();writingStatus(profile.duplicate?'이미 저장된 수정·승인 예시입니다.':profile.eligibleCount+'개 수정·승인 예시 · 다음 새 글부터 반영');}
     }catch(error){writingStatus(error.message);}finally{button.disabled=!selectedAccount();}
   });
   $('#saveWritingPreferences').addEventListener('click',async()=>{
     const account=selectedAccount();if(!account)return;const button=$('#saveWritingPreferences');button.disabled=true;
-    try{const profile=await window.blogAuto.saveWritingPreferences({accountId:account.id,enabled:$('#writingStyleEnabled').checked,avoidPhrases:$('#writingAvoidPhrases').value.split(',').map(s=>s.trim()).filter(Boolean)});
+    try{const profile=await window.blogAuto.saveWritingPreferences({accountId:account.id,enabled:$('#writingStyleEnabled').checked,formatProfile:$('#writingFormatProfile').value,avoidPhrases:$('#writingAvoidPhrases').value.split(',').map(s=>s.trim()).filter(Boolean)});
       if(selectedAccount()?.id===account.id){renderWritingProfile(profile,account);writingStatus('문체 설정 저장됨 · 다음 새 글부터 반영');}
     }catch(error){writingStatus(error.message);}finally{button.disabled=!selectedAccount();}
   });
