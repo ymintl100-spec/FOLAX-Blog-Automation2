@@ -50,3 +50,10 @@ test('hero placement follows the genre and stays consistent with the shared arti
  assert.deepEqual(articleWithHero(plan,hero,formats.guidance('explanation').surface.heroPosition).map(b=>b.type),['paragraph','hero','section','paragraph']);
  assert.equal(articleWithHero(plan,hero,formats.guidance('practical').surface.heroPosition)[0].type,'hero');
 });
+test('a routine can illustrate separate steps within one parent section without raising the image budget',()=>{
+ const check=require('../src/lib/codexRunner')._private.writerImageContractIssueReason;
+ const writer={article:'도입\n[SECTION - 실제 실행 순서]\n준비 설명\n[IMAGE INSERT - 1]\n다음 단계 설명\n[IMAGE INSERT - 2]',bodyImages:[{sequence:1,sectionHeading:'실제 실행 순서',prompt:'첫 단계의 준비를 설명하는 그림'},{sequence:2,sectionHeading:'실제 실행 순서',prompt:'두 번째 단계의 동작을 설명하는 그림'}]};
+ assert.equal(check(writer,{includeTitleImage:false,maxBodyImages:2,formatGuidance:formats.guidance('practical')}),'');
+ assert.match(check(writer,{includeTitleImage:false,maxBodyImages:1,formatGuidance:formats.guidance('practical')}),/한도/);
+ assert.match(check(writer,{includeTitleImage:false,maxBodyImages:2,formatGuidance:formats.guidance('explanation')}),/중복/);
+});

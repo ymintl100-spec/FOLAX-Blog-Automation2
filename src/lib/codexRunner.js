@@ -811,7 +811,7 @@ function buildImageWorkerPrompt({
     "Body image policy:",
     bodyImageLimit > 0 ? "- Body images are section-compression visuals, not generic decoration and not title cards. Avoid readable Korean paragraphs, long labels, UI copy, and text-heavy charts." : "- Body image generation is disabled.",
     bodyImageLimit > 0 ? `- Every body image must use aspect ratio ${selectedBodyImageAspectRatio}.` : "",
-    bodyImageLimit > 0 ? "- For every supplied item, preserve sequence and sectionHeading and compress the entire section's concrete subject, relationship, process, comparison, timeline, or decision cue into one coherent image." : "",
+    bodyImageLimit > 0 ? options.formatGuidance?.version>=3&&options.formatGuidance.id==='practical'?"- Preserve every sequence and parent sectionHeading. Each item's prompt may describe a different step within one section: visualize that specific setup, action or alternative. Keep those step images distinct and do not merge them into a repeated whole-section summary.":"- For every supplied item, preserve sequence and sectionHeading and compress the entire section's concrete subject, relationship, process, comparison, timeline, or decision cue into one coherent image." : "",
     bodyImageLimit > 0 ? "- Inspect each generated body image before accepting it. If it is generic, loosely related, or misses the section's central structure, report that image as failed with the specific reason. Do not regenerate within this task; the app permits one targeted retry." : "",
     "",
     "Writer Agent image handoff:",
@@ -1134,7 +1134,8 @@ function writerImageContractIssueReason(writerResult, options = {}) {
     const section=bodySections.find(s=>normalizedSectionHeading(s.heading)===normalizedSectionHeading(image.sectionHeading));
     if(!section || !section.content.includes(`[IMAGE INSERT - ${image.sequence}]`))return '본문 이미지는 참고자료가 아닌 해당 소제목의 섹션에 배치해야 합니다.';
   }
-  if(!unheadedEssay&&new Set(images.map(i=>normalizedSectionHeading(i.sectionHeading))).size!==images.length)return '같은 섹션의 중복 이미지 대신 다른 주요 섹션에 배치하세요.';
+  const stepImages=options.formatGuidance?.version>=3&&options.formatGuidance.id==='practical';
+  if(!unheadedEssay&&!stepImages&&new Set(images.map(i=>normalizedSectionHeading(i.sectionHeading))).size!==images.length)return '같은 섹션의 중복 이미지 대신 다른 주요 섹션에 배치하세요.';
   if(limit>0 && bodySections.length && !images.length)return '본문 주요 섹션을 함축하는 이미지를 최대한 배치하세요. 이미지 계획이 비어 있습니다.';
   if(limit>0 && images.length<Math.min(limit,bodySections.length)){
     const omissions=Array.isArray(writerResult?.imageOmissions)?writerResult.imageOmissions:[];
