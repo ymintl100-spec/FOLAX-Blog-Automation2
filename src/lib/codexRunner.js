@@ -466,6 +466,9 @@ function extractAssistantOutputTexts(event) {
   if (item?.type === "agent_message" && typeof item.message === "string") {
     texts.push(item.message);
   }
+  if (item?.type === "agent_message" && typeof item.text === "string") {
+    texts.push(item.text);
+  }
   if (payload.type === "agent_message_delta" && typeof payload.delta === "string") {
     texts.push(payload.delta);
   }
@@ -751,7 +754,7 @@ function buildImageWorkerPrompt({
   imageAspectRatio = DEFAULT_IMAGE_ASPECT_RATIO,
   titleImageAspectRatio,
   bodyImageAspectRatio,
-  maxBodyImages = 10,
+  maxBodyImages = 3,
   writerResult,
   finalTitle,
   accountImageStylePrompt = "",
@@ -1198,12 +1201,18 @@ async function runCodexTask({
   agentTokenOffset = 0,
   agent = "main"
 }) {
+  const imageOutput = require('./imageTaskOutput');
+  const imageStage = imageOutput.isImageStage(agent);
+  const outputFileName = imageStage ? imageOutput.lastMessageName(resultFileName) : resultFileName;
+  let lastAssistantText = '';
   const directText=require('./textTaskOutput').isTextStage(agent);
   if(directText)prompt=require('./textTaskOutput').responsePrompt(prompt);
+  else if(imageStage)prompt=imageOutput.responsePrompt(prompt);
   else if(options.trustBlogAsSource===true)prompt+='\n'+require('./generationPrompts').sourceOnlyPolicy;
   else prompt += '\nQuality policy: source-quality scores and domain classifications are discovery hints, not proof or vetoes. Assess original excerpts, dates, scope and conflicts. Stable explanations need no artificial current-news hook. A single directly relevant primary source can suffice; unknown domains may be primary sources. Blogs can inform discovery or first-hand experience, but cannot alone establish high-stakes or release claims. Omit nonessential unsupported details instead of blocking the whole topic. Never invent facts. Minor style differences are notes, not revision grounds.';
   fs.writeFileSync(path.join(options.jobDir, promptFileName), prompt, "utf8");
   removeAgentResultFile(options.jobDir, resultFileName);
+  if (imageStage) removeAgentResultFile(options.jobDir, outputFileName);
   const outputState = { section: "meta" };
   const tokenState = {
     awaitingValue: false,
@@ -1318,6 +1327,10 @@ async function runCodexTask({
         reportTokenUsage();
       }
       for (const assistantText of extractAssistantOutputTexts(parsedJson)) {
+        if (imageStage && parsedJson.type !== 'item.started' && parsedJson.type !== 'item.updated'
+            && parsedJson.type !== 'agent_message_delta' && parsedJson.payload?.type !== 'agent_message_delta') {
+          lastAssistantText = String(assistantText || '').slice(-262144);
+        }
         String(assistantText || "")
           .split(/\r?\n/)
           .forEach((nestedLine) => {
@@ -1369,7 +1382,7 @@ async function runCodexTask({
       "exec",
       "--json",
       "--skip-git-repo-check",
-      ...(directText ? ['--output-last-message',path.join(options.jobDir,resultFileName)] : []),
+      ...((directText || imageStage) ? ['--output-last-message',path.join(options.jobDir,outputFileName)] : []),
       ...(codexModel ? ["--model", codexModel] : []),
       "-c",
       `model_reasoning_effort=${taskEffort}`,
@@ -1484,12 +1497,21 @@ async function runCodexTask({
     tokenState.lastOutputTokens = 0;
     tokenState.rateLimits = null;
     removeAgentResultFile(options.jobDir, resultFileName);
+    if (imageStage) removeAgentResultFile(options.jobDir, outputFileName);
+    lastAssistantText = '';
     taskStartedAt = Date.now();
     await executeCodex();
   }
   recoverTokenUsageFromSession();
   reportTokenUsage({ final: true });
 
+  if (imageStage) {
+    const received = imageOutput.saveResult(options.jobDir, resultFileName, agent, lastAssistantText);
+    if (received.status !== 'success') {
+      const detail = imageOutput.diagnosticText(received.failureReason || (received.notes || []).join(' / '));
+      if (detail) log('이미지 작업 응답: ' + detail, 'warn', agent);
+    }
+  }
   return {
     ...readAgentResult(options.jobDir, resultFileName),
     tokenUsage: {

@@ -1014,6 +1014,7 @@ async function startJob(form) {
     safeLog(jobId, `Agent 모델 설정: Codex ${modelSnapshot.codexModel}, Main ${modelSnapshot.main}, Research/Title ${modelSnapshot.research}, Writer ${modelSnapshot.writer}, Image Worker ${modelSnapshot.image}`);
     safeLog(jobId, `Codex ${usesImages ? "본문/이미지 프롬프트" : "본문"} 생성 시작: ${generationSubject}`);
     if(generationDraft?.checkpoint)safeLog(jobId,'중단된 작업을 이어갑니다. 완료된 조사·본문·검증·이미지는 재사용하고 미완료 단계부터 다시 시도합니다.');
+    if((form.tokenSaving ?? settings.tokenSaving)!==false)safeLog(jobId,'토큰 절약 적용 · Writer 자체 다듬기 + 최종 품질 검수 · 실패 시 전체 주제 재생성 생략');
     const generationStartedAt = Date.now();
     let generationPhase = "준비 중";
     const generationHeartbeat = setInterval(() => {
@@ -1035,6 +1036,9 @@ async function startJob(form) {
         runtimeRoot,
         jobDir,
         codexModel,
+        tokenSaving: (form.tokenSaving ?? settings.tokenSaving) !== false,
+        qualityPolicyVersion: 1,
+        writingGuidance: require('./lib/writingMemory').guidance(runtimeRoot,account.id),
         topic,
         keyword,
         category,
@@ -1516,6 +1520,17 @@ app.whenReady().then(async () => {
       history: historyForUi(runtimeRoot)
     };
   });
+
+  const writingMemory=require('./lib/writingMemory');
+  const writingAccount=(event,id)=>{
+    if(event.sender!==mainWindow?.webContents)throw new Error('앱 창에서 요청하세요.');
+    if(typeof id!=='string'||!readAccountStore(getRuntimeRoot(),readSettings(getRuntimeRoot())).accounts.some(a=>a.id===id))throw new Error('등록된 계정을 선택하세요.');
+    return id;
+  };
+  ipcMain.handle('writing:list',(event,id)=>writingMemory.list(getRuntimeRoot(),writingAccount(event,id)));
+  ipcMain.handle('writing:add',(event,{accountId,...input})=>writingMemory.add(getRuntimeRoot(),writingAccount(event,accountId),input));
+  ipcMain.handle('writing:remove',(event,{accountId,id})=>writingMemory.remove(getRuntimeRoot(),writingAccount(event,accountId),id));
+  ipcMain.handle('writing:preferences',(event,{accountId,...input})=>writingMemory.savePreferences(getRuntimeRoot(),writingAccount(event,accountId),input));
 
   ipcMain.handle('codex:models', () => require('./lib/codexModels').getCodexCatalog(readSettings(getRuntimeRoot()).codexCmdPath));
   ipcMain.handle("chrome:installAndQuit", async () => {

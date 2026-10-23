@@ -241,6 +241,8 @@
                 <input id="reserveAfterHours" type="number" min="1" step="1" value="3" />
               </label>
             </div>
+            <label class="wide compact-check"><input id="tokenSaving" type="checkbox" checked /> 토큰 절약 · 별도 윤문을 작성 단계에 통합</label>
+            <p class="hint wide">최종 사실·문체·독자 유용성 검수는 유지합니다. 수정은 최대 한 번 진행하고 실패한 주제의 자동 전체 재생성은 생략합니다.</p>
             <div class="form-actions wide">
             <button id="saveSettingsButton" class="ghost wide" type="button">설정 저장</button>
             <button hidden id="tistoryTestButton" class="ghost wide" type="button">Tistory 테스트 발행</button>
@@ -288,6 +290,23 @@
           </div>
           <textarea id="articlePreview" readonly placeholder="선택한 주제로 생성된 본문이 이곳에 표시됩니다.
 왼쪽에서 블로그와 주제를 선택하고 작업을 시작하세요."></textarea>
+          <details id="writingLearning" class="writing-learning">
+            <summary>내 글 문체 학습 · <span id="writingLearningStatus">계정을 선택하세요</span></summary>
+            <p class="hint" id="writingLearningAccount"></p>
+            <p class="hint">직접 쓴 글과 검토·수정한 글에서 설명 방식과 문장 리듬을 참고합니다. 다음 새 글부터 적용하며, 학습용 글 편집은 현재 원고나 게시글을 바꾸지 않습니다.</p>
+            <p class="hint">예시는 이 PC에 저장됩니다. 문체를 적용할 때 짧은 발췌만 Codex에 전달하며, 학습을 위한 추가 AI 호출은 없습니다.</p>
+            <label class="compact-check"><input id="writingStyleEnabled" type="checkbox" checked /> 학습한 문체 적용</label>
+            <label>피하고 싶은 표현 (쉼표 구분, 최대 12개)<input id="writingAvoidPhrases" maxlength="650" placeholder="예: 살펴보겠습니다, 여러분도 꼭" /></label>
+            <button id="saveWritingPreferences" class="ghost small" type="button">문체 설정 저장</button>
+            <div class="writing-sample-fields">
+              <label>예시 제목<input id="writingSampleTitle" maxlength="120" placeholder="내 글 예시 이름" /></label>
+              <label>글 종류<select id="writingSampleSource"><option value="own">직접 쓴 글</option><option value="edited">검토·수정한 글</option></select></label>
+            </div>
+            <label>학습용 글 (200~12,000자)<textarea id="writingSampleText" rows="7" maxlength="12000" placeholder="마음에 드는 내 글을 붙여넣거나 현재 글을 불러와 수정하세요."></textarea></label>
+            <label class="compact-check"><input id="writingSampleApproved" type="checkbox" /> 직접 검토했으며 문체 예시로 사용할 글입니다.</label>
+            <div class="writing-actions"><button id="loadCurrentWriting" class="ghost small" type="button">현재 글 불러오기</button><button id="saveWritingExample" class="primary small" type="button">예시 추가</button></div>
+            <ul id="writingExamples" class="writing-examples"></ul>
+          </details>
         </section>
 
         <section class="panel image-panel" aria-label="생성 이미지 미리보기">
@@ -317,7 +336,10 @@
                 <span>본문섹션이미지</span>
                 <select id="maxBodyImages">
                   <option value="0">사용 안 함</option>
-                  <option value="10" selected>섹션별 생성(최대 10장)</option>
+                  <option value="2">최대 2장</option>
+                  <option value="3" selected>최대 3장</option>
+                  <option value="5">최대 5장</option>
+                  <option value="10">섹션별 생성(최대 10장)</option>
                 </select>
               </label>
             </div>

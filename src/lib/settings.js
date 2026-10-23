@@ -36,7 +36,8 @@ const DEFAULT_SETTINGS = {
   imageAspectRatio: DEFAULT_IMAGE_ASPECT_RATIO,
   titleImageAspectRatio: DEFAULT_IMAGE_ASPECT_RATIO,
   bodyImageAspectRatio: DEFAULT_IMAGE_ASPECT_RATIO,
-  maxBodyImages: 10,
+  maxBodyImages: 3,
+  tokenSaving: true,
   breakSentencesInBody: true,
   agentModels: {
     main: "high",
@@ -61,7 +62,7 @@ function ensureSettingsFile(runtimeRoot) {
 }
 
 function normalizeSettings(settings) {
-  const normalized = { ...settings, topicMode: "auto", topic: "", publishAfterGenerate: true, breakSentencesInBody: true };
+  const normalized = { ...settings, tokenSaving: settings.tokenSaving !== false, topicMode: "auto", topic: "", publishAfterGenerate: true, breakSentencesInBody: true };
   if (!String(normalized.blogId || "").trim() && String(normalized.naverId || "").trim()) {
     normalized.blogId = String(normalized.naverId).trim();
   }
@@ -82,8 +83,9 @@ function normalizeSettings(settings) {
 }
 
 function normalizeMaxBodyImages(value) {
-  if (value === undefined || value === null || String(value).trim() === "") return 10;
-  return Number(value) > 0 ? 10 : 0;
+  if (value === undefined || value === null || String(value).trim() === "") return 3;
+  const count=Number(value);
+  return Number.isFinite(count)?Math.max(0,Math.min(10,Math.floor(count))):3;
 }
 
 function normalizeCodexModel(value) {

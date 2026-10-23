@@ -196,3 +196,11 @@ button{transition:background-color .15s,border-color .15s,color .15s}
 #draftTistoryLabel[hidden]{display:none!important}
 #draftTistoryLabel{align-self:end;padding-bottom:10px;white-space:nowrap}
 .compact-check input[type="checkbox"]{margin:0}
+
+.writing-learning{border-top:1px solid var(--border);padding-top:12px;margin-top:12px;flex-shrink:0;font-size:13px}
+.writing-learning summary{cursor:pointer;font-weight:600}.writing-learning[open]{max-height:430px;overflow:auto;padding-right:6px}
+.writing-learning label{display:flex;flex-direction:column;gap:6px;margin:10px 0}.writing-learning .compact-check{flex-direction:row;align-items:center}
+#writingSampleText{min-height:150px;width:100%;resize:vertical}.writing-sample-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.writing-actions{display:flex;gap:8px;flex-wrap:wrap}.writing-examples{padding:0;list-style:none}.writing-examples li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.preview-panel:has(.writing-learning[open]){height:auto;min-height:620px}
+.preview-panel:has(.writing-learning[open]) #articlePreview{flex:none;height:240px;min-height:200px}
+.writing-learning[open]{max-height:none;overflow:visible}

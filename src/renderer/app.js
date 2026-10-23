@@ -644,6 +644,7 @@ function renderAccounts() {
   const manager = $("#accountManager");
   const toggle = $("#toggleAccountManagerButton");
   ensureSelectedAccount();
+  if($('#writingLearning') && $('#writingLearning').dataset.accountId!==(state.accountStore.selectedAccountId || ''))refreshWritingLearning();
   updateModeControls();
   if (manager && toggle) {
     manager.classList.toggle("collapsed", !state.accountManagerOpen);
@@ -864,6 +865,7 @@ function selectAccount(accountId) {
   if (!account) return;
   state.accountStore.selectedAccountId = account.id;
   fillAccountForm(account);
+  refreshWritingLearning();
   clearCategoryForm();
   renderAccounts();
   saveAccountStoreNow();
@@ -1095,6 +1097,7 @@ function collectForm(target = {}) {
     publishPrivate: $("#publishVisibility").value !== "public",
     publishScheduleMode: $("#publishScheduleMode").value,
     reserveAfterHours: Number($("#reserveAfterHours").value || 0),
+    tokenSaving: $("#tokenSaving").checked,
     includeTitleImage: $("#includeTitleImage").checked,
     titleImageAspectRatio: normalizeImageAspectRatio($("#titleImageAspectRatio").value),
     bodyImageAspectRatio: normalizeImageAspectRatio($("#bodyImageAspectRatio").value),
@@ -1123,6 +1126,7 @@ function applySettings(settings) {
   $("#crossPublish").checked = settings.crossPublish === true;
   $("#draftTistoryAutoPublish").checked = settings.draftTistoryAutoPublish === true;
   state.tistorySessionStatus = settings.tistorySessionStatus || "unknown";
+  $("#tokenSaving").checked = settings.tokenSaving !== false;
   $("#includeTitleImage").checked = settings.includeTitleImage !== false;
   $("#titleImageAspectRatio").value = normalizeImageAspectRatio(settings.titleImageAspectRatio || settings.imageAspectRatio);
   $("#bodyImageAspectRatio").value = normalizeImageAspectRatio(settings.bodyImageAspectRatio || settings.imageAspectRatio);
@@ -1160,6 +1164,7 @@ async function saveSettingsNow() {
     publishVisibility: form.publishVisibility,
     publishScheduleMode: form.publishScheduleMode,
     reserveAfterHours: form.reserveAfterHours,
+    tokenSaving: form.tokenSaving,
     includeTitleImage: form.includeTitleImage,
     titleImageAspectRatio: form.titleImageAspectRatio,
     bodyImageAspectRatio: form.bodyImageAspectRatio,
@@ -1385,6 +1390,7 @@ async function boot() {
   state.chrome = initial.chrome || state.chrome;
   state.accountStore = initial.accountStore || state.accountStore;
   applySettings(initial.settings || {});
+  initializeWritingLearning();
   refreshCodexCatalog();
   setCodexRateLimits(initial.settings?.codexRateLimits || null);
   refreshCodexUsageOnStartup();
@@ -1731,7 +1737,7 @@ async function boot() {
       addLog({ level: "error", message: error.message, at: new Date().toISOString() });
     });
   });
-  for (const selector of ["#codexModel", ...Object.values(AGENT_MODEL_SELECTORS)]) {
+  for (const selector of ["#codexModel", "#tokenSaving", ...Object.values(AGENT_MODEL_SELECTORS)]) {
     const control = $(selector);
     if (!control) continue;
     control.addEventListener("change", () => {
@@ -1864,3 +1870,52 @@ async function refreshCodexCatalog(){
 }
 window.addEventListener('focus',refreshCodexCatalog);
 setInterval(()=>{if(!document.hidden)refreshCodexCatalog();},300000);
+
+let writingRequestSequence=0;
+function writingStatus(message){$('#writingLearningStatus').textContent=message;}
+function renderWritingProfile(profile,account){
+  $('#writingLearningAccount').textContent='선택 계정: '+accountDisplayName(account);
+  $('#saveWritingExample').disabled=false;$('#saveWritingPreferences').disabled=false;
+  $('#writingStyleEnabled').checked=profile.enabled;
+  $('#writingAvoidPhrases').value=profile.avoidPhrases.join(', ');
+  writingStatus(profile.examples.length+'개 예시');
+  const list=$('#writingExamples');list.replaceChildren();
+  for(const example of profile.examples){
+    const row=document.createElement('li'),label=document.createElement('span'),button=document.createElement('button');
+    label.textContent=example.title+' · '+example.characters+'자';
+    button.type='button';button.className='ghost small';button.textContent='삭제';
+    button.addEventListener('click',async()=>{button.disabled=true;try{await window.blogAuto.removeWritingExample({accountId:account.id,id:example.id});await refreshWritingLearning();}catch(error){writingStatus(error.message);button.disabled=false;}});
+    row.append(label,button);list.appendChild(row);
+  }
+}
+async function refreshWritingLearning(){
+  const request=++writingRequestSequence,account=selectedAccount();
+  if(!$('#writingLearningStatus'))return;
+  $('#writingLearning').dataset.accountId=account?.id || '';
+  $('#saveWritingExample').disabled=true;$('#saveWritingPreferences').disabled=true;
+  $('#writingExamples').replaceChildren();$('#writingAvoidPhrases').value='';
+  writingStatus('불러오는 중');
+  $('#writingSampleText').value='';$('#writingSampleTitle').value='';$('#writingSampleApproved').checked=false;
+  if(!account){writingStatus('계정을 선택하세요');$('#writingLearningAccount').textContent='';$('#writingExamples').replaceChildren();return;}
+  try{const profile=await window.blogAuto.getWritingProfile(account.id);if(request===writingRequestSequence&&selectedAccount()?.id===account.id)renderWritingProfile(profile,account);}catch(error){if(request===writingRequestSequence)writingStatus(error.message);}
+}
+function initializeWritingLearning(){
+  $('#loadCurrentWriting').addEventListener('click',()=>{
+    $('#writingSampleText').value=$('#articlePreview').value.slice(0,12000);
+    $('#writingSampleTitle').value=$('#selectedTitle').textContent.slice(0,120);
+    $('#writingSampleSource').value='edited';$('#writingSampleApproved').checked=false;
+  });
+  $('#saveWritingExample').addEventListener('click',async()=>{
+    const account=selectedAccount();if(!account)return;const button=$('#saveWritingExample');button.disabled=true;
+    try{const profile=await window.blogAuto.addWritingExample({accountId:account.id,title:$('#writingSampleTitle').value,article:$('#writingSampleText').value,source:$('#writingSampleSource').value,approved:$('#writingSampleApproved').checked});
+      if(selectedAccount()?.id===account.id){await refreshWritingLearning();writingStatus(profile.duplicate?'이미 저장된 예시입니다.':profile.examples.length+'개 예시 · 다음 새 글부터 반영');}
+    }catch(error){writingStatus(error.message);}finally{button.disabled=!selectedAccount();}
+  });
+  $('#saveWritingPreferences').addEventListener('click',async()=>{
+    const account=selectedAccount();if(!account)return;const button=$('#saveWritingPreferences');button.disabled=true;
+    try{const profile=await window.blogAuto.saveWritingPreferences({accountId:account.id,enabled:$('#writingStyleEnabled').checked,avoidPhrases:$('#writingAvoidPhrases').value.split(',').map(s=>s.trim()).filter(Boolean)});
+      if(selectedAccount()?.id===account.id){renderWritingProfile(profile,account);writingStatus('문체 설정 저장됨 · 다음 새 글부터 반영');}
+    }catch(error){writingStatus(error.message);}finally{button.disabled=!selectedAccount();}
+  });
+  refreshWritingLearning();
+}

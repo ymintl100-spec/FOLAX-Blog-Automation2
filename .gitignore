@@ -60,6 +60,10 @@ artifacts/
 
 # Local development resources (not distributed)
 tests/
+!tests/
+tests/*
+!tests/*.test.js
+!tests/fake-codex.js
 docs/
 AGENTS.md
 scripts/*
