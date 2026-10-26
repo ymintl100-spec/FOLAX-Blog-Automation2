@@ -1,6 +1,7 @@
 const path=require('node:path');
 const {articleLengthInstruction,articleCharacterCount}=require('./articleRequirements');
 const {cleanSourceUrl}=require('./publicationFormat');
+const {editorialFormatDirective}=require('./editorialFormat');
 const text=value=>String(value || '').trim();
 function sourcesFor(options) {
   const selected=new Set((options.researchTitleResult?.factChecks || []).flatMap(f=>f.sourceIds || []));
@@ -58,6 +59,7 @@ function writerPrompt(options,previous) {
   return [
     'You write the final Korean blog article. '+policyFor(options),
     articleLengthInstruction,
+    editorialFormatDirective(options),
     '필요한 조건과 예외를 직접 설명한다. 단정할 수 없습니다·판단하지 않겠습니다 같은 글쓴이의 판단 보고로 대신하지 않는다. 긴 조문 나열은 조건별로 문장을 나누되 대상·예외·의무·가능성은 보존한다. 서로 다른 행위·절차·결과·시점을 단순한 전후 관계로 바꿔 쓰지 않는다. 의무의 주체를 보존한다. 기관이 제공해야 한다는 규정을 독자가 받아야 한다는 의무로 바꾸지 말고, 권리를 행사할 수 있다는 설명과 구분한다.',
     `Output JSON file: ${path.join(options.jobDir,'agent-result.json')}`,
     'Follow the supplied writing brief and preserve the selected title. Focus on the reader, not the research process. You may synthesize stable explanations but not add unsupported specifics. Do not independently search or generate images.',
@@ -84,6 +86,7 @@ function reviewPrompt(options) {
   return [
     'You perform one final factual and usefulness review. '+policyFor(options),
     articleLengthInstruction,
+    'Check whether the structure is clear and original. Prefer the user-approved format over benchmark examples without copying third-party prose. Do not reject on FAQ count or paragraph length alone.',
     '이미지 계획도 같은 검수에서 확인한다. 참고자료를 제외한 주요 섹션에 설정 최대치 안에서 이미지를 최대한 배치했는지 확인한다. 타이틀 이미지 설명이 제목과 본문 전체의 핵심을 함축하고, 각 본문 이미지 설명이 해당 섹션의 핵심을 함축해야 한다. 부족하거나 일반 장식에 그치면 구체적인 보완 지시와 REVISION을 반환한다. imageOmissions의 이유가 실제 섹션 내용에 타당한지도 확인한다. 별도 검수 호출은 하지 않는다.',
     `Output JSON file: ${path.join(options.jobDir,'main-review-result.json')}`,
     '확보한 원문 발췌로 사실성과 독자에게 주는 실제 도움을 함께 검수한다. 사실이 맞다는 이유만으로 PASS하지 않는다. 제목의 질문에 답하는지, 독자가 읽고 판단할 수 있는 구체적인 설명이 있는지 실제 문장을 근거로 평가한다. sourceUsePass는 내부 citations와 원문 연결, 하단 참고자료의 정확성을 뜻한다. 사용자 설정에 따라 블로그 출처는 내부 citations에만 남고 공개 참고자료에는 없어야 한다. 이를 출처 누락으로 반려하거나 공식 출처를 추가 요구하지 않는다. 본문 인용 번호나 매 단락의 출처 표기를 요구하지 않는다.',

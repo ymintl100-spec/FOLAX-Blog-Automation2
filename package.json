@@ -10,7 +10,8 @@
     "dist": "electron-builder --win portable",
     "dist:mac": "electron-builder --mac dmg",
     "dist:mac:arm64": "electron-builder --mac dmg --arm64",
-    "dist:mac:x64": "electron-builder --mac dmg --x64"
+    "dist:mac:x64": "electron-builder --mac dmg --x64",
+    "test:editorial": "node --test tests/editorialFormat.test.js"
   },
   "devDependencies": {
     "electron": "^44.4.3",
