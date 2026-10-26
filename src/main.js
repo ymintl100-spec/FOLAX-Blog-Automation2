@@ -1563,7 +1563,11 @@ app.whenReady().then(async () => {
   ipcMain.handle('writing:list',(event,id)=>writingMemory.list(getRuntimeRoot(),writingAccount(event,id)));
   ipcMain.handle('writing:add',(event,{accountId,...input})=>writingMemory.add(getRuntimeRoot(),writingAccount(event,accountId),input));
   ipcMain.handle('writing:remove',(event,{accountId,id})=>writingMemory.remove(getRuntimeRoot(),writingAccount(event,accountId),id));
-  ipcMain.handle('writing:preferences',(event,{accountId,...input})=>writingMemory.savePreferences(getRuntimeRoot(),writingAccount(event,accountId),input));
+  ipcMain.handle('writing:preferences',(event,{accountId,...input})=>{
+    const id=writingAccount(event,accountId),result=writingMemory.savePreferences(getRuntimeRoot(),id,input);
+    if(operations){const editorial=require('./lib/operations/editorial'),current=editorial.profile(operations.db,id);editorial.saveProfile(operations.db,id,{enabled:input.enabled,instructions:current.instructions,rules:current.explicitRules});}
+    return result;
+  });
   ipcMain.handle('writing:preview',(event,input)=>{
     if(event.sender!==mainWindow?.webContents)throw new Error('앱에서 미리보기를 여세요.');
     if(typeof input?.article!=='string'||input.article.length>100000)throw new Error('미리보기 원고를 확인하세요.');

@@ -201,8 +201,16 @@ function register({ ipcMain, dialog, safeStorage, window, root, ...hooks }) {
           return service.publish(accountId, payload.id, payload);
         case "resolvePublication":
           return service.resolve(accountId, payload.id, payload);
-        case "profile":
-          return E.saveProfile(service.db, accountId, payload);
+        case "profile": {
+          const memory = require("../writingMemory"),
+            previous = memory.list(root, accountId);
+          const result = E.saveProfile(service.db, accountId, payload);
+          memory.savePreferences(root, accountId, {
+            ...previous,
+            enabled: payload.enabled,
+          });
+          return result;
+        }
         case "benchmark":
           return service.addBenchmark(accountId, payload);
         case "analyzeCapture":

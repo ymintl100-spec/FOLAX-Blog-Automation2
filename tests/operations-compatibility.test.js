@@ -129,3 +129,46 @@ test("same-day concurrent API refreshes share one request and unclassified keywo
   assert.equal(offTopic.category, "미분류");
   assert(!offTopic.parts.some((p) => p.key === "relevance"));
 });
+test("new profile enable switch is synchronized with the reused approved-writing memory setting", async (t) => {
+  const root = temp(t),
+    handlers = new Map(),
+    sender = {},
+    service = require("../src/lib/operations/register").register({
+      root,
+      ipcMain: { handle: (name, fn) => handlers.set(name, fn) },
+      dialog: {},
+      safeStorage: { isEncryptionAvailable: () => false },
+      window: () => ({ webContents: sender }),
+      accounts: () => [{ id: "a", blogId: "trafle" }],
+      settings: () => ({}),
+      history: () => [],
+    });
+  t.after(() => service.dispose());
+  const invoke = handlers.get("operations:action");
+  await invoke(
+    { sender },
+    {
+      accountId: "a",
+      action: "profile",
+      payload: { enabled: false, instructions: "유지할 필수 지침", rules: [] },
+    },
+  );
+  assert.equal(
+    require("../src/lib/writingMemory").list(root, "a").enabled,
+    false,
+  );
+  assert.equal(service.snapshot("a").profile.enabled, false);
+  assert.equal(service.snapshot("a").profile.instructions, "유지할 필수 지침");
+  await invoke(
+    { sender },
+    {
+      accountId: "a",
+      action: "profile",
+      payload: { enabled: true, instructions: "유지할 필수 지침", rules: [] },
+    },
+  );
+  assert.equal(
+    require("../src/lib/writingMemory").list(root, "a").enabled,
+    true,
+  );
+});
