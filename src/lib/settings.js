@@ -19,6 +19,7 @@ const DEFAULT_SETTINGS = {
   naverSearchUrl: DEFAULT_NAVER_SEARCH_URL,
   googleSearchUrl: "https://www.google.com/search?q={query}&num=20&hl=ko",
   naverEditorDomNotes: "",
+  publicationMode: "approval",
   publishAfterGenerate: true,
   publishPrivate: true,
   topicMode: "auto",
@@ -117,6 +118,7 @@ function readSettings(runtimeRoot) {
     if (!Object.prototype.hasOwnProperty.call(parsed, "bodyImageAspectRatio")) {
       merged.bodyImageAspectRatio = parsed.imageAspectRatio;
     }
+    if(!Object.hasOwn(parsed,"publicationMode"))merged.publicationMode="legacy_auto";
     const normalized = normalizeSettings(merged);
     if (
       Object.prototype.hasOwnProperty.call(parsed, "naverId")

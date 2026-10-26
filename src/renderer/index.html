@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>네이버 블로그 자동화 by @복사장의생존발악</title>
+    <title>FOLAX 콘텐츠 운영 · 네이버·티스토리</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header class="titlebar"><img src="../assets/app-icon.png" alt="" /><span>네이버 블로그 자동화 <span class="titlebar-credit">by @복사장의생존발악</span> <span id="appVersion" class="titlebar-credit"></span></span></header>
+    <header class="titlebar"><img src="../assets/app-icon.png" alt="" /><span>FOLAX 콘텐츠 운영 <span class="titlebar-credit">by @복사장의생존발악</span> <span id="appVersion" class="titlebar-credit"></span></span></header>
     <div class="app-shell">
       <p id="runtimePath" hidden>런타임 폴더 확인 중</p>
       <header class="topbar">
@@ -61,6 +61,14 @@
         </div>
       </header>
 
+      <nav id="operationsNav" class="ops-nav" aria-label="콘텐츠 운영 메뉴">
+        <strong>FOLAX</strong><button type="button" data-ops-tab="overview" class="ghost">운영 · 추천 TOP 10</button><button type="button" data-ops-tab="data" class="ghost">검색 데이터</button><button type="button" data-ops-tab="drafts" class="ghost">원고 · 승인 · 발행</button><button type="button" data-ops-tab="style" class="ghost">벤치마크 · 편집 기준</button><button type="button" data-ops-tab="analytics" class="ghost">성과 · 사용량</button><button type="button" data-ops-tab="legacy" class="ghost">계정 · 기존 작업</button>
+      </nav>
+      <section id="operationsPanel" class="panel ops-panel" aria-label="FOLAX 콘텐츠 운영" hidden>
+        <div class="ops-toolbar"><label>운영 계정<select id="opsAccount"></select></label><button type="button" id="opsReload" class="ghost">새로고침</button><span id="opsStatus" role="status" aria-live="polite">계정을 선택하세요.</span></div>
+        <p class="hint">FOLAX(포렉스) · YM INTL Co., Ltd. | 건강하고 편안하게 움직이는 일상 · 정보성 콘텐츠 운영</p>
+        <div id="opsContent"></div>
+      </section>
       <div id="sessionNotice" class="session-notice" role="status" aria-live="polite" hidden>
         <div>
           <strong>계정 연결·로그인 상태를 확인해 주세요.</strong>
@@ -395,7 +403,7 @@
     <div class="button-row"><button id="prepareExtensionFolder" class="primary" type="button">설치 폴더 준비 · 경로 복사</button><button id="copyExtensionsUrl" class="ghost" type="button">Chrome 설정 주소 복사</button></div>
     <p id="extensionFolder" class="hint"></p><strong id="pairingCode" class="pairing-code">계정의 ‘브라우저 연결’을 눌러 주세요.</strong><p id="pairingHelp">업데이트 후에는 Chrome 확장 관리 화면에서 BlogAuto의 새로고침 버튼을 누르세요. 최초 설치 후 이 폴더를 이동하거나 삭제하지 마세요.</p>
     <p class="hint">각 블로그 창의 로그인은 별도 로컬 폴더에 Chrome이 보관합니다. 앱은 쿠키를 읽거나 교체하지 않습니다. 처음에는 계정 창마다 확장을 설치하세요. 이후 세션 만료 시에만 직접 로그인하며 앱은 완료될 때까지 대기합니다.</p>
-    </section></div><script src="./app.js"></script>
+    </section></div><script src="./app.js"></script><script src="./operations.js"></script>
     <div id="modelErrorLayer" class="modal-backdrop" hidden>
       <section class="startup-card" role="dialog" aria-modal="true" aria-labelledby="modelErrorTitle">
         <h2 id="modelErrorTitle">모델 응답 대기</h2>

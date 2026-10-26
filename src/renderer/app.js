@@ -1318,6 +1318,7 @@ async function startAutoPublishing(startTargetKey = '') {
       addLog({agent:'main',message:accountDisplayName(target.account)+' · '+target.category.name+' 작업 시작'});
       const result=await runAutoStartJob(collectForm({account:target.account,category:target.category,failOnLoginRequired:true}));
       setTargetProgress(target,['success','draft_saved'].includes(result?.status)?'완료':result?.status==='session_expired'?'로그인 대기':result?.status==='publish_uncertain'?'발행 확인 필요':'실패',result?.reason || '');
+      if(result?.status==='awaiting_approval'){state.autoRunning=false;state.nextTarget=null;setTargetProgress(target,'검수 대기','콘텐츠 운영에서 수정·승인하세요.');setRunState('generated','사용자 검수 대기');break;}
       if(autoResultAction(result)==='stop'){
         state.autoRunning=false;state.nextTarget=null;
         const reason=result?.reason || '실행 오류를 확인해 주세요.';

@@ -46,12 +46,12 @@ function add(root,id,input){
  if(hash===originalHash)throw new Error('수정 전후의 내용과 문단 형식이 같습니다. 표현 또는 의미 있는 줄바꿈·문단 구성을 수정하세요.');
  const data=read(root,id);
  const existing=data.examples.find(e=>layoutDigest(e.article)===hash);
- if(existing&&eligible(existing))return {...summary(data),duplicate:true};
+ if(existing&&eligible(existing))return {...summary(data),savedExampleId:existing.id,duplicate:true};
  if(!existing&&data.examples.length>=MAX_EXAMPLES)throw new Error('계정당 예시는 최대 12개입니다. 이전 예시를 삭제한 뒤 추가하세요.');
  const now=new Date().toISOString();
  const example={id:existing?.id||crypto.randomUUID(),title:input.title.trim()||'수정·승인 예시',article,hash,source:'edited',createdAt:existing?.createdAt||now,approvalVersion:3,originalHash,approvedHash:hash,approvedAt:now,editComparison:editComparison(original,article),editComparisons:distributedEdits(original,article)};
  if(existing)data.examples[data.examples.indexOf(existing)]=example;else data.examples.push(example);
- write(root,id,data);return {...summary(data),duplicate:false};
+ write(root,id,data);return {...summary(data),savedExampleId:example.id,duplicate:false};
 }
 function remove(root,id,exampleId){
  if(typeof exampleId!=='string')throw new Error('삭제할 예시를 확인하세요.');
