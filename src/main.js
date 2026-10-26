@@ -1049,6 +1049,11 @@ async function startJob(form) {
         excludedTopics: form.excludedTopics || "",
         publishPurpose: form.publishPurpose || "",
         preferredTone: form.preferredTone || "",
+        editorialReference: {
+          approved: account.approvedArticleApproved === true,
+          article: account.approvedArticleApproved === true ? (account.approvedArticleSample || "") : "",
+          approvedAt: account.approvedArticleApprovedAt || ""
+        },
         freshnessLevel: form.freshnessLevel || "auto",
         searchChannel: form.searchChannel || "blog",
         trustBlogAsSource: form.trustBlogAsSource === true,
