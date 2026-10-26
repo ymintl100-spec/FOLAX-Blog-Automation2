@@ -2,6 +2,9 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("blogAuto", {
   platform: process.platform,
+  onOperationsProgress: handler=>ipcRenderer.on('operations:progress',(_event,payload)=>handler(payload)),
+  getOperations: input=>ipcRenderer.invoke('operations:state',input),
+  operationsAction: input=>ipcRenderer.invoke('operations:action',input),
   openTistoryChrome: blogId => ipcRenderer.invoke('tistory:open',blogId),
   pairTistoryExtension: blogId => ipcRenderer.invoke('tistory:pair',blogId),
   setWindowTheme: theme => ipcRenderer.invoke('window:theme', theme),
@@ -12,6 +15,12 @@ contextBridge.exposeInMainWorld("blogAuto", {
   pairExtension: id => ipcRenderer.invoke('extension:pair',id),
   getConnections: () => ipcRenderer.invoke('extension:connections'),
   revokeConnection: id => ipcRenderer.invoke('extension:revoke',id),
+  getWritingProfile: accountId=>ipcRenderer.invoke('writing:list',accountId),
+  addWritingExample: input=>ipcRenderer.invoke('writing:add',input),
+  removeWritingExample: input=>ipcRenderer.invoke('writing:remove',input),
+  saveWritingPreferences: input=>ipcRenderer.invoke('writing:preferences',input),
+  getWritingPreview: input=>ipcRenderer.invoke('writing:preview',input),
+  onExperienceConsumed: handler=>ipcRenderer.on('job:experienceConsumed',(_event,payload)=>handler(payload)),
   getInitialData: () => ipcRenderer.invoke("app:getInitialData"),
   openChromeInstallAndQuit: () => ipcRenderer.invoke("chrome:installAndQuit"),
   refreshCodexUsage: () => ipcRenderer.invoke("codex:refreshUsage"),

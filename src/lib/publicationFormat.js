@@ -16,7 +16,7 @@ function cleanSourceUrl(value) {
 function cleanPublicationUrls(writer) {
   if(!writer || typeof writer!=='object')return writer;
   return {...writer,
-    article:typeof writer.article==='string' ? omitBlogReferences(writer.article,writer.citations).replace(/https?:\/\/[^\s<>"\[\]]+/g,match=>{
+    article:typeof writer.article==='string' ? omitReferences(writer.article).replace(/https?:\/\/[^\s<>"\[\]]+/g,match=>{
       const suffix=match.match(/[).,;!?]+$/)?.[0] || '';
       return cleanSourceUrl(suffix ? match.slice(0,-suffix.length) : match)+suffix;
     }) : writer.article,
@@ -27,23 +27,19 @@ function isBlogCitation(citation) {
   if(citation?.sourceKind==='blog')return true;
   try{const host=new URL(citation?.url).hostname.toLowerCase();return /(^|\.)(blog\.naver\.com|tistory\.com|blogspot\.com|wordpress\.com|velog\.io|brunch\.co\.kr)$/.test(host);}catch{return false;}
 }
-function omitBlogReferences(article,citations=[]) {
-  const parts=referenceParts(article);
-  if(parts.count!==1)return article;
-  const hidden=new Set((citations || []).filter(isBlogCitation).map(c=>cleanSourceUrl(c.url)));
-  const entries=parts.references.trim().split(/(?=^참고\s*\d+\s*[:：])/m).filter(s=>s.trim());
-  const kept=entries.filter(entry=>{
-    const urls=entry.match(/https?:\/\/[^\s<>"\[\]]+/g) || [];
-    return !urls.some(url=>hidden.has(cleanSourceUrl(url)) || isBlogCitation({url}));
-  });
-  if(kept.length===entries.length)return article;
-  return parts.body.trimEnd()+(kept.length?'\n\n[SECTION - 참고자료]\n'+kept.map((s,i)=>s.trim().replace(/^참고\s*\d+\s*[:：]/,'참고 '+(i+1)+':')).join('\n\n'):'');
-}
 function referenceParts(article) {
   const text=String(article || '');
-  const headings=[...text.matchAll(/^\[SECTION\s*-\s*참고자료\]\s*$/gm)];
+  const headings=[...text.matchAll(/^(?:\[SECTION\s*-\s*(?:참고\s*자료|참고\s*문헌|출처(?:\s*및\s*참고자료)?|References|Sources)\]|(?:#{1,6}\s*)?(?:참고\s*자료|참고\s*문헌|출처|References|Sources)\s*[:：]?)\s*$/gmi)];
   const heading=headings[0];
-  return {body:heading?text.slice(0,heading.index):text,
-    references:heading?text.slice(heading.index+heading[0].length):'',count:headings.length};
+  // A legacy checkpoint can contain prose after its reference block. Keep it.
+  const next=heading?text.slice(heading.index+heading[0].length).search(/^\[SECTION\s*-/mi):-1;
+  const end=heading&&next>=0?heading.index+heading[0].length+next:text.length;
+  return {body:heading?text.slice(0,heading.index)+text.slice(end):text,
+    references:heading?text.slice(heading.index+heading[0].length,end):'',count:headings.length};
 }
-module.exports={cleanSourceUrl,cleanPublicationUrls,referenceParts,isBlogCitation};
+function omitReferences(article){
+  let text=String(article||'');
+  for(let i=0;i<20;i++){const parts=referenceParts(text);if(!parts.count)break;text=parts.body;}
+  return text.trimEnd();
+}
+module.exports={cleanSourceUrl,cleanPublicationUrls,referenceParts,isBlogCitation,omitReferences};

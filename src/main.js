@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, clipboard } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog, clipboard, safeStorage } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const crypto = require("node:crypto");
@@ -48,21 +48,22 @@ function historyForUi(root){
  return history.map(item=>({...item,retry:publicPlan(retryPlan(root,item,history,settings,accounts))}));
 }
 
-function pendingPublishBusy(){return Boolean(activeJob) || [...getBridge().tasks.values()].some(t=>t.type==='publish' && ['queued','running'].includes(t.state));}
+function pendingPublishBusy(){return Boolean(activeJob) || Boolean(operations?.busy) || [...getBridge().tasks.values()].some(t=>t.type==='publish' && ['queued','running'].includes(t.state));}
 const {retrieveResearch}=require('./lib/researchRetrieval');
 let bridgeError = '';
 function connectionStore() {
   const root=getRuntimeRoot(); const store=withAccountImageUrls(root,readAccountStore(root,readSettings(root)));
   return {...store, tistoryConnection:getBridge().snapshot(TISTORY_ACCOUNT_ID), accounts:store.accounts.map(a=>({...a,sessionStatus:getBridge().snapshot(a.id).status,sessionCheckedAt:getBridge().snapshot(a.id).checkedAt,connection:getBridge().snapshot(a.id)}))};
 }
-function prepareExtension() {
+function prepareExtension({copyPath=true}={}) {
   const source=app.isPackaged ? path.join(process.resourcesPath,'extension') : path.join(__dirname,'..','extension');
   const destination=path.join(app.getPath('userData'),'chrome-extension');
   fs.mkdirSync(destination,{recursive:true}); fs.cpSync(source,destination,{recursive:true});
-  clipboard.writeText(destination); return destination;
+  if(copyPath)clipboard.writeText(destination); return destination;
 }
 let mainWindow;
 let activeJob = null;
+let operations=null;
 const activeTistorySessions = new Map();
 
 app.disableHardwareAcceleration();
@@ -76,7 +77,7 @@ function createWindow() {
     minWidth: 980,
     minHeight: 720,
     backgroundColor: "#11151d",
-    title: "네이버 블로그 자동화 by @복사장의생존발악",
+    title: "FOLAX 콘텐츠 운영 · 네이버·티스토리",
     icon: path.join(__dirname, 'assets', 'app-icon.png'),
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
     ...(process.platform === 'darwin' ? {} : {titleBarOverlay: {color:'#152030', symbolColor:'#edf3fc', height:40}}),
@@ -345,6 +346,9 @@ function buildPendingNaverPublishDraft({
     publishScheduleMode,
     reserveAfterHours,
     breakSentencesInBody,
+    preserveParagraphs:agentResult.writingApplication?.guideVersion>=2,
+    writingApplication:agentResult.writingApplication,
+    presentation:agentResult.writingApplication?.presentation,
     publishToTistoryAfterNaver,
     tistoryBlogId,
     keywordLane: keywordLaneResultPayload(latestLaneResult),
@@ -512,12 +516,12 @@ function uniqueSearchQueries(values, limit = 4) {
 }
 
 function todayLabel() {
-  const now = new Date();
-  return `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
+  return new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'long',day:'numeric'}).format(new Date());
 }
 
 async function resolveTopicInput(form, category, log) {
   const seedKeyword = String(form.keyword || "").trim() || category;
+  if(form.topicMode==='manual'&&String(form.topic||'').trim()){log("사용자가 선택한 추천 주제만 조사·작성합니다.");return {topic:String(form.topic).trim(),keyword:seedKeyword};}
   log("자동 주제 모드: 카테고리와 키워드를 Research/Title Agent에 전달합니다.");
   return {
     topic: "",
@@ -678,7 +682,7 @@ function awaitModelRetry(jobId, payload) {
 }
 
 async function startJob(form) {
-  form = {...form, topicMode:"auto", topic:"", publishAfterGenerate:true};
+  form = {...form,topicMode:form.operationsDraft&&form.topic?"manual":"auto",topic:form.operationsDraft?String(form.topic||""):"",publishAfterGenerate:!form.requireApproval};
   if (activeJob) {
     throw new Error("이미 실행 중인 작업이 있습니다.");
   }
@@ -687,6 +691,11 @@ async function startJob(form) {
   ensureRuntimeFiles(runtimeRoot);
   ensureSettingsFile(runtimeRoot);
   const settings = readSettings(runtimeRoot);
+  const storedOptions=settings.pendingGenerationDraft?.checkpoint?.generationOptions;
+  const requireApproval=storedOptions?.requireApproval??(form.requireApproval===true||settings.publicationMode==='approval');
+  const operationsTopicId=form.operationsTopicId||storedOptions?.operationsTopicId||null;
+  if(requireApproval&&!operations)throw new Error('콘텐츠 DB 오류를 먼저 확인하세요. 원고 생성·발행은 시작하지 않았습니다.');
+  if(requireApproval&&settings.pendingNaverPublishDraft)throw new Error('기존 미완료 발행 원고를 먼저 확인하세요. 새 승인 모드에서 기존 원고를 자동 재발행하지 않습니다.');
   ensureAccountStoreFile(runtimeRoot, settings);
 
   const jobId = `job_${Date.now()}`;
@@ -716,7 +725,7 @@ async function startJob(form) {
   const maxBodyImages = normalizeMaxBodyImages(form.maxBodyImages);
   const breakSentencesInBody = true;
   const agentModels = form.agentModels || settings.agentModels || {};
-  const shouldPublish = form.publishAfterGenerate === true || form.topicMode === "auto";
+  const shouldPublish = !requireApproval&&(form.publishAfterGenerate === true || form.topicMode === "auto");
   const pendingRecovery=settings.pendingNaverPublishDraft;
   const generationDraft=settings.pendingGenerationDraft;
   const pendingTarget=pendingRecovery || generationDraft;
@@ -903,7 +912,7 @@ async function startJob(form) {
   if (shouldPublish && pendingDraftMatches(pendingDraft, { account, blogId, category })) {
     const resumeAgentResult = {
       title: pendingDraft.title || "",
-      article: pendingDraft.article || "",
+      article: require("./lib/publicationFormat").omitReferences(pendingDraft.article),
       titleImagePath: pendingDraft.titleImagePath || "",
       bodyImages: Array.isArray(pendingDraft.bodyImages) ? pendingDraft.bodyImages : [],
       imageWarnings: []
@@ -999,7 +1008,7 @@ async function startJob(form) {
     const accountHistory = require('./lib/topicHistory').accountHistory(history,{accountId:account.id,blogId});
     keywordLanePlan = buildKeywordLanePlan(keyword, accountHistory, { category, excludedKeywordLanes });
     latestLaneResult = normalizeResearchLaneResult({}, keywordLanePlan);
-    const publishedTopicHistory=require('./lib/topicHistory').publishedTopics(accountHistory);
+    const publishedTopicHistory=[...require('./lib/topicHistory').publishedTopics(accountHistory),...(operations?.known(account.id,operationsTopicId)||[]).map(x=>({id:x.id,title:x.title,readerQuestion:x.question||''}))];
     const titleHistory = accountHistory.filter(entry=>entry.title && ['success','generated','draft_saved'].includes(entry.status)).map(entry=>({title:entry.title}));
 
     const usesImages = includeTitleImage || maxBodyImages > 0;
@@ -1014,6 +1023,7 @@ async function startJob(form) {
     safeLog(jobId, `Agent 모델 설정: Codex ${modelSnapshot.codexModel}, Main ${modelSnapshot.main}, Research/Title ${modelSnapshot.research}, Writer ${modelSnapshot.writer}, Image Worker ${modelSnapshot.image}`);
     safeLog(jobId, `Codex ${usesImages ? "본문/이미지 프롬프트" : "본문"} 생성 시작: ${generationSubject}`);
     if(generationDraft?.checkpoint)safeLog(jobId,'중단된 작업을 이어갑니다. 완료된 조사·본문·검증·이미지는 재사용하고 미완료 단계부터 다시 시도합니다.');
+    if((form.tokenSaving ?? settings.tokenSaving)!==false)safeLog(jobId,'토큰 절약 적용 · Writer 자체 다듬기 + 최종 품질 검수 · 실패 시 전체 주제 재생성 생략');
     const generationStartedAt = Date.now();
     let generationPhase = "준비 중";
     const generationHeartbeat = setInterval(() => {
@@ -1035,10 +1045,26 @@ async function startJob(form) {
         runtimeRoot,
         jobDir,
         codexModel,
+        tokenSaving: (form.tokenSaving ?? settings.tokenSaving) !== false,
+        qualityPolicyVersion: 1,
+        compactWriting:true,
+        requireApproval,operationsTopicId,operationsDraft:form.operationsDraft===true,
+        requiredWritingInstructions:operations?require('./lib/operations/editorial').profile(operations.db,account.id).instructions:'',
+        approvedEditorial:operations?operations.promptProfile(account.id):undefined,
+        contentPolicy:requireApproval||blogId==='trafle'?require('./lib/operations/service').policy:undefined,
+        platform:form.platform||'naver',
+        writingGuidance: require('./lib/writingMemory').guidance(runtimeRoot,account.id),
+        formatGuidance: require('./lib/writingMemory').formatGuidance(runtimeRoot,account.id),
+        blogDirection:require('./lib/writingMemory').direction(runtimeRoot,account.id),
+        experienceNotes:form.experienceNotes||'',experienceNotesId:form.experienceNotesId||'',
+        onWritingApplication: applied=>{
+          safeLog(jobId,`실제 생성 설정: ${applied.label} · 형식 v${applied.guideVersion} · 수정·승인 예시 ${applied.approvedExamples}개${applied.resumed?' · 재개 작업의 기존 설정 사용':''}`);
+          if(applied.experienceNotesId)emit('job:experienceConsumed',{accountId:account.id,id:applied.experienceNotesId});
+        },
         topic,
         keyword,
         category,
-        topicMode: "auto",
+        topicMode: form.topicMode,
         searchResults: [],
         currentDateLabel,
         includeTitleImage,
@@ -1075,12 +1101,14 @@ async function startJob(form) {
           emit("accounts:update", withAccountImageUrls(runtimeRoot, saved));
         },
         onArticleReady: (draft) => {
+          if(operationsTopicId)operations?.progressTopic(account.id,operationsTopicId,draft.previewStage==='humanizing'?'writing':'ai_review');
           // Preview only: unreviewed text is never a resumable publish draft.
           emit("job:preview", {jobId,title:draft.title,article:draft.article,
-            previewStage:draft.previewStage,writerAttempt:draft.writerAttempt,
+            previewStage:draft.previewStage,writerAttempt:draft.writerAttempt,writingApplication:draft.writingApplication,
             images:[],imageNotes:[],tags:draft.tags || []});
         },
         onResearchTitle: (researchResult) => {
+          if(operationsTopicId)operations?.progressTopic(account.id,operationsTopicId,researchResult.status==='PASS'?'writing':'research');
           latestResearchTitleResult = researchResult || null;
           latestLaneResult = normalizeResearchLaneResult(researchResult, keywordLanePlan);
           const selectedTitle = String(researchResult.finalTitle || researchResult.selectedTitle || "").trim();
@@ -1302,6 +1330,7 @@ async function startJob(form) {
       currentDateLabel,
       result: codexResult
     });
+    agentResult.writingApplication=codexResult.writingApplication;
     latestAgentResultForResume = agentResult;
     if(codexResult.publishable===false || agentResult.imageWarnings?.length){
       throw Object.assign(new Error([...(codexResult.notes || []),...(agentResult.imageWarnings || [])].join(' / ') || '이미지 생성을 완료하지 못했습니다. 본문을 보존하고 자동 진행을 중지합니다.'),{failureKind:'execution',failurePhase:'image'});
@@ -1320,12 +1349,14 @@ async function startJob(form) {
       jobId,
       title: agentResult.title,
       article: agentResult.article,
+      writingApplication:codexResult.writingApplication,
       images: getPreviewImages(agentResult),
       imageNotes: [...(agentResult.imageWarnings || []),...(codexResult.publishable===false ? codexResult.notes || [] : [])],
       tokenUsage: jobTokenUsage,
       tags
     });
 
+    let contentDocumentId='';
     let publishStatus = "generated";
     let publishReason = [...(codexResult.publishable===false ? codexResult.notes || [] : []),...(agentResult.imageWarnings || [])].join(" / ");
 
@@ -1339,6 +1370,10 @@ async function startJob(form) {
       clearPendingNaverPublishDraft(runtimeRoot);
       publishStatus = publishVisibility==='draft'?'draft_saved':'success';
       updateStatus(jobId, publishStatus, publishReason);
+    } else if(requireApproval){
+      const document=operations.saveGenerated(account.id,operationsTopicId,{...codexResult,...agentResult,bodyImages:agentResult.bodyImages.map(image=>({...codexResult.bodyImages?.find(i=>i.sequence===image.sequence),...image})),writingApplication:codexResult.writingApplication},{jobId,jobDir,category,keyword,blogId});
+      contentDocumentId=document.id;publishStatus='awaiting_approval';publishReason='AI 검수 완료 · 사용자 수정·최종 승인 대기. 외부 발행은 하지 않았습니다.';
+      writeSettings(runtimeRoot,{pendingGenerationDraft:null});updateStatus(jobId,publishStatus,publishReason);
     } else {
       publishReason = "사용자가 발행 실행을 끄고 생성만 실행했습니다.";
       writeSettings(runtimeRoot,{pendingGenerationDraft:null});
@@ -1393,7 +1428,7 @@ async function startJob(form) {
       tags,
       history: historyForUi(runtimeRoot)
     });
-    return { status: publishStatus, keywordLane: keywordLaneResultPayload(latestLaneResult) };
+    return { status: publishStatus,documentId:contentDocumentId, keywordLane: keywordLaneResultPayload(latestLaneResult) };
   } catch (error) {
     if(error.failureKind==='quality')writeSettings(runtimeRoot,{pendingGenerationDraft:null});
     const failedStatus = error.code === "SESSION_EXPIRED"
@@ -1500,22 +1535,51 @@ app.whenReady().then(async () => {
   ensureSettingsFile(getRuntimeRoot());
   ensureAccountStoreFile(getRuntimeRoot(), readSettings(getRuntimeRoot()));
   createWindow();
+  try{prepareExtension({copyPath:false});}catch(error){bridgeError+=' 확장 설치 폴더 준비가 필요합니다: '+error.message;}
 
   ipcMain.handle("app:getInitialData", () => {
     const runtimeRoot = getRuntimeRoot();
     const settings = readSettings(runtimeRoot);
     return {
       runtimeRoot,
+      appVersion:require('../package.json').version,
       codexCmdPath: resolveCodexCmdPath(settings.codexCmdPath),
       codexInstallation: require('./lib/codexPlatform').detectCodexInstallation(settings.codexCmdPath),
       chrome: detectChromeInstall(),
       settings,
       accountStore: connectionStore(),
       bridgeError,
-      pendingPreview:settings.pendingNaverPublishDraft ? {...settings.pendingNaverPublishDraft,images:getPreviewImages(settings.pendingNaverPublishDraft)} : null,
+      pendingPreview:settings.pendingNaverPublishDraft ? {...settings.pendingNaverPublishDraft,article:require("./lib/publicationFormat").omitReferences(settings.pendingNaverPublishDraft.article),images:getPreviewImages(settings.pendingNaverPublishDraft)} : null,
       history: historyForUi(runtimeRoot)
     };
   });
+
+  const writingMemory=require('./lib/writingMemory');
+  const writingAccount=(event,id)=>{
+    if(event.sender!==mainWindow?.webContents)throw new Error('앱 창에서 요청하세요.');
+    if(typeof id!=='string'||!readAccountStore(getRuntimeRoot(),readSettings(getRuntimeRoot())).accounts.some(a=>a.id===id))throw new Error('등록된 계정을 선택하세요.');
+    return id;
+  };
+  ipcMain.handle('writing:list',(event,id)=>writingMemory.list(getRuntimeRoot(),writingAccount(event,id)));
+  ipcMain.handle('writing:add',(event,{accountId,...input})=>writingMemory.add(getRuntimeRoot(),writingAccount(event,accountId),input));
+  ipcMain.handle('writing:remove',(event,{accountId,id})=>writingMemory.remove(getRuntimeRoot(),writingAccount(event,accountId),id));
+  ipcMain.handle('writing:preferences',(event,{accountId,...input})=>{
+    const id=writingAccount(event,accountId),result=writingMemory.savePreferences(getRuntimeRoot(),id,input);
+    if(operations){const editorial=require('./lib/operations/editorial'),current=editorial.profile(operations.db,id);editorial.saveProfile(operations.db,id,{enabled:input.enabled,instructions:current.instructions,rules:current.explicitRules});}
+    return result;
+  });
+  ipcMain.handle('writing:preview',(event,input)=>{
+    if(event.sender!==mainWindow?.webContents)throw new Error('앱에서 미리보기를 여세요.');
+    if(typeof input?.article!=='string'||input.article.length>100000)throw new Error('미리보기 원고를 확인하세요.');
+    const plan=require(path.join(app.isPackaged?process.resourcesPath:path.join(__dirname,'..'),'extension','article-plan.js'));
+    const raw=input.presentation||{},presentation={headingStyle:raw.headingStyle==='quotation_underline'?'quotation_underline':'quotation_line',alignment:raw.alignment==='center'?'center':'left',preserveImageOrder:raw.preserveImageOrder===true,heroPosition:raw.heroPosition==='after-opening'?'after-opening':'before-opening'};
+    return {blocks:plan.articleWithHero(plan.articlePlan(input.article,{preserveParagraphs:true,presentation}),input.titleImagePlanned===true?{type:'hero'}:null,presentation.heroPosition),presentation};
+  });
+
+  try{operations=require('./lib/operations/register').register({ipcMain,dialog,safeStorage,window:()=>mainWindow,root:getRuntimeRoot(),accounts:()=>readAccountStore(getRuntimeRoot(),readSettings(getRuntimeRoot())).accounts,settings:()=>readSettings(getRuntimeRoot()),saveSettings:next=>writeSettings(getRuntimeRoot(),next),history:id=>require('./lib/topicHistory').accountHistory(readHistory(getRuntimeRoot()),{accountId:id,blogId:readAccountStore(getRuntimeRoot(),readSettings(getRuntimeRoot())).accounts.find(a=>a.id===id)?.blogId}),isBusy:()=>Boolean(activeJob),openExternal:url=>shell.openExternal(url),installCategories:id=>{const root=getRuntimeRoot(),settings=readSettings(root),store=readAccountStore(root,settings),account=store.accounts.find(a=>a.id===id);for(const name of require('./lib/operations/data').CATEGORIES)if(!account.categories.some(c=>c.name===name))account.categories.push({name,keyword:name,checked:false});const saved=writeAccountStore(root,store,settings);emitAccountStore(root);return saved;},startJob,progress:(id,message,level)=>emit('operations:progress',{id,message,level})});}catch(error){
+    const detail='콘텐츠 DB를 열 수 없습니다. 기존 파일은 보존했습니다. 계정·기존 작업은 유지됩니다. '+error.message;
+    console.error(detail);ipcMain.handle('operations:state',()=>{throw new Error(detail);});ipcMain.handle('operations:action',()=>{throw new Error(detail);});
+  }
 
   ipcMain.handle('codex:models', () => require('./lib/codexModels').getCodexCatalog(readSettings(getRuntimeRoot()).codexCmdPath));
   ipcMain.handle("chrome:installAndQuit", async () => {
@@ -1734,7 +1798,7 @@ app.whenReady().then(async () => {
       url: result.url || ""
     };
   });
-  ipcMain.handle("tistory:testPublish", (_event, form) => startTistoryTestPublish(form));
+  ipcMain.handle("tistory:testPublish", (_event, form) => {if(operations?.busy||readSettings(getRuntimeRoot()).publicationMode==='approval')throw new Error("승인 모드에서는 별도 승인 원고를 발행 준비하세요. 테스트 글을 자동 공개하지 않습니다.");return startTistoryTestPublish(form);});
   ipcMain.handle("history:load", () => historyForUi(getRuntimeRoot()));
   ipcMain.handle('history:retry', (_event, {id,form}) => {
     if(pendingPublishBusy())throw new Error('진행 중인 작업을 마친 뒤 재시도하세요.');
@@ -1750,7 +1814,7 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle('job:pendingState',()=>pendingPublishState(getRuntimeRoot(),pendingPublishBusy()));
   ipcMain.handle('job:cancelPending',()=>cancelPendingPublish(getRuntimeRoot(),pendingPublishBusy()));
-  ipcMain.handle("job:start", (_event, form) => startJob(form));
+  ipcMain.handle("job:start", (_event, form) => {if(operations?.busy)throw new Error("콘텐츠 작업 종료 후 시작하세요.");return startJob(form);});
   ipcMain.handle('job:modelRetry', (event, choice) => {
     if(event.sender!==mainWindow?.webContents || !modelRetryPending || choice.id!==modelRetryPending.id)return false;
     if(!['retry','cancel'].includes(choice.action))return false;
