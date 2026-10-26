@@ -873,6 +873,8 @@ function fillAccountForm(account) {
   $("#accountLabel").value = account?.label || "";
   $("#blogId").value = account?.blogId || account?.naverId || "";
   $("#accountTistoryBlogId").value = account?.tistoryBlogId || "";
+  $("#accountApprovedArticleSample").value = account?.approvedArticleSample || "";
+  $("#accountApprovedArticleApproved").checked = account?.approvedArticleApproved === true;
   renderAccountSampleImage(account);
 }
 
@@ -1518,6 +1520,9 @@ async function boot() {
       label: $("#accountLabel").value.trim() || blogId,
       blogId,
       tistoryBlogId,
+      approvedArticleSample: $("#accountApprovedArticleSample").value.trim().slice(0,24000),
+      approvedArticleApproved: $("#accountApprovedArticleApproved").checked && $("#accountApprovedArticleSample").value.trim().length >= 200,
+      approvedArticleApprovedAt: $("#accountApprovedArticleApproved").checked && $("#accountApprovedArticleSample").value.trim().length >= 200 ? new Date().toISOString() : "",
       sampleImagePath: "",
       sampleImageHash: "",
       sampleImageUpdatedAt: "",
@@ -1559,9 +1564,24 @@ async function boot() {
     account.tistoryBlogId = tistoryBlogId;
     account.label = $("#accountLabel").value.trim() || blogId;
     account.blogId = blogId;
+    const sample = $("#accountApprovedArticleSample").value.trim().slice(0,24000);
+    const isApproved = $("#accountApprovedArticleApproved").checked;
+    if (isApproved && sample.length < 200) {
+      addLog({ level:"error", message:"승인 원고는 200자 이상이어야 합니다. 원고를 붙여 넣거나 승인 체크를 해제하세요.", at:new Date().toISOString() });
+      return;
+    }
+    const changed = account.approvedArticleSample !== sample || account.approvedArticleApproved !== isApproved;
+    account.approvedArticleSample = sample;
+    account.approvedArticleApproved = isApproved && sample.length >= 200;
+    account.approvedArticleApprovedAt = account.approvedArticleApproved
+      ? (changed ? new Date().toISOString() : account.approvedArticleApprovedAt || new Date().toISOString())
+      : "";
     await saveAccountStoreNow();
   });
 
+  $("#accountApprovedArticleSample").addEventListener("input", () => {
+    $("#accountApprovedArticleApproved").checked = false;
+  });
   $("#clearAccountFormButton").addEventListener("click", () => {
     clearAccountForm();
     addLog({ level: "info", message: "신규 계정 입력을 시작합니다.", at: new Date().toISOString() });
