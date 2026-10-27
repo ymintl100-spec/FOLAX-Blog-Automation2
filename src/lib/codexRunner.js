@@ -800,6 +800,8 @@ function buildImageWorkerPrompt({
     "- Prefer concrete editorial blog visuals that summarize the article or nearby section. Avoid abstract decorative backgrounds.",
     accountImageStylePrompt ? "- Apply this account-specific visual style prompt unless it conflicts with factual accuracy, no-text rules, or the article context:" : "",
     accountImageStylePrompt ? accountImageStylePrompt : "",
+    accountImageStylePrompt ? "- Preserve the account style's requested visual medium (for example photorealistic photography). Adapt the Writer scene to that medium; a diagram-like subject description does not override the account style. Verify the style before accepting the title image." : "",
+    imageRevisionFeedback ? "- This is an application-authorized correction of the failed items below. Generate the requested replacement once and inspect it; do not refuse this correction because the previous task prohibited regenerating inside that task. Keep already accepted images unchanged." : "",
     "",
     "Title image policy:",
     includeTitleImage ? "- The title image is a mobile-feed editorial thumbnail: visually synthesize the title AND the whole article’s core message and supported reader promise, using one clear focal point. Do not compress every section into a dense infographic." : "- Title image generation is disabled.",
@@ -830,6 +832,7 @@ function buildImageWorkerPrompt({
     "- JSON shape: { \"status\": \"success\" | \"partial\" | \"failed\", \"failureReason\": string, \"titleImagePath\": string, \"titleImageVerified\": boolean, \"bodyImages\": [{\"sequence\": number, \"sectionHeading\": string, \"path\": string, \"prompt\": string, \"summaryVerified\": boolean}], \"notes\": string[] }.",
     "- If no image prompt is available, return status \"failed\", empty image paths, and a concise Korean note.",
     "- If some images succeed and some fail, return status \"partial\" with successful paths and notes for failures.",
+    "- Preserve concrete paths for generated candidates even when inspection fails; keep the corresponding verification flag false and explain the specific defect. Never discard a real candidate path merely because its visual style was rejected, and never mark it verified to bypass a failure.",
     "- Keep notes concise and include only generation failures or verification facts needed by the app.",
     "- Status \"success\" is allowed only when every requested image has a concrete image file path, titleImageVerified is true when requested, and every body image has summaryVerified true.",
     "- Print one final line after writing the file: BLOGAUTO_RESULT_READY"

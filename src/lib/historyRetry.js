@@ -53,10 +53,11 @@ function retryPlan(root, item, history, settings, accounts) {
     mode = 'publish'; reason = '완성 원고 재사용 · 발행 결과 확인 후 미완료 플랫폼만 진행';
   } else if (checkpoint?.version === 2 && checkpoint.steps && checkpoint.retrievals && checkpoint.attemptNumber >= 1 && checkpoint.attemptNumber <= 3) {
     checkpoint = JSON.parse(JSON.stringify(checkpoint));
+    const legacyImageResume=require('./generationRecovery').legacyImageResumeFailure(latest,checkpoint,phase);
     if (quality && ['research','title_duplicate'].includes(phase)) {
       checkpoint = null; mode = 'research'; reason = '주제·근거 반려 · 주제 선정부터 다시 진행';
     } else {
-      if (quality && ['writer','main_review'].includes(phase)) {
+      if (quality && ['writer','main_review'].includes(phase) && !legacyImageResume) {
         for (const k of Object.keys(checkpoint.steps || {})) if (!k.includes('research-title')) delete checkpoint.steps[k];
         delete checkpoint.imageCheckpoint;
         mode = 'writer'; reason = '본문 품질 반려 · 완료된 조사를 재사용해 본문부터 다시 진행';

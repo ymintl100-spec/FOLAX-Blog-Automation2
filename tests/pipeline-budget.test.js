@@ -139,3 +139,55 @@ for(const partial of [false,true])test(`image interruption survives disk restart
  for(const [file,data] of Object.entries(savedFiles))assert.equal(fs.readFileSync(path.join(h.opts.jobDir,file),'utf8'),data);
  if(partial)assert.equal(second.bodyImages[0].path,checkpoint.imageCheckpoint.images.bodyImages[0].path);
 });
+
+for(const legacy of [false,true])test(`source-backed article resumes images with the original retrieved evidence (legacy=${legacy})`,async()=>{
+ const source={sourceId:'fixture-original-source',url:'https://example.org/original',excerpt:help,title:'검증 전용 원문'};
+ const expected=[{sequence:1,sectionHeading:'실제로 쓰는 물건',prompt:'도구의 배치 조건을 보여주는 그림'}];
+ let sourcedArticle=article;
+ while(require('../src/lib/articleRequirements').articleCharacterCount(sourcedArticle)<2000)sourcedArticle+='\n\n'+help;
+ const w={...writer,article:sourcedArticle,citations:[{sourceId:source.sourceId,url:source.url}],bodyImages:expected};
+ const h=harness({writerResult:w,options:{maxBodyImages:1,onSearchNeeded:async()=>({searchResults:[source],sourceQuality:{status:'ready'}})}});
+ Object.assign(h.deps,{bodyImageLimit:Number,writerIssue:runner.writerOutputIssueReason,imagePrompt:runner.buildImageWorkerPrompt,imageIssue:runner.imageWorkerContractIssueReason,pendingImages:runner.pendingImageWriterResult,mergeImages:runner.mergeImageWorkerAttempts,applyImages:(w,images)=>({...w,bodyImages:images.bodyImages||[]})});
+ const original=h.deps.runTask;let researchCalls=0;
+ h.deps.runTask=async args=>{
+  if(args.agent==='research'){h.calls.push(args);return {status:++researchCalls===1?'REVISION':'PASS',finalTitle:title,searchNeed:'required',searchQueries:['검증용 원문'],factBased:true,factChecks:[{claim:help,essential:true,supported:true,sourceIds:[source.sourceId]}]};}
+  if(args.agent==='image'){h.calls.push(args);throw Error('fixture style verification interruption');}
+  return original(args);
+ };
+ const first=await h.run();assert.equal(first.publishable,false);assert.equal(first.article,sourcedArticle.trim());
+ const checkpoint=JSON.parse(JSON.stringify(h.checkpoints.at(-1)));
+ if(legacy)delete checkpoint.imageCheckpoint.evidenceContext;
+ else assert.deepEqual(checkpoint.imageCheckpoint.evidenceContext.searchResults,[source]);
+ h.calls.length=0;
+ h.deps.runTask=async args=>{h.calls.push(args);assert.equal(args.agent,'image');assert.deepEqual(args.options.searchResults,[source]);
+  const file=path.join(h.opts.jobDir,'source-backed-fixture.png');fs.writeFileSync(file,'file-existence fixture, not a real generated image');
+  return {status:'success',titleImagePath:'',bodyImages:[{...expected[0],path:file,summaryVerified:true}]};};
+ const second=await generate({...h.opts,generationCheckpoint:checkpoint,searchResults:[{sourceId:'unrelated',url:'https://example.org/other',excerpt:'무관한 새 자료'}]},()=>{},h.deps);
+ assert.equal(second.publishable,true,second.failureReason);assert.equal(second.article,first.article);assert.deepEqual(h.calls.map(c=>c.agent),['image']);
+});
+
+for(const rejectAgain of [false,true])test(`title style failure gets one correction and preserves accepted body images (rejectAgain=${rejectAgain})`,async()=>{
+ const body={sequence:1,sectionHeading:'실제로 쓰는 물건',prompt:'책상 위 도구의 배치'};
+ const h=harness({writerResult:{...writer,titleImagePrompt:'도구를 고르는 장면',titleImageText:['도구 정리'],bodyImages:[body]},options:{includeTitleImage:true,maxBodyImages:1}});
+ Object.assign(h.deps,{bodyImageLimit:Number,imagePrompt:runner.buildImageWorkerPrompt,imageIssue:runner.imageWorkerContractIssueReason,pendingImages:runner.pendingImageWriterResult,mergeImages:runner.mergeImageWorkerAttempts,applyImages:(w,images)=>({...w,...images})});
+ const original=h.deps.runTask;let images=0;const defect='대표 이미지가 실사 사진 조건을 충족하지 못했습니다.';
+ h.deps.runTask=async args=>{
+  if(args.agent!=='image')return original(args);
+  h.calls.push(args);images++;
+  const file=path.join(h.opts.jobDir,`candidate-${images}.png`);fs.writeFileSync(file,'fixture, not a generated image');
+  if(images===1){assert(!args.prompt.includes('application-authorized correction'));return {status:'partial',titleImagePath:file,titleImageVerified:false,bodyImages:[{...body,path:file,summaryVerified:true}],notes:[defect]};}
+  assert(args.prompt.includes(defect));assert(args.prompt.includes('application-authorized correction'));
+  const handoff=JSON.parse(args.prompt.split('Writer Agent image handoff:\n')[1].split('\nRequired output:')[0]);assert.deepEqual(handoff.bodyImages,[]);
+  return {status:rejectAgain?'partial':'success',titleImagePath:file,titleImageVerified:!rejectAgain,bodyImages:[],notes:rejectAgain?[defect]:[]};
+ };
+ const r=await h.run();assert.equal(r.publishable,!rejectAgain);assert.equal(images,2);assert.equal(r.bodyImages.length,1);
+ if(rejectAgain){assert.equal(r.failurePhase,'image');assert.equal(r.failureKind,'execution');}
+ assert(r.bodyImages[0].path.endsWith('candidate-1.png'));assert(r.titleImagePath.endsWith(rejectAgain?'candidate-1.png':'candidate-2.png'));
+});
+
+test('image-resume evidence mismatch preserves the draft as an execution problem and never calls the writer',async()=>{
+ const h=harness();const checkpoint={version:2,steps:{},retrievals:{},attemptNumber:1,generationOptions:{includeTitleImage:false,maxBodyImages:1},imageCheckpoint:{version:1,title,writer,research:{status:'PASS'},review:goodReview()}};
+ h.deps.writerIssue=()=> '본문 출처가 전달한 원문과 일치하지 않습니다. 제공된 sourceId와 URL을 사용하세요.';
+ const r=await generate({...h.opts,generationCheckpoint:checkpoint},()=>{},h.deps);
+ assert.equal(r.failureKind,'execution');assert.equal(r.failurePhase,'image_resume');assert.equal(r.article,article.trim());assert.equal(h.calls.length,0);assert(h.checkpoints.at(-1).imageCheckpoint);
+});
