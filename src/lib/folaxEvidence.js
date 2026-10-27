@@ -41,7 +41,13 @@ function lookupEvidence({runtimeRoot,query,limit=6}={}){
     const label=norm([r.display_name_source_master,r.observed_title].filter(Boolean).join(' '));
     if(!(tokens.length?tokens.some(t=>label.includes(t)):label.includes(q)))continue;
     const promo=/(테스트|프로모션|공동구매|전제품|한정|특가|증정|세트|오프)/i.test(r.observed_title||'');
-    candidates.push({rank:(r.record_type==='master_product'?3:2)-(promo?2:0),
+    const first=tokens.find(t=>t.length>=3)||q;
+    const ranking=(r.record_type==='master_product'?10:5)-(promo?4:0)
+      +(label.startsWith(first)?3:0)+(label.includes(q)?4:0)
+      -(/[+＋]|콤보/.test(label)?4:0)
+      -(!q.includes('프리미엄')&&label.includes('프리미엄')?2:0)
+      -(!q.includes('마그네틱')&&label.includes('마그네틱')?2:0);
+    candidates.push({rank:ranking,
       record_type:r.record_type,record_id:r.record_id,
       source_title:String(r.display_name_source_master||r.observed_title||'').slice(0,130),
       source_url:String(r.source_url||'').slice(0,300),
