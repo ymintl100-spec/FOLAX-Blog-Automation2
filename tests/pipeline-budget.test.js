@@ -182,7 +182,7 @@ for(const rejectAgain of [false,true])test(`title style failure gets one correct
  };
  const r=await h.run();assert.equal(r.publishable,!rejectAgain);assert.equal(images,2);assert.equal(r.bodyImages.length,1);
  if(rejectAgain){assert.equal(r.failurePhase,'image');assert.equal(r.failureKind,'execution');}
- assert(r.bodyImages[0].path.endsWith('candidate-1.png'));assert(r.titleImagePath.endsWith('candidate-2.png'));
+ assert(r.bodyImages[0].path.endsWith('candidate-1.png'));assert(r.titleImagePath.endsWith(rejectAgain?'candidate-1.png':'candidate-2.png'));
 });
 
 test('image-resume evidence mismatch preserves the draft as an execution problem and never calls the writer',async()=>{
