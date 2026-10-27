@@ -40,8 +40,19 @@ test('invalid review evidence retries only review on resume and freezes the orig
  const h=harness({options:{writingGuidance:{fingerprint:'style-before',styleFragments:['차분한 설명']},formatGuidance:{id:'explanation',flow:'고민에서 판단으로'}},review:n=>n===1?{...goodReview(),readerValueAssessment:{openingAnswer:'원고에 없는 검수 인용을 새로 작성합니다.',decisionHelp:help}}:goodReview()});
  const first=await h.run();assert.equal(first.failureKind,'execution');assert.equal(first.failurePhase,'main_review');
  const checkpoint=h.checkpoints.at(-1);h.calls.length=0;
- const second=await generate({...h.opts,generationCheckpoint:checkpoint,writingGuidance:{fingerprint:'style-after'},formatGuidance:{id:'practical'},experienceNotes:'다음 새 글에만 쓰려던 경험',experienceNotesId:'next-job-memo',compactWriting:true},()=>{},h.deps);
+ const second=await generate({...h.opts,generationCheckpoint:checkpoint,writingGuidance:{fingerprint:'style-after'},formatGuidance:{id:'practical'},experienceNotes:'다음 새 글에만 쓰려던 경험',experienceNotesId:'next-job-memo',compactWriting:true,articleLengthPolicy:1},()=>{},h.deps);
  assert.equal(second.publishable,true);assert.deepEqual(h.calls.map(c=>c.agent),['main']);assert.equal(h.calls[0].options.writingGuidance.fingerprint,'style-before');assert.equal(h.calls[0].options.formatGuidance.id,'explanation');assert.equal(h.calls[0].options.experienceNotes,undefined);assert.equal(h.calls[0].options.experienceNotesId,undefined);assert.equal(h.calls[0].options.compactWriting,undefined);
+ assert.equal(h.calls[0].options.articleLengthPolicy,undefined);
+});
+test('the new length policy is checkpointed and retained across image-only resume',async()=>{
+ const expected={sequence:1,sectionHeading:'실제로 쓰는 물건',prompt:'정리 순서를 나타내는 장면'};
+ const h=harness({writerResult:{...writer,bodyImages:[expected]},options:{maxBodyImages:1,articleLengthPolicy:1}});
+ h.deps.bodyImageLimit=Number;h.deps.imagePrompt=runner.buildImageWorkerPrompt;h.deps.mergeImages=runner.mergeImageWorkerAttempts;h.deps.applyImages=(w,images)=>({...w,bodyImages:images.bodyImages});
+ const original=h.deps.runTask;
+ h.deps.runTask=async args=>{if(args.agent==='image')throw Error('fixture interruption');assert.equal(args.options.articleLengthPolicy,1);assert(args.prompt.includes('1000~1200자'));return original(args);};
+ await h.run();const checkpoint=h.checkpoints.at(-1);assert.equal(checkpoint.generationOptions.articleLengthPolicy,1);
+ h.deps.runTask=async args=>{assert.equal(args.agent,'image');assert.equal(args.options.articleLengthPolicy,1);return {status:'success',bodyImages:[]};};
+ const resumed=await generate({...h.opts,articleLengthPolicy:undefined,generationCheckpoint:checkpoint},()=>{},h.deps);assert.equal(resumed.publishable,true);assert.equal(resumed.writingApplication.lengthBudget.min,1000);assert.equal(resumed.writingApplication.lengthBudget.max,1200);
 });
 test('missing essential evidence stops before writer and token-saving mode avoids whole-topic retries',async()=>{
  const h=harness({blockResearch:true});const r=await h.run();assert.equal(r.status,'failed');assert.deepEqual(h.calls.map(c=>c.agent),['research']);

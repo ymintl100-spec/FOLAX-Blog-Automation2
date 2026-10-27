@@ -790,6 +790,7 @@ class Operations {
         ...this.options(account, d, dir),
         platform,
         platformVariant: true,
+        articleLengthPolicy: 1,
         includeTitleImage: false,
         maxBodyImages: 0,
         writerRevisionFeedback:
@@ -830,6 +831,7 @@ class Operations {
           images: [],
           options: {
             ...d.data.options,
+            articleLengthPolicy: 1,
             includeTitleImage: false,
             maxBodyImages: 0,
           },

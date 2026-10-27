@@ -1048,6 +1048,7 @@ async function startJob(form) {
         tokenSaving: (form.tokenSaving ?? settings.tokenSaving) !== false,
         qualityPolicyVersion: 1,
         compactWriting:true,
+        articleLengthPolicy:1,
         requireApproval,operationsTopicId,operationsDraft:form.operationsDraft===true,
         requiredWritingInstructions:operations?require('./lib/operations/editorial').profile(operations.db,account.id).instructions:'',
         approvedEditorial:operations?operations.promptProfile(account.id):undefined,

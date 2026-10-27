@@ -1,6 +1,16 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const formats=require('../src/lib/blogFormatProfiles'),lengths=require('../src/lib/articleRequirements'),publication=require('../src/lib/publicationFormat'),prompts=require('../src/lib/generationPrompts'),memory=require('../src/lib/writingMemory'),layout=require('../src/lib/blogLayout');
 const {articlePlan}=require('../extension/article-plan'),runner=require('../src/lib/codexRunner')._private;
+test('new article policy enforces 1000–1200 characters across genres and approved samples',()=>{
+ for(const id of ['balanced','explanation','practical','comparison','essay','off']){
+  const options={jobDir:'/tmp/length-policy-test',articleLengthPolicy:1,formatGuidance:formats.guidance(id),writingGuidance:{typicalArticleCharacters:250}};
+  assert.deepEqual(lengths.limits(options),{min:1000,max:1200,target:1100});
+  for(const count of [1000,1100,1200])assert.equal(lengths.articleLengthIssue({article:'가'.repeat(count)},options),'');
+  for(const count of [999,1201])assert.match(lengths.articleLengthIssue({article:'가'.repeat(count)},options),/1000~1200자/);
+  for(const prompt of [prompts.researchPrompt(options),prompts.writerPrompt(options),prompts.reviewPrompt(options)])assert(prompt.includes('1000~1200자'));
+ }
+ assert.equal(lengths.articleCharacterCount('제 목\n\n[SECTION - 소제목]\n본 문\n[IMAGE INSERT - 1]\n[자료](https://example.org/source)'),'제목소제목본문자료'.length);
+});
 test('short new writing stays within genre budgets and a long legacy article needs explicit rewriting',()=>{
  for(const [id,max] of [['explanation',1000],['practical',1200],['comparison',1100],['essay',700]]){
   const options={formatGuidance:formats.guidance(id)},limit=lengths.limits(options);

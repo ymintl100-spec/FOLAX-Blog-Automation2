@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header class="titlebar"><img src="../assets/app-icon.png" alt="" /><span>FOLAX 콘텐츠 운영 <span class="titlebar-credit">by @복사장의생존발악</span> <span id="appVersion" class="titlebar-credit"></span></span></header>
+    <header class="titlebar"><img src="../assets/app-icon.png" alt="" /><span>FOLAX 콘텐츠 운영 <span id="appVersion" class="titlebar-credit"></span></span></header>
     <div class="app-shell">
       <p id="runtimePath" hidden>런타임 폴더 확인 중</p>
       <header class="topbar">
@@ -308,7 +308,7 @@
             <p class="hint">예시는 이 PC에 저장됩니다. 문체를 적용할 때 짧은 발췌만 Codex에 전달하며, 학습을 위한 추가 AI 호출은 없습니다.</p>
             <label>블로그 운영 방향 (계정별, 최대 400자)<textarea id="writingDirection" rows="2" maxlength="400" placeholder="주 독자와 이 블로그에서 계속 전하고 싶은 관점"></textarea></label>
             <label>벤치마크 형식<select id="writingFormatProfile"><option value="balanced">자동 · 건강 정보와 일상</option><option value="explanation">건강 설명 · 오해에서 선택 기준으로</option><option value="practical">실행·루틴 · 이해에서 따라 하는 순서로</option><option value="comparison">선택·비교 · 같은 기준으로 살펴보기</option><option value="essay">일상·경험 · 장면에서 여운으로</option><option value="off">벤치마크 형식 끄기</option></select></label>
-            <p class="hint">공개 글 100편의 전개·소제목·이미지 배치를 분석했습니다. 짧은 본문을 기본으로 하며 참고자료 목록은 표시하지 않습니다. 문체와 표현은 내가 수정·승인한 글을 우선합니다.</p>
+            <p class="hint">공개 글 100편의 전개·소제목·이미지 배치를 분석했습니다. 새 글은 공백 제외 1,000~1,200자로 생성하며 참고자료 목록은 표시하지 않습니다. 문체와 표현은 내가 수정·승인한 글을 우선합니다.</p>
             <label class="compact-check"><input id="writingStyleEnabled" type="checkbox" checked /> 학습한 문체 적용</label>
             <label>피하고 싶은 표현 (쉼표 구분, 최대 12개)<input id="writingAvoidPhrases" maxlength="650" placeholder="예: 살펴보겠습니다, 여러분도 꼭" /></label>
             <button id="saveWritingPreferences" class="ghost small" type="button">문체 설정 저장</button>
