@@ -1,5 +1,7 @@
 // Persist each platform result before moving on. A retry never republishes a completed platform.
+const {assertFolaxPublishable}=require('./folaxPublishGate');
 async function publishSequence(draft, {save, naver, tistory, log=()=>{}}) {
+  assertFolaxPublishable(draft); // Before save() or either external publisher.
   const state={...draft,publications:{...draft.publications}};
   for (const platform of ['naver', ...(draft.tistoryBlogId && (draft.publishVisibility==='draft' ? draft.publishToTistoryAfterNaver===true : draft.publishToTistoryAfterNaver!==false) ? ['tistory'] : [])]) {
     const prior=state.publications[platform];
