@@ -7,7 +7,7 @@ function flatten(x,level=0){
   if(level>5||x==null)return '';
   if(typeof x==='string')return x.slice(0,MAX);
   if(Array.isArray(x))return x.slice(0,80).map(v=>flatten(v,level+1)).join('\n').slice(0,MAX);
-  if(typeof x==='object')return ['title','article','body','content','html','text','topic','keyword','description','summary','tags','caption','alt','path','src','url','file','fileName','filename','prompt','images','bodyImages','titleImagePath','titleImageText','titleImagePrompt','brandAssetRefs'].map(k=>flatten(x[k],level+1)).join('\n').slice(0,MAX);
+  if(typeof x==='object')return ['title','article','body','content','html','text','topic','keyword','description','summary','tags','caption','alt','path','src','url','file','fileName','filename','prompt','images','bodyImages','titleImagePath','titleImageText','titleImagePrompt','brandAssetRefs'].map(k=>{const v=x[k];if(['path','titleImagePath','file','fileName','filename'].includes(k)&&typeof v==='string')return v.split(/[\\/]/).pop();return flatten(v,level+1);}).join('\n').slice(0,MAX);
   return '';
 }
 function reviewDraft(draft){
