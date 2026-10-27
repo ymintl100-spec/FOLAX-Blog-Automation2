@@ -184,7 +184,7 @@ async function generateAttempt(options, log, deps) {
       progress(`이미지 ${attempt}차 ${attempt===1?'생성':'보완'} 시작`);
       const request=images?deps.pendingImages(writer,images,effective):writer;
       try{
-        const feedback=[issue,images?.failureReason,...(images?.notes || [])].filter(Boolean).join(' / ').slice(0,2500);
+        const feedback=images?[issue,images.failureReason,...(images.notes || [])].filter(Boolean).join(' / ').slice(0,2500):'';
         const generated=await run('image',deps.imagePrompt({...effective,researchTitleResult:research,articleOpening:String(writer.article || '').slice(0,900),includeTitleImage:images?Boolean(request.titleImagePrompt):effective.includeTitleImage!==false,writerResult:request,finalTitle,imageRevisionFeedback:feedback}),`image-worker-${attempt}.txt`,'image-worker-result.json');
         images=deps.mergeImages(images,usableImages(generated,options.jobDir));savedImages=images;await checkpoint();issue=deps.imageIssue(images,writer,effective);if(!issue){progress('이미지 생성 및 확인 완료');break;}
         progress(`이미지 ${attempt}차 확인: ${issue}`,'warn');

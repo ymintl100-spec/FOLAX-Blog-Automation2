@@ -166,7 +166,7 @@ for(const legacy of [false,true])test(`source-backed article resumes images with
  assert.equal(second.publishable,true,second.failureReason);assert.equal(second.article,first.article);assert.deepEqual(h.calls.map(c=>c.agent),['image']);
 });
 
-test('title style failure gets one correction with the concrete defect and preserves an accepted body image',async()=>{
+for(const rejectAgain of [false,true])test(`title style failure gets one correction and preserves accepted body images (rejectAgain=${rejectAgain})`,async()=>{
  const body={sequence:1,sectionHeading:'실제로 쓰는 물건',prompt:'책상 위 도구의 배치'};
  const h=harness({writerResult:{...writer,titleImagePrompt:'도구를 고르는 장면',titleImageText:['도구 정리'],bodyImages:[body]},options:{includeTitleImage:true,maxBodyImages:1}});
  Object.assign(h.deps,{bodyImageLimit:Number,imagePrompt:runner.buildImageWorkerPrompt,imageIssue:runner.imageWorkerContractIssueReason,pendingImages:runner.pendingImageWriterResult,mergeImages:runner.mergeImageWorkerAttempts,applyImages:(w,images)=>({...w,...images})});
@@ -175,12 +175,13 @@ test('title style failure gets one correction with the concrete defect and prese
   if(args.agent!=='image')return original(args);
   h.calls.push(args);images++;
   const file=path.join(h.opts.jobDir,`candidate-${images}.png`);fs.writeFileSync(file,'fixture, not a generated image');
-  if(images===1)return {status:'partial',titleImagePath:file,titleImageVerified:false,bodyImages:[{...body,path:file,summaryVerified:true}],notes:[defect]};
+  if(images===1){assert(!args.prompt.includes('application-authorized correction'));return {status:'partial',titleImagePath:file,titleImageVerified:false,bodyImages:[{...body,path:file,summaryVerified:true}],notes:[defect]};}
   assert(args.prompt.includes(defect));assert(args.prompt.includes('application-authorized correction'));
   const handoff=JSON.parse(args.prompt.split('Writer Agent image handoff:\n')[1].split('\nRequired output:')[0]);assert.deepEqual(handoff.bodyImages,[]);
-  return {status:'success',titleImagePath:file,titleImageVerified:true,bodyImages:[]};
+  return {status:rejectAgain?'partial':'success',titleImagePath:file,titleImageVerified:!rejectAgain,bodyImages:[],notes:rejectAgain?[defect]:[]};
  };
- const r=await h.run();assert.equal(r.publishable,true);assert.equal(images,2);assert.equal(r.bodyImages.length,1);
+ const r=await h.run();assert.equal(r.publishable,!rejectAgain);assert.equal(images,2);assert.equal(r.bodyImages.length,1);
+ if(rejectAgain){assert.equal(r.failurePhase,'image');assert.equal(r.failureKind,'execution');}
  assert(r.bodyImages[0].path.endsWith('candidate-1.png'));assert(r.titleImagePath.endsWith('candidate-2.png'));
 });
 
