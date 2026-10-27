@@ -7,6 +7,7 @@ const {lookupEvidence,buildReviewBrief}=require('./folaxEvidence');
 const {publishSequence}=require('./publishSequence');
 test('article-only FOLAX mention must be blocked',()=>assert.equal(reviewDraft({title:'걷기',article:'포렉스 하이볼륨 깔창'}).allow,false));
 test('FOLAX image path must be blocked',()=>assert.equal(reviewDraft({article:'일반 정보',bodyImages:[{path:'/images/FOLAX_highvolume.jpg'}]}).allow,false));
+test('directory named FOLAX does not turn generic photos into brand photos',()=>assert.equal(reviewDraft({title:'산책',article:'걷는 방법',bodyImages:[{path:'/app/FOLAX-Blog-Automation2/image1.jpg'}]}).allow,true));
 test('topic-only FOLAX mention must be blocked',()=>assert.equal(reviewDraft({topic:'포렉스 슬림업',article:'정보'}).allow,false));
 test('neutral educational post unaffected',()=>assert.equal(reviewDraft({title:'발 관리',article:'개인 차이가 있습니다.'}).allow,true));
 test('invalid draft blocked',()=>assert.equal(reviewDraft(null).allow,false));
