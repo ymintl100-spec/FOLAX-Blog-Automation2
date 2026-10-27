@@ -40,3 +40,14 @@ test('missing output cannot reuse a previous result or pretend images succeeded'
 test('style analysis still permits tools and saves final JSON',async()=>{const {result,invocation}=await run('fixture-style','imageStyle');assert.equal(result.imageStylePrompt,'soft natural lighting');assert(!invocation.input.includes('do not use tools'))});
 test('existing text-stage output remains direct JSON',async()=>{const {result,invocation}=await run('fixture-json','main');assert.equal(result.status,'success');assert(invocation.input.includes('do not use tools'));assert(invocation.args.some(a=>a.endsWith('main-result.json')))});
 test('xhigh fallback discards the failed attempt output',async()=>{const {result,invocation}=await run('fixture-fallback','image',{agentModels:{image:'xhigh'}});assert.equal(result.titleImagePath,'generated-title.png');assert(invocation.args.includes('model_reasoning_effort=high'))});
+
+test('body image prompt respects formatting guidance without an undefined options reference',()=>{
+ const base={jobDir:temp,runtimeRoot:temp,includeTitleImage:false,maxBodyImages:1,
+   writerResult:{title:'발바닥 통증',article:'본문',bodyImages:[{sequence:1,sectionHeading:'통증 위치',prompt:'발바닥 위치 설명'}]}};
+ const practical=_private.buildImageWorkerPrompt({...base,formatGuidance:{version:4,id:'practical'}});
+ assert.match(practical,/Each item's prompt may describe a different step/);
+ const explanation=_private.buildImageWorkerPrompt({...base,formatGuidance:{version:4,id:'explanation'}});
+ assert.match(explanation,/compress the entire section's concrete subject/);
+ const withoutGuide=_private.buildImageWorkerPrompt(base);
+ assert.match(withoutGuide,/compress the entire section's concrete subject/);
+});
