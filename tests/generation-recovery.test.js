@@ -16,6 +16,10 @@ test('the reported zero-token citation rejection keeps the approved image checkp
  const settings={pendingGenerationDraft:{jobId:item.id,checkpoint}};
  const before=JSON.stringify(settings);const plan=retryPlan(root,item,[item],settings,accounts);
  assert.equal(plan.allowed,true);assert.equal(plan.mode,'checkpoint');assert.deepEqual(plan.checkpoint.imageCheckpoint,imageCheckpoint);assert.equal(JSON.stringify(settings),before);
+ const folder=path.join(root,'jobs',item.id);fs.mkdirSync(folder,{recursive:true});
+ const file=path.join(folder,'generation-checkpoint.json'),bytes=JSON.stringify(checkpoint);fs.writeFileSync(file,bytes);
+ const diskPlan=retryPlan(root,item,[item],{},accounts);
+ assert.equal(diskPlan.allowed,true);assert.equal(diskPlan.mode,'checkpoint');assert.deepEqual(diskPlan.checkpoint.imageCheckpoint,imageCheckpoint);assert.equal(fs.readFileSync(file,'utf8'),bytes);
  for(const change of [{token_total:10},{reason:'본문의 필수 내용이 부족합니다.'}]){
   const rejected={...item,...change},p=retryPlan(root,rejected,[rejected],settings,accounts);assert.equal(p.mode,'writer');assert.equal(p.checkpoint.imageCheckpoint,undefined);
  }
