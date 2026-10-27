@@ -60,9 +60,12 @@ async function generateAttempt(options, log, deps) {
   if(resume){
     if(resume.version!==1 || resume.review?.status!=='PASS' || !resume.writer?.article || !resume.title)throw new Error('저장된 이미지 재개 원고가 유효하지 않습니다. 기존 작업을 확인하세요.');
     research=resume.research;writer=cleanPublicationUrls(resume.writer);review=resume.review;finalTitle=resume.title;
+    // Older checkpoints kept evidence only under recovery.retrievals. Restoring
+    // the article without it falsely rejects valid citations before any call.
+    effective={...effective,...(resume.evidenceContext || options.imageEvidenceContext)};
     effective.formatGuidance=formats.resolve(effective.formatGuidance,research,effective.experienceNotes);
     const resumedIssue=reasons([deps.writerIssue(writer,{...effective,researchTitleResult:research}),deps.imagePromptIssue(writer,effective)]);
-    if(resumedIssue)return failed('writer',resumedIssue);
+    if(resumedIssue)return failed('image_resume',`저장된 원고의 이미지 재개 확인이 필요합니다. 본문은 다시 쓰지 않았습니다: ${resumedIssue}`,'execution');
     options.onResearchTitle?.(research);
     progress('승인된 본문 재사용 · 조사·본문 생성·윤문·검수를 건너뛰고 이미지 단계부터 재개합니다.');
   }else{
@@ -159,6 +162,7 @@ async function generateAttempt(options, log, deps) {
   options.onArticleReady?.({...writer,previewStage:'approved',writingApplication});
   let savedImages=usableImages(resume?.images,options.jobDir);
   const checkpoint=()=>options.onImageCheckpoint?.({version:1,title:finalTitle,writer,research,review,images:savedImages,
+    evidenceContext:{searchResults:effective.searchResults,sourceQuality:effective.sourceQuality},
     imageOptions:{includeTitleImage:options.includeTitleImage,maxBodyImages:options.maxBodyImages,titleImageAspectRatio:options.titleImageAspectRatio,bodyImageAspectRatio:options.bodyImageAspectRatio}});
   const needsImageWork=usesImages && (options.includeTitleImage!==false || writer.bodyImages?.length>0);
   if(needsImageWork)await checkpoint();
@@ -170,7 +174,7 @@ async function generateAttempt(options, log, deps) {
         analyze:style=>run('imageStyle',deps.stylePrompt({...effective,...style}),'image-style-prompt.txt','image-style-result.json'),
         save:(source,result)=>options.onAccountImageStylePrompt?.({...result,sampleImageHash:source.sampleImageHash},source)
       });
-    }catch(error){const reason=`본문은 보존했습니다. 이미지 스타일 확인 실패: ${error.message}`;progress(reason,'warn');return {...writer,status:'success',publishable:false,notes:[reason],tokenUsage:snapshot(),researchTitleResult:research,mainReviewResult:review};}
+    }catch(error){const reason=`본문은 보존했습니다. 이미지 스타일 확인 실패: ${error.message}`;progress(reason,'warn');return {...writer,status:'success',publishable:false,failurePhase:'image',failureKind:'execution',failureReason:reason,notes:[reason],tokenUsage:snapshot(),researchTitleResult:research,mainReviewResult:review};}
   }
   let result={...writer,title:finalTitle,publishable:true};
   if(needsImageWork){
@@ -180,7 +184,8 @@ async function generateAttempt(options, log, deps) {
       progress(`이미지 ${attempt}차 ${attempt===1?'생성':'보완'} 시작`);
       const request=images?deps.pendingImages(writer,images,effective):writer;
       try{
-        const generated=await run('image',deps.imagePrompt({...effective,researchTitleResult:research,articleOpening:String(writer.article || '').slice(0,900),includeTitleImage:images?Boolean(request.titleImagePrompt):effective.includeTitleImage!==false,writerResult:request,finalTitle,imageRevisionFeedback:issue}),`image-worker-${attempt}.txt`,'image-worker-result.json');
+        const feedback=[issue,images?.failureReason,...(images?.notes || [])].filter(Boolean).join(' / ').slice(0,2500);
+        const generated=await run('image',deps.imagePrompt({...effective,researchTitleResult:research,articleOpening:String(writer.article || '').slice(0,900),includeTitleImage:images?Boolean(request.titleImagePrompt):effective.includeTitleImage!==false,writerResult:request,finalTitle,imageRevisionFeedback:feedback}),`image-worker-${attempt}.txt`,'image-worker-result.json');
         images=deps.mergeImages(images,usableImages(generated,options.jobDir));savedImages=images;await checkpoint();issue=deps.imageIssue(images,writer,effective);if(!issue){progress('이미지 생성 및 확인 완료');break;}
         progress(`이미지 ${attempt}차 확인: ${issue}`,'warn');
       }catch(error){
@@ -192,7 +197,7 @@ async function generateAttempt(options, log, deps) {
       }
     }
     result=deps.applyImages(result,images || {},effective);
-    if(issue){result.publishable=false;result.notes=[...(result.notes || []),`본문은 보존했습니다. 이미지 확인 후 발행하세요: ${issue}`];log(result.notes.at(-1),'warn','image');}
+    if(issue){result.publishable=false;result.failurePhase='image';result.failureKind='execution';result.failureReason=issue;result.notes=[...(result.notes || []),`본문은 보존했습니다. 이미지 확인 후 발행하세요: ${issue}`];log(result.notes.at(-1),'warn','image');}
   }
   return {...result,status:'success',writingApplication,researchTitleResult:research,mainReviewResult:review,tokenUsage:snapshot()};
 }
@@ -247,6 +252,7 @@ async function generate(options,log,deps) {
     try {
       result=await generateAttempt({...options,jobDir,attemptNumber:number,maxAttempts:limit,priorAttempts,reviewedEvidence,
         imageCheckpoint:recovery.imageCheckpoint,
+        imageEvidenceContext:require('./generationRecovery').imageEvidenceContext(recovery),
         onImageCheckpoint:async checkpoint=>{recovery.imageCheckpoint=checkpoint;await saveRecovery();},
         onSearchNeeded:options.onSearchNeeded?async(research,context)=>{
           const retrievalKey=number+':'+context.round;
