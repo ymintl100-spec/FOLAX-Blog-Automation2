@@ -95,3 +95,47 @@ test('actual experience and selected genre are checkpointed before the one-shot 
  const save=h.opts.onGenerationCheckpoint;h.opts.onGenerationCheckpoint=c=>{order.push({event:'saved',notes:c.generationOptions.experienceNotes});return save(c)};
  const result=await h.run();assert.equal(result.publishable,true);assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main']);assert.equal(order[0].event,'saved');assert.equal(order[0].notes,notes);assert.equal(order[1].id,'one-shot-memo');assert.equal(result.writingApplication.profileId,'essay');
 });
+
+for(const partial of [false,true])test(`image interruption survives disk restart without regenerating text (partial=${partial})`,async()=>{
+ const expected=[1,2].map(sequence=>({sequence,sectionHeading:'실제로 쓰는 물건',prompt:'도구 배치의 구체적인 단계 '+sequence}));
+ const h=harness({writerResult:{...writer,bodyImages:expected},options:{maxBodyImages:2}});
+ Object.assign(h.deps,{bodyImageLimit:Number,imagePrompt:runner.buildImageWorkerPrompt,
+  imageIssue:runner.imageWorkerContractIssueReason,pendingImages:runner.pendingImageWriterResult,
+  mergeImages:runner.mergeImageWorkerAttempts,applyImages:(w,images)=>({...w,bodyImages:images.bodyImages||[]})});
+ const originalTask=h.deps.runTask;let imageCalls=0;
+ const image=sequence=>{const file=path.join(h.opts.jobDir,`fixture-${sequence}.png`);fs.writeFileSync(file,Buffer.from('isolated file-existence fixture, not a generated image'));return {...expected[sequence-1],path:file,summaryVerified:true};};
+ h.deps.runTask=async args=>{
+  if(args.agent!=='image')return originalTask(args);
+  h.calls.push(args);imageCalls++;
+  if(partial&&imageCalls===1)return {status:'partial',bodyImages:[image(1)]};
+  throw new Error('fixture image tool interruption');
+ };
+ const first=await h.run();assert.equal(first.publishable,false);assert.equal(first.article,article.trim());
+ const checkpoint=h.checkpoints.at(-1);assert.equal(checkpoint.imageCheckpoint.writer.article,first.article);
+ assert.equal(checkpoint.imageCheckpoint.review.status,'PASS');
+ const checkpointPath=path.join(h.opts.jobDir,'generation-checkpoint.json');fs.writeFileSync(checkpointPath,JSON.stringify(checkpoint));
+ const bytes=fs.readFileSync(checkpointPath);h.calls.length=0;
+ const item={id:'job_100',account_id:'fixture-account',blog_id:'fixture-blog',category:'기존 분류',title,status:'failed',failure_phase:'image',failure_kind:'execution',create_at:'2026-10-26T00:00:00Z'};
+ const accounts=[{id:item.account_id,blogId:item.blog_id,categories:[{id:'category-a',name:item.category}]}];
+ const settings={blogId:item.blog_id,maxBodyImages:2,pendingGenerationDraft:{accountId:item.account_id,blogId:item.blog_id,category:item.category,jobId:item.id,checkpoint:JSON.parse(bytes)}};
+ const savedFiles={'user-settings.json':JSON.stringify(settings),'account-categories.json':JSON.stringify({selectedAccountId:item.account_id,accounts}),'blog_history.jsonl':JSON.stringify(item)+'\n','existing-draft.json':JSON.stringify({title,article:first.article})};
+ for(const [file,data] of Object.entries(savedFiles))fs.writeFileSync(path.join(h.opts.jobDir,file),data);
+ const diskSettings=require('../src/lib/settings').readSettings(h.opts.jobDir);
+ const diskHistory=require('../src/lib/history').readHistory(h.opts.jobDir);
+ const diskAccounts=require('../src/lib/accountStore').readAccountStore(h.opts.jobDir,diskSettings).accounts;
+ const plan=require('../src/lib/historyRetry').retryPlan(h.opts.jobDir,diskHistory[0],diskHistory,diskSettings,diskAccounts);
+ assert.equal(plan.allowed,true);assert.equal(plan.mode,'checkpoint');assert.equal(plan.checkpoint.imageCheckpoint.writer.article,first.article);
+ h.deps.runTask=async args=>{h.calls.push(args);assert.equal(args.agent,'image');
+  assert.equal(args.options.imageCheckpoint.writer.article,first.article);
+  assert.deepEqual(args.prompt.includes('fixture'),false);
+  const handoff=JSON.parse(args.prompt.split('Writer Agent image handoff:\n')[1].split('\nRequired output:')[0]);
+  assert.deepEqual(handoff.bodyImages.map(x=>x.sequence),partial?[2]:[1,2]);
+  return {status:'success',bodyImages:handoff.bodyImages.map(x=>image(x.sequence)),tokenUsage:{total:7}};
+ };
+ const second=await generate({...h.opts,jobDir:path.join(h.opts.jobDir,'after-restart'),generationCheckpoint:plan.checkpoint},()=>{},h.deps);
+ assert.equal(second.publishable,true);assert.equal(second.article,first.article);assert.equal(second.title,title);
+ assert.deepEqual(h.calls.map(c=>c.agent),['image']);assert.equal(second.tokenUsage.total,7);
+ assert.deepEqual(second.bodyImages.map(x=>x.sequence),[1,2]);assert.deepEqual(fs.readFileSync(checkpointPath),bytes);
+ for(const [file,data] of Object.entries(savedFiles))assert.equal(fs.readFileSync(path.join(h.opts.jobDir,file),'utf8'),data);
+ if(partial)assert.equal(second.bodyImages[0].path,checkpoint.imageCheckpoint.images.bodyImages[0].path);
+});
