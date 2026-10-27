@@ -1,6 +1,6 @@
 // This function runs only inside the editor's isolated world. No debugger or remote control.
 async function editorCommand(command, args = {}) {
-  const build='20261023.3';let step='locate';
+  const build='20261027.1';let step='locate';
   try {
   const visible = el => Boolean(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
   const find = selector => [...document.querySelectorAll(selector)].find(visible);
@@ -449,7 +449,16 @@ async function editorCommand(command, args = {}) {
       tagInput.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
       await wait(40); if (tagInput.value) throw new Error('태그 입력 반영을 확인하지 못했습니다.');
     }
-    if (args.publishScheduleMode === 'reserve') {
+    if (args.publishScheduleMode !== 'reserve' && args.publishVisibility === 'public') {
+      step='publish-now';
+      const current = exact('현재') || exact('즉시') || exact('지금');
+      if (!current) throw new Error('지금 바로 발행할 현재 시점 설정을 찾지 못했습니다. 예약 상태로 발행하지 않았습니다.');
+      current.click(); await wait(100);
+      const currentLabel = current.closest?.('label') || current;
+      const currentRadio = currentLabel.querySelector('input[type="radio"], input') || document.getElementById(currentLabel.htmlFor || '');
+      if (!(currentRadio?.checked || currentLabel.getAttribute('aria-checked') === 'true'))
+        throw new Error('현재 시점 선택을 확인하지 못했습니다. 예약 상태로 발행하지 않았습니다.');
+    } else if (args.publishScheduleMode === 'reserve') {
       step='reserve';
       const reserve = exact('예약'); if (!reserve) throw new Error('예약 설정을 찾지 못했습니다.'); reserve.click(); await wait(100);
       const requested = new Date(args.scheduledAt).getTime();

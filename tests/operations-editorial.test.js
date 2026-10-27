@@ -261,6 +261,25 @@ test("publication requires approval, prepared current digest and typed confirmat
     /이미 발행/,
   );
 });
+test('switching a prepared reservation to publish now uses the current choice and no delay',async t=>{
+ const {ops,calls}=setup(t),d=document(ops);
+ ops.approve('a',d.id,{version:1,confirmed:true});
+ ops.prepare('a',d.id,{platform:'naver',visibility:'public',scheduleMode:'reserve',reserveAfterHours:3,confirmed:true});
+ const preparation={version:1,visibility:'public',scheduleMode:'now',reserveAfterHours:3};
+ await assert.rejects(()=>ops.publish('a',d.id,{confirmation:'잘못된 제목',preparation}),/제목/);
+ assert.equal(ops.document('a',d.id).publications[0].data.scheduleMode,'reserve');
+ await assert.rejects(()=>ops.publish('a',d.id,{confirmation:d.current.title,preparation:{...preparation,version:0}}),/버전/);
+ await ops.publish('a',d.id,{confirmation:d.current.title,preparation});
+ assert.equal(calls.length,1);assert.equal(calls[0].options.publishScheduleMode,'now');assert.equal(calls[0].options.reserveAfterHours,0);assert.equal(calls[0].options.publishVisibility,'public');
+ assert.equal(ops.document('a',d.id).publications[0].data.scheduleMode,'now');
+ await assert.rejects(()=>ops.publish('a',d.id,{confirmation:d.current.title,preparation}),/이미 발행/);assert.equal(calls.length,1);
+});
+test('publish choice preserves reservations and still blocks an unapproved document',async t=>{
+ const {ops,calls}=setup(t),d=document(ops),preparation={version:1,visibility:'public',scheduleMode:'reserve',reserveAfterHours:5};
+ await assert.rejects(()=>ops.publish('a',d.id,{confirmation:d.current.title,preparation}),/승인/);assert.equal(calls.length,0);
+ ops.approve('a',d.id,{version:1,confirmed:true});await ops.publish('a',d.id,{confirmation:d.current.title,preparation});
+ assert.equal(calls[0].options.publishScheduleMode,'reserve');assert.equal(calls[0].options.reserveAfterHours,5);
+});
 test("uncertain results are never automatically retried and manual resolution is recorded separately", async (t) => {
   const { ops, calls } = setup(t),
     d = document(ops);

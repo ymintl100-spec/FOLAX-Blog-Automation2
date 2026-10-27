@@ -900,11 +900,25 @@ class Operations {
     this.account(account);
     return E.prepare(this.db, account, id, input);
   }
-  async publish(account, id, { confirmation }) {
+  async publish(account, id, { confirmation, preparation }) {
     const a = this.account(account);
     return this.lock(async () => {
       if (this.hooks.settings().pendingNaverPublishDraft)
         throw Error("기존 미완료 발행 원고부터 확인하세요.");
+      if (preparation) {
+        const current = E.read(this.db, account, id);
+        if (confirmation !== current.current.title)
+          throw Error("현재 제목을 정확히 입력해 발행을 확인하세요.");
+        if (preparation.version !== current.current_version)
+          throw Error("원고 버전이 바뀌었습니다. 다시 열어 확인하세요.");
+        this.prepare(account, id, {
+          platform: current.platform,
+          visibility: preparation.visibility,
+          scheduleMode: preparation.scheduleMode,
+          reserveAfterHours: preparation.scheduleMode === 'reserve' ? preparation.reserveAfterHours : 0,
+          confirmed: true,
+        });
+      }
       const d = E.read(this.db, account, id),
         prepared = d.publications.find(
           (p) => p.version === d.current_version && p.state === "prepared",
