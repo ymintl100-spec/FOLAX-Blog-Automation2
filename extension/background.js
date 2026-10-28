@@ -10,7 +10,7 @@ async function api(route, body = {}, override) {
   const data = await response.json(); if (!response.ok) throw new Error(data.error || '앱 연결 오류'); return data;
 }
 async function frameResults(tabId, command, args = {}) {
-  const results = await chrome.scripting.executeScript({target:{tabId,allFrames:true},func:editorCommand,args:[command,args]});
+  const results = await withEditorDeadline(()=>chrome.scripting.executeScript({target:{tabId,allFrames:true},func:editorCommand,args:[command,args]}),'편집기 상태 확인',30000);
   return results.map(item=>({...item.result,frameId:item.frameId,...(!item.result?{status:'unknown',reason:'확장 페이지 응답 없음 · frame '+item.frameId}:{} )}));
 }
 async function tistoryRun(tabId,command,args) {
@@ -86,6 +86,9 @@ async function inspectSession(tabId) {
   const session={...result,checkedAt:new Date().toISOString()}; await chrome.storage.local.set({session});return session;
 }
 async function command(tabId,command,args={}) {
+  return withEditorDeadline(()=>commandInEditor(tabId,command,args),({paragraph:'본문 입력',image:'이미지 입력',quote:'소제목 입력',verify:'전체 원고 검증'})[command] || '편집기 '+command,command==='image'?90000:45000);
+}
+async function commandInEditor(tabId,command,args={}) {
   const state=await stored();
   if(state.connection?.platform==='tistory'){
     const result=await tistoryRun(tabId,command,{...args,blogId:args.blogId || state.activeTask?.blogId || state.connection.blogId});
@@ -130,7 +133,7 @@ async function verifyReservation(task) {
 }
 async function saveNaverDraft(task,resumeOnly=false) {
   const run=async action=>{
-    const results=await chrome.scripting.executeScript({target:{tabId:task.tabId},func:draftEditorCommand,args:[action,{title:task.payload.title}]});
+    const results=await withEditorDeadline(()=>chrome.scripting.executeScript({target:{tabId:task.tabId},func:draftEditorCommand,args:[action,{title:task.payload.title}]}),'네이버 임시저장 '+action,60000);
     const r=results[0]?.result;if(!r?.ok)throw new Error(r?.error || '임시저장 편집기 응답 없음');return r;
   };
   await api('/stage',{id:task.id,stage:'final_publish'});

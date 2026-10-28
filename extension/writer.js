@@ -1,6 +1,13 @@
 // Deterministic authoring: inspect the document, apply one operation, verify it.
 // No AI calls, text rewriting, blind retries, or final publication here.
 const writerNormalize = value => String(value || '').replace(/[\s\u200b\ufeff]/g,'');
+async function withEditorDeadline(operation,label,timeoutMs=45000){
+  let timer;
+  try{return await Promise.race([
+    Promise.resolve().then(operation),
+    new Promise((_,reject)=>{timer=setTimeout(()=>reject(Object.assign(new Error(label+' 응답이 '+Math.round(timeoutMs/1000)+'초 동안 없어 중지했습니다. 원고와 입력한 내용은 보존했습니다. Chrome 상태를 확인해 주세요.'),{code:'EDITOR_RESPONSE_TIMEOUT'})),timeoutMs);})
+  ]);}finally{clearTimeout(timer);}
+}
 function writerLink(value){try{const url=new URL(value);if(!/^https?:$/.test(url.protocol))return '';return url.href.replace(/\/$/,'');}catch{return '';}}
 function withoutGeneratedPreviews(blocks){
   const content=[];
@@ -61,7 +68,7 @@ async function runWriter({steps,read,apply,save,checkCancelled,onProgress,onBefo
     await onBeforeStep?.(cursor+1,steps.length,step.type);
     let failure;
     for(let attempt=0;attempt<2;attempt++){
-      try{await apply(step,{anchorId:before.blocks.at(-1)?.id || ''});}catch(error){failure=error;}
+      try{await apply(step,{anchorId:before.blocks.at(-1)?.id || ''});}catch(error){if(error.code==='EDITOR_RESPONSE_TIMEOUT')throw error;failure=error;}
       snapshot=await read();
       const next=matchingWriterPrefix(snapshot,steps);
       if(next===cursor+1){cursor=next;failure=null;break;}
@@ -76,4 +83,4 @@ async function runWriter({steps,read,apply,save,checkCancelled,onProgress,onBefo
   }
   return {complete:true,cursor};
 }
-if(typeof module!=='undefined')module.exports={writerUnits,matchingWriterPrefix,runWriter};
+if(typeof module!=='undefined')module.exports={writerUnits,matchingWriterPrefix,runWriter,withEditorDeadline};

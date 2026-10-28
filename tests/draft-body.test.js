@@ -2,6 +2,13 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {omitReferences}=require('../src/lib/publicationFormat');
 const {articlePlan}=require('../extension/article-plan');
 const {runWriter,matchingWriterPrefix}=require('../extension/writer');
+test('a silent editor command times out once and cannot trigger an overlapping retry',async()=>{
+ const {withEditorDeadline}=require('../extension/writer');let calls=0;
+ const steps=[{type:'title',text:'원고'}],snapshot={title:'',blocks:[]};
+ await assert.rejects(runWriter({steps,read:async()=>snapshot,save:async()=>{},checkCancelled:async()=>{},apply:()=>withEditorDeadline(()=>{calls++;return new Promise(()=>{});},'본문 입력',10)}),error=>error.code==='EDITOR_RESPONSE_TIMEOUT' && /응답이/.test(error.message));
+ assert.equal(calls,1);
+ assert.equal(await withEditorDeadline(async()=>({ok:true}),'본문 입력',100).then(x=>x.ok),true);
+});
 test('only the requested standalone operator footer is removed from public text and the shared editor plan',()=>{
  const body='협찬받아 작성했습니다.\n\n[SECTION - 적용 조건]\n조건과 예외를 확인하세요.';
  for(const suffix of ['운영: FOLAX(포렉스) / YM INTL Co., Ltd.','운영: FOLAX(포렉스) / YM INTL\nCo., Ltd.','운영： FOLAX (포렉스) / YM INTL\r\nCo., Ltd.\n']){

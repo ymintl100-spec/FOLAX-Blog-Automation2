@@ -984,6 +984,7 @@ class Operations {
         interactive: true,
       };
       try {
+        this.hooks.progress?.(id,(d.platform==='naver'?'네이버':'티스토리')+' 원고 입력·'+(prepared.data.visibility==='draft'?'임시저장':'발행')+' 시작','info');
         const result = await (this.hooks.publish
           ? this.hooks.publish(d.platform, options)
           : d.platform === "naver"
@@ -1024,8 +1025,10 @@ class Operations {
           postId: result.postId || "",
           result,
         });
+        this.hooks.progress?.(id,result.saved?'임시저장 완료 · 전체 본문과 이미지 확인':result.scheduled?'예약 발행 등록 완료':'발행 완료','info');
         return E.read(this.db, account, id);
       } catch (e) {
+        this.hooks.progress?.(id,e.message,'error');
         this.db
           .prepare(
             "UPDATE ops_publications SET state=?,updated_at=?,data=? WHERE id=?",
