@@ -54,14 +54,24 @@ function retryPlan(root, item, history, settings, accounts) {
   } else if (checkpoint?.version === 2 && checkpoint.steps && checkpoint.retrievals && checkpoint.attemptNumber >= 1 && checkpoint.attemptNumber <= 3) {
     checkpoint = JSON.parse(JSON.stringify(checkpoint));
     const legacyImageResume=require('./generationRecovery').legacyImageResumeFailure(latest,checkpoint,phase);
+    let legacyMarkerRepair=false;
+    if(phase==='writer'&&!checkpoint.imageCheckpoint&&/이미지 번호가 중복되었거나 본문 마커와 일치하지 않습니다|이미지 번호와 마커 불일치/.test(String(latest.reason||''))){
+      const prefix=checkpoint.attemptNumber+':';
+      const candidates=Object.entries(checkpoint.steps).filter(([key,value])=>key.startsWith(prefix)&&/:(?:prompt|prompt-retry-\d+)\.txt$/.test(key)&&String(value?.article||'').trim()).sort(([a],[b])=>Number(b.match(/prompt-retry-(\d+)/)?.[1]||1)-Number(a.match(/prompt-retry-(\d+)/)?.[1]||1));
+      if(candidates.length){
+        const value=candidates[0][1];
+        checkpoint.steps=Object.fromEntries(Object.entries(checkpoint.steps).filter(([key])=>key.includes('research-title')));
+        checkpoint.steps[prefix+'prompt.txt']=value;legacyMarkerRepair=true;
+      }
+    }
     if (quality && ['research','title_duplicate'].includes(phase)) {
       checkpoint = null; mode = 'research'; reason = '주제·근거 반려 · 주제 선정부터 다시 진행';
     } else {
-      if (quality && ['writer','main_review'].includes(phase) && !legacyImageResume) {
+      if (quality && ['writer','main_review'].includes(phase) && !legacyImageResume && !legacyMarkerRepair) {
         for (const k of Object.keys(checkpoint.steps || {})) if (!k.includes('research-title')) delete checkpoint.steps[k];
         delete checkpoint.imageCheckpoint;
         mode = 'writer'; reason = '본문 품질 반려 · 완료된 조사를 재사용해 본문부터 다시 진행';
-      } else { mode = 'checkpoint'; reason = checkpoint.imageCheckpoint ? '승인된 본문과 완료된 이미지 재사용 · 미완료 이미지부터 진행' : '완료된 단계 재사용 · 중단된 단계부터 진행'; }
+      } else { mode = 'checkpoint'; reason = legacyMarkerRepair?'마지막 본문 재사용 · 이미지 배치만 보완':checkpoint.imageCheckpoint ? '승인된 본문과 완료된 이미지 재사용 · 미완료 이미지부터 진행' : '완료된 단계 재사용 · 중단된 단계부터 진행'; }
     }
   } else if (['research','title_duplicate','connection'].includes(phase) || ['codex_exec_failed','codex_usage_limit','session_expired'].includes(latest.status)) {
     mode = 'research'; reason = '저장된 완료 단계 없음 · 연결 확인 후 주제 선정부터 진행';

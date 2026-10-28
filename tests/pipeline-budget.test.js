@@ -73,6 +73,24 @@ test('a 1000–1200 character article produces four verified image files and reu
  h.deps.runTask=async()=>{throw Error('No new model call expected for complete images');};
  const resumed=await generate({...h.opts,generationCheckpoint:checkpoint},()=>{},h.deps);assert.equal(resumed.publishable,true);assert.equal(resumed.article,result.article);assert.equal(resumed.bodyImages.length,3);
 });
+for(const invalidFirst of [false,true])test(`marker mismatch repairs placement only and preserves cached prose across retry (invalidFirst=${invalidFirst})`,async()=>{
+ const L=require('../src/lib/imageLayout');
+ const w={...writer,titleImagePrompt:'핵심 내용을 보여주는 장면',titleImageText:['정리 기준'],bodyImages:[1,1,3].map((sequence,i)=>({sequence,sectionHeading:'실제로 쓰는 물건',prompt:'서로 다른 조건 '+(i+1)}))};
+ w.article=article.split('\n\n').slice(0,9).map((p,i)=>p+(i>=3&&i<=5?'\n[IMAGE INSERT - '+(i-2)+']':'')).join('\n\n').trim();
+ const before=JSON.stringify(w),h=harness({writerResult:w,options:{includeTitleImage:true,maxBodyImages:3,minimumImageCount:4,articleLengthPolicy:1}});
+ Object.assign(h.deps,{bodyImageLimit:Number,writerIssue:runner.writerOutputIssueReason,imagePromptIssue:runner.writerImageContractIssueReason,imagePrompt:runner.buildImageWorkerPrompt,imageIssue:runner.imageWorkerContractIssueReason,pendingImages:runner.pendingImageWriterResult,mergeImages:runner.mergeImageWorkerAttempts,applyImages:(w,i)=>({...w,...i})});
+ const original=h.deps.runTask;let repairs=0;
+ h.deps.runTask=async args=>{
+   if(args.promptFileName.startsWith('image-layout-repair-')){h.calls.push(args);repairs++;const c=L.context(w);return {status:'success',fingerprint:invalidFirst&&repairs===1?'wrong':c.fingerprint,placements:c.images.map((_,i)=>({imageIndex:i+1,afterParagraphId:c.paragraphs[i].id})),tokenUsage:{total:5}};}
+   if(args.agent==='image'){h.calls.push(args);const file=n=>{const f=path.join(h.opts.jobDir,n+'.png');fs.writeFileSync(f,'fixture '+n);return f;};return {status:'success',titleImagePath:file('title'),titleImageVerified:true,bodyImages:[1,2,3].map(sequence=>({sequence,sectionHeading:'실제로 쓰는 물건',path:file('body'+sequence),summaryVerified:true})),tokenUsage:{total:5}};}
+   return original(args);
+ };
+ let result=await h.run();
+ if(invalidFirst){assert.equal(result.failurePhase,'image_layout');assert.equal(result.failureKind,'execution');assert.equal(result.article,w.article);const checkpoint=h.checkpoints.at(-1);assert(checkpoint.steps['1:prompt.txt']);assert(!checkpoint.steps['1:image-layout-repair-1.txt']);h.calls.length=0;result=await generate({...h.opts,generationCheckpoint:checkpoint},()=>{},h.deps);assert.deepEqual(h.calls.map(c=>c.agent),['writer','main','image']);}
+ else{assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','writer','main','image']);assert.equal(h.calls.filter(c=>c.promptFileName==='prompt.txt').length,1);assert.equal(result.attempts[0].steps.filter(s=>s.kind==='image_layout').length,1);}
+ assert.equal(result.publishable,true,result.failureReason);assert.equal(result.bodyImages.length,3);assert(result.titleImagePath);
+ const text=s=>s.replace(/\[IMAGE INSERT[^\]]*\]/g,'').replace(/\s/gu,'');assert.equal(text(result.article),text(w.article));assert.equal(result.title,title);assert.deepEqual(result.citations,w.citations);assert.equal(JSON.stringify(w),before);
+});
 test('missing essential evidence stops before writer and token-saving mode avoids whole-topic retries',async()=>{
  const h=harness({blockResearch:true});const r=await h.run();assert.equal(r.status,'failed');assert.deepEqual(h.calls.map(c=>c.agent),['research']);
  const legacy=harness({blockResearch:true,options:{tokenSaving:false}});await legacy.run();assert.equal(legacy.calls.length,3);

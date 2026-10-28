@@ -1141,7 +1141,7 @@ function writerImageContractIssueReason(writerResult, options = {}) {
   const markers=[...String(writerResult?.article || '').matchAll(/^\[IMAGE INSERT\s*-\s*(\d+)\]\s*$/gmi)].map(m=>Number(m[1]));
   if(images.length>limit)return '요청한 이미지 한도를 초과했습니다.';
   const sequences=images.map(i=>Number(i.sequence));
-  if(new Set(sequences).size!==sequences.length || new Set(markers).size!==markers.length || markers.length!==images.length)return '이미지 번호가 중복되었거나 본문 마커와 일치하지 않습니다.';
+  if(new Set(sequences).size!==sequences.length || new Set(markers).size!==markers.length || markers.length!==images.length)return require('./imageLayout').diagnostic(writerResult);
   if(images.some(i=>!Number.isInteger(Number(i.sequence)) || Number(i.sequence)<1 || !markers.includes(Number(i.sequence)) || !String(i.prompt || '').trim()))return '이미지 번호, 본문 위치 또는 설명을 확인해 주세요.';
   const sections=articleSections(writerResult?.article);
   const bodySections=sections.filter(s=>s.heading!=='참고자료');

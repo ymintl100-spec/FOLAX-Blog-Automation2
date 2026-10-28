@@ -33,7 +33,7 @@ function apply(article,guide,style){
  const flush=()=>{if(pending.length){out.push(paragraph(pending.join('\n'),limits));pending.length=0;}};
  for(const line of String(article||'').replace(/\r\n?/g,'\n').split('\n')){
   if(/^\[SECTION\s*-\s*참고자료\]/.test(line))references=true;
-  if(references||/^\[(?:SECTION|IMAGE INSERT)\b/.test(line)||/^https?:\/\/\S+$/.test(line.trim())){flush();out.push(line);}
+  if(references||/^\s*\[(?:SECTION|IMAGE\s+INSERT)\b/i.test(line)||/^https?:\/\/\S+$/.test(line.trim())){flush();out.push(line);}
   else if(!line.trim()){flush();out.push('');}else pending.push(line);
  }
  flush();const result=out.join('\n');
