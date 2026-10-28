@@ -165,6 +165,7 @@ async function generateAttempt(options, log, deps) {
     evidenceContext:{searchResults:effective.searchResults,sourceQuality:effective.sourceQuality},
     imageOptions:{includeTitleImage:options.includeTitleImage,maxBodyImages:options.maxBodyImages,titleImageAspectRatio:options.titleImageAspectRatio,bodyImageAspectRatio:options.bodyImageAspectRatio}});
   const needsImageWork=usesImages && (options.includeTitleImage!==false || writer.bodyImages?.length>0);
+  if(options.minimumImageCount===4)progress(`이미지 계획: 대표 ${options.includeTitleImage!==false?1:0}장 · 본문 ${writer.bodyImages?.length || 0}장 · 총 최소 4장`);
   if(needsImageWork)await checkpoint();
   effective.accountImageStylePrompt='';
   if(needsImageWork){
@@ -205,10 +206,10 @@ async function generate(options,log,deps) {
   options={tokenSaving:true,qualityPolicyVersion:1,...options};
   const restored=options.generationCheckpoint;
   if(restored && restored.version!==2)throw new Error('재개 기록 버전을 확인할 수 없습니다. 기존 작업을 취소한 뒤 다시 시작하세요.');
-  const optionKeys=['tokenSaving','qualityPolicyVersion','writingGuidance','formatGuidance','compactWriting','articleLengthPolicy','requireApproval','operationsTopicId','operationsDraft','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','blogDirection','experienceNotes','experienceNotesId','topic','keyword','category','topicMode','currentDateLabel','includeTitleImage','maxBodyImages','titleImageAspectRatio','bodyImageAspectRatio','excludedTopics','publishPurpose','preferredTone','freshnessLevel','searchChannel','trustBlogAsSource','keywordLanes','recommendedKeywordLanes','historyTitles','searchResults','sourceQuality'];
+  const optionKeys=['tokenSaving','qualityPolicyVersion','writingGuidance','formatGuidance','compactWriting','articleLengthPolicy','requireApproval','operationsTopicId','operationsDraft','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','blogDirection','experienceNotes','experienceNotesId','topic','keyword','category','topicMode','currentDateLabel','includeTitleImage','maxBodyImages','minimumImageCount','titleImageAspectRatio','bodyImageAspectRatio','excludedTopics','publishPurpose','preferredTone','freshnessLevel','searchChannel','trustBlogAsSource','keywordLanes','recommendedKeywordLanes','historyTitles','searchResults','sourceQuality'];
   const recovery=restored?JSON.parse(JSON.stringify(restored)):{version:2,steps:{},retrievals:{},generationOptions:Object.fromEntries(optionKeys.filter(k=>options[k]!==undefined).map(k=>[k,options[k]])),attemptNumber:1};
   options={...options,...recovery.generationOptions};
-  if(restored)for(const key of ['articleLengthPolicy','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','requireApproval','operationsTopicId','operationsDraft','compactWriting','experienceNotes','experienceNotesId','blogDirection','writingGuidance','formatGuidance'])if(!Object.hasOwn(recovery.generationOptions,key))options[key]=undefined;
+  if(restored)for(const key of ['minimumImageCount','articleLengthPolicy','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','requireApproval','operationsTopicId','operationsDraft','compactWriting','experienceNotes','experienceNotesId','blogDirection','writingGuidance','formatGuidance'])if(!Object.hasOwn(recovery.generationOptions,key))options[key]=undefined;
   if(typeof(options.experienceNotes??'')!=='string'||String(options.experienceNotes||'').length>2000)throw new Error('이번 글의 실제 경험 메모는 2,000자 이내로 입력하세요.');
   if(options.formatGuidance?.version>=3&&options.formatGuidance.id==='essay'&&!String(options.experienceNotes||'').trim())return {status:'failed',failureKind:'execution',failurePhase:'input',failureReason:'일상·경험형에는 이번 글의 실제 경험 메모가 필요합니다. 경험을 입력하거나 자동·건강 설명형을 선택하세요.',article:'',title:''};
   const saveRecovery=async()=>{await options.onGenerationCheckpoint?.(JSON.parse(JSON.stringify(recovery)));};

@@ -154,7 +154,7 @@
     )
     .join(
       "",
-    )}<div class="ops-notice"><h3>선택한 주제만 작성</h3><label>원고 플랫폼<select id="opsGeneratePlatform"><option value="naver">네이버</option><option value="tistory">티스토리(등록 계정)</option></select></label><label class="compact-check"><input id="opsGenerateImages" type="checkbox"/>설명에 필요한 이미지도 생성(추가 사용량)</label><label>이번 글의 실제 경험 메모<textarea id="opsExperience" maxlength="2000" placeholder="직접 겪은 사실만 입력. 없으면 1인칭 경험을 만들지 않습니다."></textarea></label>${button("generate", "이 주제로 원고 작성 · 사용자 검수 대기", id, "primary")}</div></section>`;
+    )}<div class="ops-notice"><h3>선택한 주제만 작성</h3><label>원고 플랫폼<select id="opsGeneratePlatform"><option value="naver">네이버</option><option value="tistory">티스토리(등록 계정)</option></select></label><label class="compact-check"><input id="opsGenerateImages" type="checkbox" checked/>이미지 총 4장 이상 생성 · 대표 1장 + 본문 최소 3장(추가 사용량)</label><label>이번 글의 실제 경험 메모<textarea id="opsExperience" maxlength="2000" placeholder="직접 겪은 사실만 입력. 없으면 1인칭 경험을 만들지 않습니다."></textarea></label>${button("generate", "이 주제로 원고 작성 · 사용자 검수 대기", id, "primary")}</div></section>`;
     $("#opsTopicDetail").scrollIntoView({ behavior: "smooth", block: "start" });
     if (generate) $("#opsExperience").focus();
   }

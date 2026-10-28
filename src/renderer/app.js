@@ -1067,6 +1067,7 @@ function applyAgentModels(models = {}) {
 }
 
 function collectForm(target = {}) {
+  updateImageCountControls();
   const account = target.account || selectedAccount();
   const category = target.category
     || (account?.categories || []).find((item) => item.checked !== false && hasCategoryName(item) && hasCategoryKeyword(item))
@@ -1125,7 +1126,10 @@ function applySettings(settings) {
   };
   for (const [key, selector] of Object.entries(map)) {
     if (settings[key] !== undefined && $(selector)) {
-      $(selector).value = settings[key];
+      if(key==='maxBodyImages'){
+        let n=Number(settings[key]);if(n>0&&n<(settings.includeTitleImage!==false?3:4))n=settings.includeTitleImage!==false?3:4;
+        if(Number.isInteger(n)&&n>=0&&n<=10){if(![...$(selector).options].some(o=>o.value===String(n)))$(selector).add(new Option('최대 '+n+'장',String(n)));$(selector).value=String(n);}
+      }else $(selector).value = settings[key];
     }
   }
   $("#crossPublish").checked = settings.crossPublish === true;
@@ -1143,6 +1147,7 @@ function applySettings(settings) {
   applyAgentModels(settings.agentModels);
   if (!settings.publishVisibility && settings.publishPrivate === false) $("#publishVisibility").value = "public";
   updateModeControls();
+  updateImageCountControls();
 }
 
 async function saveSettingsNow() {
@@ -1194,6 +1199,10 @@ function scheduleSettingsSave() {
   }, 450);
 }
 
+function updateImageCountControls(){
+  const title=$('#includeTitleImage'),count=$('#maxBodyImages');if(!title||!count)return;
+  const n=Number(count.value)||0;if(title.checked||n>0){const min=title.checked?3:4;if(n<min)count.value=String(min);}
+}
 function updateModeControls() {
   $("#publishScheduleLabel").style.display = $("#publishVisibility").value === "public" ? "grid" : "none";
   $("#draftTistoryLabel").hidden = $("#publishVisibility").value !== "draft" || !selectedAccount()?.tistoryBlogId;
@@ -1775,6 +1784,7 @@ async function boot() {
       });
     });
   }
+  for(const selector of ['#includeTitleImage','#maxBodyImages'])$(selector).addEventListener('change',()=>{updateImageCountControls();scheduleSettingsSave();});
   $("#publishVisibility").addEventListener("change", updateModeControls);
   $("#publishScheduleMode").addEventListener("change", updateModeControls);
   $("#jobForm").querySelectorAll("input, select, textarea").forEach((control) => {
