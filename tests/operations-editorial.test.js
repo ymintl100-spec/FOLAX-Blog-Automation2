@@ -227,11 +227,11 @@ test("platform variants must have different body, separate review and separate h
   );
   assert.equal(E.read(ops.db, "a", d.id).approved_version, null);
 });
-test("publication requires approval, prepared current digest and typed confirmation; one platform executes only once", async (t) => {
+test("publication requires approval and prepared current digest without title retyping; one platform executes only once", async (t) => {
   const { ops, calls } = setup(t),
     d = document(ops);
   await assert.rejects(
-    () => ops.publish("a", d.id, { confirmation: d.current.title }),
+    () => ops.publish("a", d.id, {}),
     /발행 준비/,
   );
   ops.approve("a", d.id, { version: 1, confirmed: true });
@@ -240,20 +240,14 @@ test("publication requires approval, prepared current digest and typed confirmat
     visibility: "private",
     confirmed: true,
   });
-  await assert.rejects(
-    () => ops.publish("a", d.id, { confirmation: "잘못된 제목" }),
-    /제목/,
-  );
   assert.equal(calls.length, 0);
-  const published = await ops.publish("a", d.id, {
-    confirmation: d.current.title,
-  });
+  const published = await ops.publish("a", d.id);
   assert.equal(published.status, "published");
   assert.equal(calls.length, 1);
   assert.equal(calls[0].platform, "naver");
   assert.equal(calls[0].options.publishVisibility, "private");
   await assert.rejects(
-    () => ops.publish("a", d.id, { confirmation: d.current.title }),
+    () => ops.publish("a", d.id, {}),
     /발행 준비/,
   );
   assert.throws(
@@ -266,19 +260,29 @@ test('switching a prepared reservation to publish now uses the current choice an
  ops.approve('a',d.id,{version:1,confirmed:true});
  ops.prepare('a',d.id,{platform:'naver',visibility:'public',scheduleMode:'reserve',reserveAfterHours:3,confirmed:true});
  const preparation={version:1,visibility:'public',scheduleMode:'now',reserveAfterHours:3};
- await assert.rejects(()=>ops.publish('a',d.id,{confirmation:'잘못된 제목',preparation}),/제목/);
  assert.equal(ops.document('a',d.id).publications[0].data.scheduleMode,'reserve');
- await assert.rejects(()=>ops.publish('a',d.id,{confirmation:d.current.title,preparation:{...preparation,version:0}}),/버전/);
- await ops.publish('a',d.id,{confirmation:d.current.title,preparation});
+ await assert.rejects(()=>ops.publish('a',d.id,{preparation:{...preparation,version:0}}),/버전/);
+ await ops.publish('a',d.id,{preparation});
  assert.equal(calls.length,1);assert.equal(calls[0].options.publishScheduleMode,'now');assert.equal(calls[0].options.reserveAfterHours,0);assert.equal(calls[0].options.publishVisibility,'public');
  assert.equal(ops.document('a',d.id).publications[0].data.scheduleMode,'now');
- await assert.rejects(()=>ops.publish('a',d.id,{confirmation:d.current.title,preparation}),/이미 발행/);assert.equal(calls.length,1);
+ await assert.rejects(()=>ops.publish('a',d.id,{preparation}),/이미 발행/);assert.equal(calls.length,1);
 });
 test('publish choice preserves reservations and still blocks an unapproved document',async t=>{
  const {ops,calls}=setup(t),d=document(ops),preparation={version:1,visibility:'public',scheduleMode:'reserve',reserveAfterHours:5};
- await assert.rejects(()=>ops.publish('a',d.id,{confirmation:d.current.title,preparation}),/승인/);assert.equal(calls.length,0);
- ops.approve('a',d.id,{version:1,confirmed:true});await ops.publish('a',d.id,{confirmation:d.current.title,preparation});
+ await assert.rejects(()=>ops.publish('a',d.id,{preparation}),/승인/);assert.equal(calls.length,0);
+ ops.approve('a',d.id,{version:1,confirmed:true});await ops.publish('a',d.id,{preparation});
  assert.equal(calls[0].options.publishScheduleMode,'reserve');assert.equal(calls[0].options.reserveAfterHours,5);
+});
+test('publishing a legacy draft removes only the operator footer without rewriting its stored version',async t=>{
+ const {ops,calls,db}=setup(t),d=document(ops);
+ const raw=article+'\n\n운영: FOLAX(포렉스) / YM INTL\nCo., Ltd.';
+ const digest=S.hash(d.current.title+'\n'+raw);
+ db.prepare('UPDATE ops_versions SET article=?,digest=? WHERE document=? AND version=?').run(raw,digest,d.id,1);
+ E.saveReview(db,'a',d.id,1,digest,review());ops.approve('a',d.id,{version:1,confirmed:true});
+ ops.prepare('a',d.id,{platform:'naver',visibility:'draft',confirmed:true});
+ await ops.publish('a',d.id);
+ assert.equal(calls[0].options.article,article);assert.equal(calls[0].options.publishVisibility,'draft');
+ assert.equal(ops.document('a',d.id).current.article,raw);
 });
 test("uncertain results are never automatically retried and manual resolution is recorded separately", async (t) => {
   const { ops, calls } = setup(t),
@@ -294,13 +298,13 @@ test("uncertain results are never automatically retried and manual resolution is
     throw Error("연결 끊김");
   };
   await assert.rejects(
-    () => ops.publish("a", d.id, { confirmation: d.current.title }),
+    () => ops.publish("a", d.id, {}),
     /불확실/,
   );
   const current = ops.document("a", d.id);
   assert.equal(current.publications[0].state, "uncertain");
   await assert.rejects(
-    () => ops.publish("a", d.id, { confirmation: d.current.title }),
+    () => ops.publish("a", d.id, {}),
     /발행 준비/,
   );
   assert.equal(calls.length, 1);
@@ -376,7 +380,7 @@ test("approved images cannot be replaced on disk before publication without anot
   ops.prepare("a", d.id, { platform: "naver", confirmed: true });
   fs.writeFileSync(file, "changed fixture image bytes");
   await assert.rejects(
-    () => ops.publish("a", d.id, { confirmation: d.current.title }),
+    () => ops.publish("a", d.id, {}),
     /이미지 파일이 바뀌/,
   );
   assert.equal(calls.length, 0);

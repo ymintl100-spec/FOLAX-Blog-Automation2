@@ -34,12 +34,15 @@ function referenceParts(article) {
   // A legacy checkpoint can contain prose after its reference block. Keep it.
   const next=heading?text.slice(heading.index+heading[0].length).search(/^\[SECTION\s*-/mi):-1;
   const end=heading&&next>=0?heading.index+heading[0].length+next:text.length;
-  return {body:heading?text.slice(0,heading.index)+text.slice(end):text,
+  return {body:omitOperatorFooter(heading?text.slice(0,heading.index)+text.slice(end):text),
     references:heading?text.slice(heading.index+heading[0].length,end):'',count:headings.length};
+}
+function omitOperatorFooter(article){
+  return String(article || '').replace(/(?:^|\r?\n)[ \t]*운영\s*[:：]\s*FOLAX\s*\(\s*포렉스\s*\)\s*\/\s*YM\s+INTL\s+Co\.\s*,?\s*Ltd\.?\s*$/iu,'').trimEnd();
 }
 function omitReferences(article){
   let text=String(article||'');
   for(let i=0;i<20;i++){const parts=referenceParts(text);if(!parts.count)break;text=parts.body;}
-  return text.trimEnd();
+  return omitOperatorFooter(text);
 }
-module.exports={cleanSourceUrl,cleanPublicationUrls,referenceParts,isBlogCitation,omitReferences};
+module.exports={cleanSourceUrl,cleanPublicationUrls,referenceParts,isBlogCitation,omitReferences,omitOperatorFooter};

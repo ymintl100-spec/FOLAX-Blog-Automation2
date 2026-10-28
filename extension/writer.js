@@ -47,7 +47,7 @@ function matchingWriterPrefix(snapshot,steps) {
   }
   return -1;
 }
-async function runWriter({steps,read,apply,save,checkCancelled,onProgress,requireEmpty=false}) {
+async function runWriter({steps,read,apply,save,checkCancelled,onProgress,onBeforeStep,requireEmpty=false}) {
   let snapshot=await read(),cursor=matchingWriterPrefix(snapshot,steps);
   if(requireEmpty && (writerNormalize(snapshot.title) || withoutGeneratedPreviews(snapshot.blocks).length))throw new Error('새 글쓰기 화면이 비어 있지 않습니다. 다시 시작하면 글쓰기 화면을 새로 열고 저장된 원고를 처음부터 입력합니다.');
   if(cursor<0)throw new Error('현재 글이 저장 원고의 입력 순서와 다릅니다. 기존 글을 보존하고 입력을 중지했습니다.');
@@ -58,6 +58,7 @@ async function runWriter({steps,read,apply,save,checkCancelled,onProgress,requir
     snapshot=await read();
     if(matchingWriterPrefix(snapshot,steps)!==cursor)throw new Error('다음 입력 전 문서가 변경되었습니다. 기존 글을 보존합니다.');
     const step=steps[cursor],before=snapshot,startCursor=cursor;
+    await onBeforeStep?.(cursor+1,steps.length,step.type);
     let failure;
     for(let attempt=0;attempt<2;attempt++){
       try{await apply(step,{anchorId:before.blocks.at(-1)?.id || ''});}catch(error){failure=error;}

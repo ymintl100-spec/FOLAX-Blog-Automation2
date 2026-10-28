@@ -900,15 +900,13 @@ class Operations {
     this.account(account);
     return E.prepare(this.db, account, id, input);
   }
-  async publish(account, id, { confirmation, preparation }) {
+  async publish(account, id, { preparation } = {}) {
     const a = this.account(account);
     return this.lock(async () => {
       if (this.hooks.settings().pendingNaverPublishDraft)
         throw Error("기존 미완료 발행 원고부터 확인하세요.");
       if (preparation) {
         const current = E.read(this.db, account, id);
-        if (confirmation !== current.current.title)
-          throw Error("현재 제목을 정확히 입력해 발행을 확인하세요.");
         if (preparation.version !== current.current_version)
           throw Error("원고 버전이 바뀌었습니다. 다시 열어 확인하세요.");
         this.prepare(account, id, {
@@ -926,11 +924,10 @@ class Operations {
       if (
         !prepared ||
         d.approved_version !== d.current_version ||
-        prepared.data.digest !== d.current.digest ||
-        confirmation !== d.current.title
+        prepared.data.digest !== d.current.digest
       )
         throw Error(
-          "발행 준비 후 현재 제목을 정확히 입력해 발행을 확인하세요.",
+          "현재 원고를 최종 승인하고 발행 준비를 확인하세요.",
         );
       if (
         JSON.stringify(E.assetHashes(d)) !==
@@ -974,7 +971,7 @@ class Operations {
         blogId: a.blogId,
         tistoryBlogId: a.tistoryBlogId,
         title: d.current.title,
-        article: d.current.article,
+        article: require('../publicationFormat').omitReferences(d.current.article),
         titleImagePath: writer.titleImagePath || "",
         bodyImages: writer.bodyImages || [],
         tags: writer.tags || [],
@@ -1226,7 +1223,7 @@ class Operations {
   }
 }
 const policy =
-  "FOLAX(포렉스) / YM INTL Co., Ltd. 운영의 정보 축적 단계다. 건강하고 편안하게 움직이는 일상을 다룬다. 별도 지시 없는 제품명·판매가격·할인·구매 링크·공동구매·광고성 추천을 새로 넣지 않는다. 운영 주체와 실제 제공된 상업적 관계를 숨기지 않는다. 건강 효과를 단정하거나 실제 경험·자격을 만들지 않는다. 정확성·저작권 → 사용자 필수 지침 → 승인 편집 기준 → 검색 의도 → 카테고리 → 벤치마크 → 기본 규칙 순서다.";
+  "정보 축적 단계의 건강·일상 블로그다. 건강하고 편안하게 움직이는 일상을 다룬다. 별도 지시 없는 제품명·판매가격·할인·구매 링크·공동구매·광고성 추천을 새로 넣지 않는다. 운영사 이름·회사명·운영 안내·브랜드 서명을 글 끝이나 본문에 자동으로 추가하지 않는다. 실제 제공된 협찬·광고 관계와 필요한 인용 귀속은 사실대로 유지한다. 건강 효과를 단정하거나 실제 경험·자격을 만들지 않는다. 정확성·저작권 → 사용자 필수 지침 → 승인 편집 기준 → 검색 의도 → 카테고리 → 벤치마크 → 기본 규칙 순서다.";
 function promotionalIssue(article) {
   return /(?:포렉스|FOLAX).{0,35}(?:구매하세요|특가\s*구매|공동구매\s*참여)/i.test(
     article,

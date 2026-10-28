@@ -1,6 +1,6 @@
 // This function runs only inside the editor's isolated world. No debugger or remote control.
 async function editorCommand(command, args = {}) {
-  const build='20261027.1';let step='locate';
+  const build='20261028.1';let step='locate';
   try {
   const visible = el => Boolean(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
   const find = selector => [...document.querySelectorAll(selector)].find(visible);
@@ -14,7 +14,7 @@ async function editorCommand(command, args = {}) {
   const findTitle = () => find('.se-title-text .se-text-paragraph, .se-documentTitle .se-text-paragraph, .se-title-text [contenteditable="true"], .se-title [contenteditable="true"], textarea[placeholder*="제목"], input[placeholder*="제목"]');
   const title = findTitle();
   const quoteSelector='.se-component-quotation, .se-section-quotation, .se-quotation-container, .se-module-quotation, .se-module-quote, .se-quote, .se-quotation';
-  const allParagraphs = () => [...document.querySelectorAll('.se-section-text .se-text-paragraph, .se-section-text [contenteditable="true"]')].filter(el=>!el.closest(quoteSelector) && !el.closest('.se-title, .se-documentTitle, .se-caption, .se-source'));
+  const allParagraphs = () => [...document.querySelectorAll('.se-component.se-text .se-text-paragraph, .se-section-text .se-text-paragraph, .se-section-text [contenteditable="true"]')].filter(el=>!el.closest(quoteSelector) && !el.closest('.se-title, .se-documentTitle, .se-caption, .se-source'));
   const paragraphs = () => allParagraphs().filter(visible);
   const quotes=()=>[...document.querySelectorAll(quoteSelector)].filter(el=>visible(el) && !el.parentElement?.closest(quoteSelector));
   const body = paragraphs()[0];
@@ -134,7 +134,8 @@ async function editorCommand(command, args = {}) {
     // Completed paragraph commands already leave an empty paragraph behind.
     // Never reselect a populated paragraph: SmartEditor resets its input buffer
     // on click and display coordinates can split the final word.
-    if((target && readText(target).trim()) || (last && !last.contains(target) && !last.matches('.se-text'))){
+    const followsLast=Boolean(last && target && !(last.compareDocumentPosition(target)&Node.DOCUMENT_POSITION_DISCONNECTED) && (last.compareDocumentPosition(target)&Node.DOCUMENT_POSITION_FOLLOWING));
+    if((target && readText(target).trim()) || (last && !last.contains(target) && !last.matches('.se-text') && !followsLast)){
       const beforeText=bodyText();
       const add=find('button.se-canvas-bottom-button');
       if(add){
@@ -143,12 +144,12 @@ async function editorCommand(command, args = {}) {
         const x=Math.max(1,Math.min(innerWidth-1,rect.left+rect.width/2));
         const y=Math.max(1,Math.min(innerHeight-1,rect.top+Math.min(rect.height/2,25)));
         for(const type of ['mousedown','mouseup','click'])add.dispatchEvent(new MouseEvent(type,{bubbles:true,cancelable:true,clientX:x,clientY:y,button:0,buttons:type==='mousedown'?1:0,view:window}));
-        await waitFor(()=>{const end=paragraphs().at(-1);return end && !readText(end).trim() && end!==target && bodyText()===beforeText;});target=paragraphs().at(-1);
+        if(!await waitFor(()=>{const end=paragraphs().at(-1);return end && !readText(end).trim() && end!==target && bodyText()===beforeText;}))throw new Error('이미지·소제목 뒤의 새 본문 입력란을 확인하지 못했습니다. 원고와 입력한 이미지는 보존했습니다.');target=paragraphs().at(-1);
       }
       if(!target || readText(target).trim() || bodyText()!==beforeText)throw new Error(`새 입력 영역 확인 실패: 빈 문단 ${Boolean(target && !readText(target).trim())}, 원문 보존 ${bodyText()===beforeText}, 본문 길이 ${beforeText.length} → ${bodyText().length}. 기존 내용은 자동 삭제하지 않습니다.`);
       if(last && !last.contains(target) && !(last.compareDocumentPosition(target)&Node.DOCUMENT_POSITION_FOLLOWING))throw new Error('문서 맨 아래의 입력 위치를 찾지 못했습니다.');
     }
-    if(!target)throw new Error('본문 입력 위치를 찾지 못했습니다.');await activateParagraph(target);return target;
+    if(!target)throw new Error('본문 입력 위치를 찾지 못했습니다. 마지막 요소: '+(last?.className || '없음'));await activateParagraph(target);return target;
   };
   if(command==='dismissResume'){
     // Confirmed on the live Naver editor: match this dialog, never a generic cancel.
@@ -170,7 +171,7 @@ async function editorCommand(command, args = {}) {
       const id=el.id;
       if(el.matches('.se-text')){const text=[...el.querySelectorAll('.se-text-paragraph')].map(readText).join('\n');if(normalize(text))blocks.push({id,type:'paragraph',text});}
       else if(el.matches('.se-quotation'))blocks.push({id,type:'quote',text:readText(el.querySelector('.se-quote .se-text-paragraph') || el.querySelector('.se-text-paragraph')),style:el.classList.contains('se-l-quotation_line')?'quotation_line':el.classList.contains('se-l-quotation_underline')?'quotation_underline':'default'});
-      else if(el.matches('.se-image'))blocks.push({id,type:'image',name:el.querySelector('img')?.getAttribute('alt') || ''});
+      else if(el.matches('.se-image'))blocks.push({id,type:'image',name:el.getAttribute('data-blogauto-asset-name') || el.querySelector('img')?.getAttribute('alt') || ''});
       else if(el.matches('.se-oglink')){
         const urls=[...el.querySelectorAll('a[href]')].map(a=>a.getAttribute('href')).filter(url=>/^https?:\/\//i.test(url || ''));
         const displayUrl=readText(el.querySelector('.se-oglink-url')).trim();
@@ -361,6 +362,9 @@ async function editorCommand(command, args = {}) {
       const images = [...document.querySelectorAll('.se-component.se-image, .se-component[data-comp-type="image"]')];
       if (images.length > before) {
         await ensureImageAi(images.at(-1));
+        const inserted=images.at(-1),current=inserted.id?document.getElementById(inserted.id):inserted;
+        if(!current?.isConnected)throw new Error('삽입한 이미지 요소가 바뀌었습니다. 기존 내용을 확인하세요.');
+        current.setAttribute('data-blogauto-asset-name',String(args.name || ''));
         return { ok: true };
       }
     }

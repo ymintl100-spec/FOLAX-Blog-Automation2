@@ -143,7 +143,7 @@ async function saveNaverDraft(task,resumeOnly=false) {
 }
 async function publish(task) {
   if(task.platform==='tistory')return publishTistory(task);
-  const tabId=task.tabId, p=task.payload;
+  const tabId=task.tabId, p={...task.payload,article:stripOperatorFooter(task.payload.article)};
   const plan=articlePlan(p.article,{preserveParagraphs:p.preserveParagraphs===true,presentation:p.presentation||{}});
   const steps=[{type:'title',text:p.title},...(!p.presentation?[{type:'quote',text:p.title,style:'default'}]:[])];
   const ordered=articleWithHero(plan,p.titleImageIndex!==null?{type:'hero',index:p.titleImageIndex,name:p.titleImageName||'blog_img_title.png'}:null,p.presentation?.heroPosition);
@@ -162,7 +162,8 @@ async function publish(task) {
       return command(tabId,block.type,{...block,...anchor,breakSentences:p.breakSentencesInBody,preserveParagraphs:p.preserveParagraphs===true,alignment:p.presentation?.alignment});
     },
     save:checkpoint=>chrome.storage.local.set({authoringCheckpoint:{...checkpoint,blogId:task.blogId,title:p.title,taskId:task.id}}),
-    onProgress:(done,total,type)=>type==='paragraph' && done!==total ? undefined : api('/progress',{id:task.id,message:`네이버 ${done}/${total} · ${type==='image'?'이미지':type==='quote'?'제목·섹션':'본문'} 입력 확인 완료`}),
+    onBeforeStep:(next,total,type)=>api('/progress',{id:task.id,message:`네이버 ${next}/${total} · ${type==='image'?'이미지':type==='quote'?'제목·섹션':'본문'} 입력 시작`}),
+    onProgress:(done,total,type)=>api('/progress',{id:task.id,message:`네이버 ${done}/${total} · ${type==='image'?'이미지':type==='quote'?'제목·섹션':'본문'} 입력 확인 완료`}),
     checkCancelled:async()=>{if((await api('/task/status',{id:task.id})).state!=='running')throw new Error('작업이 취소되었습니다. 입력한 내용은 보존됩니다.');}
   });
   await command(tabId,'imageAi');
