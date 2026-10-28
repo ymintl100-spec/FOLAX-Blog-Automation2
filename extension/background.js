@@ -10,7 +10,7 @@ async function api(route, body = {}, override) {
   const data = await response.json(); if (!response.ok) throw new Error(data.error || '앱 연결 오류'); return data;
 }
 async function frameResults(tabId, command, args = {}) {
-  const results = await chrome.scripting.executeScript({target:{tabId,allFrames:true},func:editorCommand,args:[command,args]});
+  const results = await withEditorDeadline(()=>chrome.scripting.executeScript({target:{tabId,allFrames:true},func:editorCommand,args:[command,args]}),'편집기 상태 확인',30000);
   return results.map(item=>({...item.result,frameId:item.frameId,...(!item.result?{status:'unknown',reason:'확장 페이지 응답 없음 · frame '+item.frameId}:{} )}));
 }
 async function tistoryRun(tabId,command,args) {
@@ -86,6 +86,9 @@ async function inspectSession(tabId) {
   const session={...result,checkedAt:new Date().toISOString()}; await chrome.storage.local.set({session});return session;
 }
 async function command(tabId,command,args={}) {
+  return withEditorDeadline(()=>commandInEditor(tabId,command,args),({paragraph:'본문 입력',image:'이미지 입력',quote:'소제목 입력',verify:'전체 원고 검증'})[command] || '편집기 '+command,command==='image'?90000:45000);
+}
+async function commandInEditor(tabId,command,args={}) {
   const state=await stored();
   if(state.connection?.platform==='tistory'){
     const result=await tistoryRun(tabId,command,{...args,blogId:args.blogId || state.activeTask?.blogId || state.connection.blogId});
@@ -130,7 +133,7 @@ async function verifyReservation(task) {
 }
 async function saveNaverDraft(task,resumeOnly=false) {
   const run=async action=>{
-    const results=await chrome.scripting.executeScript({target:{tabId:task.tabId},func:draftEditorCommand,args:[action,{title:task.payload.title}]});
+    const results=await withEditorDeadline(()=>chrome.scripting.executeScript({target:{tabId:task.tabId},func:draftEditorCommand,args:[action,{title:task.payload.title}]}),'네이버 임시저장 '+action,60000);
     const r=results[0]?.result;if(!r?.ok)throw new Error(r?.error || '임시저장 편집기 응답 없음');return r;
   };
   await api('/stage',{id:task.id,stage:'final_publish'});
@@ -143,7 +146,7 @@ async function saveNaverDraft(task,resumeOnly=false) {
 }
 async function publish(task) {
   if(task.platform==='tistory')return publishTistory(task);
-  const tabId=task.tabId, p=task.payload;
+  const tabId=task.tabId, p={...task.payload,article:stripOperatorFooter(task.payload.article)};
   const plan=articlePlan(p.article,{preserveParagraphs:p.preserveParagraphs===true,presentation:p.presentation||{}});
   const steps=[{type:'title',text:p.title},...(!p.presentation?[{type:'quote',text:p.title,style:'default'}]:[])];
   const ordered=articleWithHero(plan,p.titleImageIndex!==null?{type:'hero',index:p.titleImageIndex,name:p.titleImageName||'blog_img_title.png'}:null,p.presentation?.heroPosition);
@@ -162,7 +165,8 @@ async function publish(task) {
       return command(tabId,block.type,{...block,...anchor,breakSentences:p.breakSentencesInBody,preserveParagraphs:p.preserveParagraphs===true,alignment:p.presentation?.alignment});
     },
     save:checkpoint=>chrome.storage.local.set({authoringCheckpoint:{...checkpoint,blogId:task.blogId,title:p.title,taskId:task.id}}),
-    onProgress:(done,total,type)=>type==='paragraph' && done!==total ? undefined : api('/progress',{id:task.id,message:`네이버 ${done}/${total} · ${type==='image'?'이미지':type==='quote'?'제목·섹션':'본문'} 입력 확인 완료`}),
+    onBeforeStep:(next,total,type)=>api('/progress',{id:task.id,message:`네이버 ${next}/${total} · ${type==='image'?'이미지':type==='quote'?'제목·섹션':'본문'} 입력 시작`}),
+    onProgress:(done,total,type)=>api('/progress',{id:task.id,message:`네이버 ${done}/${total} · ${type==='image'?'이미지':type==='quote'?'제목·섹션':'본문'} 입력 확인 완료`}),
     checkCancelled:async()=>{if((await api('/task/status',{id:task.id})).state!=='running')throw new Error('작업이 취소되었습니다. 입력한 내용은 보존됩니다.');}
   });
   await command(tabId,'imageAi');

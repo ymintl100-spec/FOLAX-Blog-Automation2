@@ -1531,7 +1531,7 @@ app.whenReady().then(async () => {
 
   try {await bridge.start();}catch(error){bridgeError='확장 연결 포트를 사용할 수 없습니다. 다른 BlogAuto 앱을 종료하고 다시 실행하세요. '+error.message;}
   bridge.on('status',()=>emit('accounts:update',connectionStore()));
-  bridge.on('progress',(_accountId,message)=>{if(activeJob)safeLog(activeJob.id,message);});
+  bridge.on('progress',(accountId,message)=>{if(activeJob)safeLog(activeJob.id,message);else if(operations?.busy)emit('operations:progress',{accountId,message,level:'info'});});
   ensureRuntimeFiles(getRuntimeRoot());
   ensureSettingsFile(getRuntimeRoot());
   ensureAccountStoreFile(getRuntimeRoot(), readSettings(getRuntimeRoot()));

@@ -1,6 +1,13 @@
 // Deterministic authoring: inspect the document, apply one operation, verify it.
 // No AI calls, text rewriting, blind retries, or final publication here.
 const writerNormalize = value => String(value || '').replace(/[\s\u200b\ufeff]/g,'');
+async function withEditorDeadline(operation,label,timeoutMs=45000){
+  let timer;
+  try{return await Promise.race([
+    Promise.resolve().then(operation),
+    new Promise((_,reject)=>{timer=setTimeout(()=>reject(Object.assign(new Error(label+' 응답이 '+Math.round(timeoutMs/1000)+'초 동안 없어 중지했습니다. 원고와 입력한 내용은 보존했습니다. Chrome 상태를 확인해 주세요.'),{code:'EDITOR_RESPONSE_TIMEOUT'})),timeoutMs);})
+  ]);}finally{clearTimeout(timer);}
+}
 function writerLink(value){try{const url=new URL(value);if(!/^https?:$/.test(url.protocol))return '';return url.href.replace(/\/$/,'');}catch{return '';}}
 function withoutGeneratedPreviews(blocks){
   const content=[];
@@ -47,7 +54,7 @@ function matchingWriterPrefix(snapshot,steps) {
   }
   return -1;
 }
-async function runWriter({steps,read,apply,save,checkCancelled,onProgress,requireEmpty=false}) {
+async function runWriter({steps,read,apply,save,checkCancelled,onProgress,onBeforeStep,requireEmpty=false}) {
   let snapshot=await read(),cursor=matchingWriterPrefix(snapshot,steps);
   if(requireEmpty && (writerNormalize(snapshot.title) || withoutGeneratedPreviews(snapshot.blocks).length))throw new Error('새 글쓰기 화면이 비어 있지 않습니다. 다시 시작하면 글쓰기 화면을 새로 열고 저장된 원고를 처음부터 입력합니다.');
   if(cursor<0)throw new Error('현재 글이 저장 원고의 입력 순서와 다릅니다. 기존 글을 보존하고 입력을 중지했습니다.');
@@ -58,9 +65,10 @@ async function runWriter({steps,read,apply,save,checkCancelled,onProgress,requir
     snapshot=await read();
     if(matchingWriterPrefix(snapshot,steps)!==cursor)throw new Error('다음 입력 전 문서가 변경되었습니다. 기존 글을 보존합니다.');
     const step=steps[cursor],before=snapshot,startCursor=cursor;
+    await onBeforeStep?.(cursor+1,steps.length,step.type);
     let failure;
     for(let attempt=0;attempt<2;attempt++){
-      try{await apply(step,{anchorId:before.blocks.at(-1)?.id || ''});}catch(error){failure=error;}
+      try{await apply(step,{anchorId:before.blocks.at(-1)?.id || ''});}catch(error){if(error.code==='EDITOR_RESPONSE_TIMEOUT')throw error;failure=error;}
       snapshot=await read();
       const next=matchingWriterPrefix(snapshot,steps);
       if(next===cursor+1){cursor=next;failure=null;break;}
@@ -75,4 +83,4 @@ async function runWriter({steps,read,apply,save,checkCancelled,onProgress,requir
   }
   return {complete:true,cursor};
 }
-if(typeof module!=='undefined')module.exports={writerUnits,matchingWriterPrefix,runWriter};
+if(typeof module!=='undefined')module.exports={writerUnits,matchingWriterPrefix,runWriter,withEditorDeadline};

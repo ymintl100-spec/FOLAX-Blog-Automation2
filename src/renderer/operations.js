@@ -63,6 +63,8 @@
   function message(text, error = false) {
     $("#opsStatus").textContent = text;
     $("#opsStatus").classList.toggle("ops-error", error);
+    const progress=$('#opsPublishProgress');
+    if(progress){progress.textContent=text;progress.classList.toggle('ops-error',error);}
   }
   async function run(fn) {
     busy++;
@@ -190,7 +192,7 @@
      .join("") || "<p>현재 원고의 검수를 요청하세요.</p>"
  }
  <div class="ops-notice"><label class="compact-check"><input id="opsFinalApproval" type="checkbox"/>현재 버전의 사실·중복·허위 경험·무단 복제·과장된 효능·제품 홍보 제한을 직접 확인했고 최종 승인합니다.</label><label class="compact-check"><input id="opsImagesConfirmed" type="checkbox"/>이미지와 설명을 직접 확인했습니다(이미지 있는 원고).</label>${button("approve", "현재 버전 최종 승인", d.id, "primary")}${button("revoke", "승인 취소", d.id)}<p>현재 상태: ${esc(status(d.status))} · 승인 버전 ${d.approved_version == null ? "없음" : "v" + d.approved_version}</p></div>
- <h3>발행 준비</h3><div class="ops-grid"><label>공개 범위<select id="opsVisibility"><option value="private">비공개</option><option value="public">공개</option>${d.platform === "naver" ? '<option value="draft">네이버 임시저장</option>' : ""}</select></label><label>발행 시점<select id="opsPublishWhen"><option value="now">지금 바로 발행</option><option value="reserve">예약 발행</option></select></label><label id="opsReserveLabel" hidden>몇 시간 뒤<input id="opsReserve" type="number" min="1" value="3"/></label>${button("prepare", "승인 원고 발행 준비", d.id)}</div><label>실제 발행 실행 확인 · 현재 제목을 정확히 입력<input id="opsPublishConfirmation" autocomplete="off" placeholder="${esc(d.current.title)}"/></label>${button("publish", "지금 바로 발행", d.id, "primary")}<p id="opsPublishSummary" class="hint"></p><p class="hint">현재 선택한 공개 범위와 발행 시점으로 연결된 Chrome에 발행을 요청합니다. 네이버와 티스토리는 각각 실행합니다. 결과 불확실 시 자동 재시도하지 않습니다.</p>
+ <h3>발행 준비</h3><div class="ops-grid"><label>공개 범위<select id="opsVisibility"><option value="private">비공개</option><option value="public">공개</option>${d.platform === "naver" ? '<option value="draft">네이버 임시저장</option>' : ""}</select></label><label>발행 시점<select id="opsPublishWhen"><option value="now">지금 바로 발행</option><option value="reserve">예약 발행</option></select></label><label id="opsReserveLabel" hidden>몇 시간 뒤<input id="opsReserve" type="number" min="1" value="3"/></label>${button("prepare", "승인 원고 발행 준비", d.id)}</div>${button("publish", "지금 바로 발행", d.id, "primary")}<p id="opsPublishSummary" class="hint"></p><p id="opsPublishProgress" role="status" aria-live="polite"></p><p class="hint">현재 선택한 공개 범위와 발행 시점으로 연결된 Chrome에 발행을 요청합니다. 네이버와 티스토리는 각각 실행합니다. 결과 불확실 시 자동 재시도하지 않습니다.</p>
  <h3>플랫폼별 발행 기록</h3>${d.publications.map((p) => `<div><b>${esc(p.platform)} v${p.version} · ${esc(p.state)}</b><p>${esc(p.updated_at)} · ${esc(p.data.visibility || "")} · ${esc(p.data.scheduleMode || "")}</p>${sourceLink(p.data.url || p.data.result?.url || "")}${p.state === "uncertain" ? `<label>Chrome에서 확인한 결과<select id="opsResolveDecision"><option value="published">이미 발행·예약됨</option><option value="not_published">미발행임을 직접 확인</option></select></label><label>실제 게시글 주소<input id="opsResolveUrl" type="url"/></label><label class="compact-check"><input id="opsResolveConfirmed" type="checkbox"/>공개·예약·임시저장 목록에서 직접 확인했습니다.</label>${button("resolvePublication", "확인 결과 기록", p.id)}` : ""}</div>`).join("") || "<p>아직 발행 요청이 없습니다.</p>"}</section>`;
     const prepared=d.publications.find(p=>p.version===d.current_version && p.state==='prepared');
     if(prepared){
@@ -524,7 +526,6 @@
       return updatedDocument(
         await action("publish", {
           id,
-          confirmation: val("#opsPublishConfirmation"),
           preparation: publicationSelection(),
         }),
       );
@@ -597,7 +598,7 @@
     if (typeof selectAccount === "function") selectAccount(account());
     run(refresh);
   });
-  api.onOperationsProgress?.((p) => message(p.message, p.level === "error"));
+  api.onOperationsProgress?.((p) => {if(!p.accountId || p.accountId===account())message(p.message, p.level === "error");});
   api.onComplete(() => {
     if (
       doc &&

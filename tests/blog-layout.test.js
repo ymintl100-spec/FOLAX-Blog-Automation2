@@ -38,6 +38,7 @@ test('publish payload transports paragraph preservation and blocks old extension
   for(const payload of sent){assert.equal(payload.article,require('../src/lib/publicationFormat').omitReferences(article));assert.equal(payload.preserveParagraphs,true);assert.equal(payload.breakSentencesInBody,false);}
   assert.throws(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261007.2'},'test-blog'),/구버전/);
   assert.throws(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261023.3'},'test-blog'),/구버전/);
-  assert.doesNotThrow(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261027.1'},'test-blog'));
+  assert.throws(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261027.1'},'test-blog'),/구버전/);
+  assert.doesNotThrow(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261028.1'},'test-blog'));
  }finally{bridge.stop();fs.rmSync(root,{recursive:true,force:true});}
 });
