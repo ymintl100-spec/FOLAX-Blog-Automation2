@@ -342,6 +342,8 @@ test("recommendation generation forwards only selected topic in manual approval 
   assert.equal(calls[0].requireApproval, true);
   assert.equal(calls[0].publishAfterGenerate, false);
   assert.equal(calls[0].maxBodyImages, 0);
+  await ops.generate('a',candidate.id,{images:true});
+  assert.equal(calls[1].includeTitleImage,true);assert.equal(calls[1].maxBodyImages,3);assert.equal(calls[1].minimumImageCount,4);
 });
 test("benchmark registration stores numeric format observations, never source prose or an approval sample", (t) => {
   const { ops } = setup(t),

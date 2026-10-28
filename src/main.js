@@ -722,7 +722,9 @@ async function startJob(form) {
   const includeTitleImage = form.includeTitleImage !== false;
   const titleImageAspectRatio = normalizeImageAspectRatio(form.titleImageAspectRatio || settings.titleImageAspectRatio || form.imageAspectRatio || settings.imageAspectRatio);
   const bodyImageAspectRatio = normalizeImageAspectRatio(form.bodyImageAspectRatio || settings.bodyImageAspectRatio || form.imageAspectRatio || settings.imageAspectRatio);
-  const maxBodyImages = normalizeMaxBodyImages(form.maxBodyImages);
+  const requestedBodyImages=normalizeMaxBodyImages(form.maxBodyImages);
+  const imageCountOptions=resumeOptions?{maxBodyImages:requestedBodyImages,minimumImageCount:resumeOptions.minimumImageCount}:require('./lib/imageCountPolicy').forNewJob({includeTitleImage,maxBodyImages:requestedBodyImages});
+  const maxBodyImages = imageCountOptions.maxBodyImages;
   const breakSentencesInBody = true;
   const agentModels = form.agentModels || settings.agentModels || {};
   const shouldPublish = !requireApproval&&(form.publishAfterGenerate === true || form.topicMode === "auto");
@@ -1072,6 +1074,7 @@ async function startJob(form) {
         titleImageAspectRatio,
         bodyImageAspectRatio,
         maxBodyImages,
+        minimumImageCount:imageCountOptions.minimumImageCount,
         sourceQuality: { status: "not_requested" },
         excludedTopics: form.excludedTopics || "",
         publishPurpose: form.publishPurpose || "",

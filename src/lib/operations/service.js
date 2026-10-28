@@ -264,7 +264,8 @@ class Operations {
         operationsTopicId: id,
         requireApproval: true,
         includeTitleImage: images === true,
-        maxBodyImages: images === true ? 2 : 0,
+        maxBodyImages: images === true ? Math.max(3,require('../settings').normalizeMaxBodyImages(this.hooks.settings().maxBodyImages)) : 0,
+        minimumImageCount: images === true ? 4 : 0,
         experienceNotes,
         publishAfterGenerate: false,
         searchChannel: "web",
@@ -793,6 +794,7 @@ class Operations {
         articleLengthPolicy: 1,
         includeTitleImage: false,
         maxBodyImages: 0,
+        minimumImageCount: 0,
         writerRevisionFeedback:
           platform === "tistory"
             ? "티스토리 독자를 위해 원리·구조·같은 기준의 비교를 중심으로 별도 제목과 본문을 작성한다. 새 사실·경험을 만들지 않는다."
@@ -834,6 +836,7 @@ class Operations {
             articleLengthPolicy: 1,
             includeTitleImage: false,
             maxBodyImages: 0,
+            minimumImageCount: 0,
           },
           parentDocumentId: d.id,
         },
