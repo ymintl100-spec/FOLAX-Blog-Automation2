@@ -258,7 +258,7 @@ function report(db, account, history = [], reference = day()) {
                 sum +
                 Math.max(
                   0,
-                  (a.steps || []).filter((s) => s.agent === "writer").length -
+                  (a.steps || []).filter((s) => s.agent === "writer" && s.kind !== 'image_layout').length -
                     1,
                 ),
               0,

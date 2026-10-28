@@ -9,6 +9,7 @@ const {canonicalUrl}=require('./evidenceText');
 const naverQuality=require('./naverQuality');
 const blogLayout=require('./blogLayout');
 const formats=require('./blogFormatProfiles'),rhythm=require('./readingRhythm');
+const imageLayout=require('./imageLayout');
 const {humanize,applyReview}=require('../../packages/blog-humanizer');
 const {resolveImageStyle}=require('./accountImageStyle');
 const normalizeTitle=s=>String(s || '').trim();
@@ -59,7 +60,7 @@ async function generateAttempt(options, log, deps) {
   const usesImages=options.includeTitleImage!==false || deps.bodyImageLimit(options.maxBodyImages)>0;
   if(resume){
     if(resume.version!==1 || resume.review?.status!=='PASS' || !resume.writer?.article || !resume.title)throw new Error('저장된 이미지 재개 원고가 유효하지 않습니다. 기존 작업을 확인하세요.');
-    research=resume.research;writer=cleanPublicationUrls(resume.writer);review=resume.review;finalTitle=resume.title;
+    research=resume.research;writer=imageLayout.normalize(cleanPublicationUrls(resume.writer),{renumber:false});review=resume.review;finalTitle=resume.title;
     // Older checkpoints kept evidence only under recovery.retrievals. Restoring
     // the article without it falsely rejects valid citations before any call.
     effective={...effective,...(resume.evidenceContext || options.imageEvidenceContext)};
@@ -101,18 +102,34 @@ async function generateAttempt(options, log, deps) {
   const duplicate=await options.onFinalTitleCandidate?.(finalTitle,research);
   if(duplicate?.duplicate)return {...failed('title_duplicate',duplicate.reason || '동일한 제목이 있습니다.'),status:'duplicate_retry',title:finalTitle};
   progress('주제 선정 통과 · 본문 작성으로 이동','info','research');
-  let feedback='';
+  let feedback='',layoutRepairUsed=false;
   // At most one targeted correction. No outer UI loop may rerun the whole pipeline.
   for(let attempt=1;attempt<=2;attempt++){
     const params={...effective,topic:finalTitle,researchTitleResult:research,writerRevisionFeedback:feedback,writerAttempt:attempt,maxWriterAttempts:2};
     progress(`본문 ${attempt}차 ${attempt===1?'작성':'보완'} 시작`,'info','writer');
     writer=await run('writer',attempt===1?deps.writerPrompt(params):deps.writerRetry(params,writer),attempt===1?'prompt.txt':'prompt-retry-2.txt','agent-result.json');
-    writer=cleanPublicationUrls(writer);
+    const cleanWriter=cleanPublicationUrls(writer);
+    writer=imageLayout.normalize(cleanWriter);
+    if(writer.article!==cleanWriter.article)progress('이미지 마커 표기·번호 정리 · 본문 문장은 유지했습니다.','info','writer');
     const contentQualityIssue=options.qualityPolicyVersion===1?naverQuality.articleIssue(writer):'';
     if(writer?.article)writer={...writer,article:rhythm.apply(writer.article,effective.formatGuidance,effective.writingGuidance)};
     const lengthLimits=require('./articleRequirements').limits(effective);
     progress(`본문 ${attempt}차 글자수: 공백 제외 ${articleCharacterCount(writer.article)}자 · 기준 ${lengthLimits.min}~${lengthLimits.max}자`,'info','writer');
-    const structural=reasons([deps.writerIssue(writer,params),deps.imagePromptIssue(writer,effective),blogLayout.issue(writer,effective),contentQualityIssue,options.qualityPolicyVersion===1?naverQuality.articleIssue(writer):'']);
+    const textStructural=reasons([deps.writerIssue(writer,params),blogLayout.issue(writer,effective),contentQualityIssue,options.qualityPolicyVersion===1?naverQuality.articleIssue(writer):'']);
+    let imageStructural=deps.imagePromptIssue(writer,effective);
+    if(!textStructural&&imageStructural){
+      progress('본문 문장 보존 · 이미지 배치만 보완합니다: '+imageStructural,'warn','writer');
+      if(layoutRepairUsed)return failed('image_layout','이미지 배치 보완 한도에 도달했습니다. 원고와 완료된 단계를 보존했습니다.','execution');
+      layoutRepairUsed=true;
+      try{
+        const placements=await run('writer',imageLayout.repairPrompt(writer,effective),`image-layout-repair-${attempt}.txt`,`image-layout-result-${attempt}.json`);
+        const repaired=imageLayout.applyRepair(writer,placements,effective);
+        imageStructural=deps.imagePromptIssue(repaired,effective);
+        if(imageStructural)throw Error(imageStructural);
+        writer=repaired;progress('이미지 배치 보완 완료 · 본문 재작성 없이 최종 검수로 이동','info','writer');
+      }catch(error){return failed('image_layout','본문을 보존했습니다. 이미지 배치 보완 확인이 필요합니다: '+error.message,'execution');}
+    }
+    const structural=reasons([textStructural,imageStructural]);
     if(structural){progress(`본문 ${attempt}차 형식 확인 실패: ${structural}`,'warn','writer');if(attempt===1 && writer.failureCode!=='INSUFFICIENT_EVIDENCE'){feedback=structural;continue;}return failed('writer',structural);}
     let humanized={article:writer.article,changes:[],cached:false};
     if(effective.tokenSaving!==false){
@@ -127,7 +144,7 @@ async function generateAttempt(options, log, deps) {
         signal:options.signal,
         complete:prompt=>run('humanizer',prompt+`\nOutput JSON file: ${path.join(effective.jobDir || '.',`humanizer-result-${attempt}.json`)}\nSave the JSON file, then print BLOGAUTO_RESULT_READY.`, `humanizer-prompt-${attempt}.txt`,`humanizer-result-${attempt}.json`)
       });
-      writer={...writer,article:require('./publicationFormat').omitReferences(humanized.article)};
+      writer=imageLayout.normalize({...writer,article:require('./publicationFormat').omitReferences(humanized.article)});
       const issue=reasons([deps.writerIssue(writer,params),deps.imagePromptIssue(writer,effective)]);
       if(issue){
         progress(`윤문 후 본문 조건 보완 필요: ${issue}`,'warn','writer');
@@ -145,7 +162,8 @@ async function generateAttempt(options, log, deps) {
     review=await run('main',deps.reviewPrompt({...effective,researchTitleResult:research,writerResult:writer,finalTitle,humanizerChanges:humanized.changes}),`main-review-${attempt}.txt`,'main-review-result.json');
     try {
       const reviewed=applyReview(writer.article,humanized.changes,review.humanizerDecisions);
-      writer={...writer,article:rhythm.apply(reviewed.article,effective.formatGuidance,effective.writingGuidance)};
+      writer=imageLayout.normalize({...writer,article:reviewed.article});
+      writer={...writer,article:rhythm.apply(writer.article,effective.formatGuidance,effective.writingGuidance)};
       if(reviewed.restoredIds.length)progress('메인 검증 · 불필요하거나 의미가 달라질 수 있는 윤문을 원문으로 복원했습니다.','info','writer');
     }catch(error){return failed('main_review',error.message,'execution');}
     const reviewEvidenceIssue=options.qualityPolicyVersion===1?naverQuality.reviewEvidenceIssue(review,writer,effective):'';
@@ -234,7 +252,7 @@ async function generate(options,log,deps) {
         log(`${args.agent} 완료 결과 재사용`,'info','main');
         return {...JSON.parse(JSON.stringify(recovery.steps[key])),tokenUsage:{}};
       }
-      const step={step:entry.steps.length+1,agent:args.agent,startedAt:new Date().toISOString()};entry.steps.push(step);persist();
+      const step={step:entry.steps.length+1,agent:args.agent,kind:args.promptFileName.startsWith('image-layout-repair-')?'image_layout':args.agent,startedAt:new Date().toISOString()};entry.steps.push(step);persist();
       const adjusted={...args};
       for(const [offset,key] of Object.entries({tokenOffset:'total',grossTokenOffset:'grossTotal',inputTokenOffset:'inputTokens',cachedInputTokenOffset:'cachedInputTokens',outputTokenOffset:'outputTokens',promptCharacterOffset:'promptCharacters'}))adjusted[offset]=(args[offset] || 0)+totals[key];
       adjusted.agentTokenOffset=(args.agentTokenOffset || 0)+(totals.agents[args.agent] || 0);
@@ -289,8 +307,8 @@ async function generate(options,log,deps) {
     if(result.failureKind==='execution'){
       // A returned but invalid response is not a completed step. Re-run only
       // that agent, retaining its preceding accepted results.
-      const agent=result.failurePhase==='humanizer'?'humanizer':result.failurePhase==='main_review'?'main':null;
-      if(agent){const prefix=number+':';const keys=Object.keys(recovery.steps).filter(k=>k.startsWith(prefix) && (agent==='humanizer'?k.includes('humanizer-prompt'):k.includes('main-review')));if(keys.length)delete recovery.steps[keys.at(-1)];await saveRecovery();}
+      const agent=result.failurePhase==='humanizer'?'humanizer':result.failurePhase==='main_review'?'main':result.failurePhase==='image_layout'?'image_layout':null;
+      if(agent){const prefix=number+':';const keys=Object.keys(recovery.steps).filter(k=>k.startsWith(prefix) && (agent==='humanizer'?k.includes('humanizer-prompt'):agent==='image_layout'?k.includes('image-layout-repair-'):k.includes('main-review')));if(keys.length)delete recovery.steps[keys.at(-1)];await saveRecovery();}
       break;
     }
     if(['writer','main_review','humanizer'].includes(result.failurePhase)){
