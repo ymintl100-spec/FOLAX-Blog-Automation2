@@ -88,7 +88,8 @@ function writerPrompt(options,previous) {
     `Output JSON file: ${path.join(options.jobDir,'agent-result.json')}`,
     options.platform==='tistory'?'티스토리 독자에게 필요한 원리·구조·같은 기준의 비교를 중심으로 독립적인 제목·전개를 작성한다. 네이버 원고를 단순 복사하거나 어휘만 바꾸지 않는다. 근거가 허용하는 범위와 현재 분량 제한을 지킨다.':'네이버 독자의 생활 속 질문·이유·선택 기준을 중심으로 작성한다.',
     options.platformVariant?'이전 원고는 자료가 아니라 수정 출발점이다. 같은 주제를 유지하며 제공 근거 안에서 해당 플랫폼의 별도 제목과 본문을 작성한다. 이전 제목을 그대로 유지할 필요는 없다.':'Follow the supplied writing brief and preserve the selected title. Focus on the reader, not the research process. You may synthesize stable explanations but not add unsupported specifics. Do not independently search or generate images.',
-    '소제목은 별도 줄의 [SECTION - 소제목]으로 표시한다. 짧고 구체적인 소제목을 쓰되 모든 소제목을 억지 질문형으로 만들지 않는다. 본문에 제목을 다시 인용하거나 인용구용 문장을 덧붙이지 않는다. 편집기 서식은 앱이 처리한다. Tags는 필요할 때만 최대 10개.',
+    '소제목은 별도 줄의 [SECTION - 소제목]으로 표시한다. 짧고 구체적인 소제목을 쓰되 모든 소제목을 억지 질문형으로 만들지 않는다. 본문에 제목을 다시 인용하거나 인용구용 문장을 덧붙이지 않는다. 편집기 서식은 앱이 처리한다.',
+    require('./articleTags').instruction(options),
     options.formatGuidance?.id==='essay'?'이번 글은 제공된 실제 경험을 읽을 수 있는 장면과 생각의 흐름으로 엮는다. 소제목 없는 전개도 가능하다. 독자에게 정보 강의를 하거나 없는 대화를 만드는 대신, 메모의 구체적인 선택과 변화를 보존한다.':'이 글은 조사 보고서나 공고 독후감이 아니라 한국어 블로그 글이다. 독자의 구체적인 고민에서 시작해 제목이 약속한 답을 초반에 준다. 자료 수·문서 구성·확인 과정을 도입으로 쓰지 않는다. 이어서 왜 독자에게 중요한지, 어떤 선택이 달라지는지 풀어 쓴다. preferredTone을 존중하되 번역투·행정문서체·과장된 광고체를 피하고 자연스럽고 단정한 한국어를 쓴다. 해요체만 붙인다고 블로그 글이 되는 것은 아니다.',
     options.formatGuidance?.id==='essay'?'':'본문 전개는 독자의 판단 순서로 설계한다. 각 주요 단락은 구체적인 답, 그 답의 이유 또는 필요한 조건, 독자에게 생기는 차이를 연결한다. 근거가 있으면 선택지의 차이·혼동하기 쉬운 지점·준비 순서 등을 설명한다. 모든 단락에 같은 틀을 반복하거나 불필요한 사례·체크리스트를 채워 넣지 않는다. 확인되지 않은 지원금·자격·효과·경험을 흥미를 위해 만들지 않는다. 조건과 예외는 관련 설명 옆에 간결하게 유지한다.',
     options.formatGuidance?.id==='essay'?'':'자료의 목차나 공고 항목을 순서대로 바꿔 적는 데서 끝내지 않는다. 공식 목록에서 네 가지가 확인됩니다, 원문을 대조해야 합니다, 적용 범위를 확인하는 것이 중요합니다 같은 문장으로 내용을 채우지 않는다. 무엇을 왜 비교해야 하는지 이미 확보한 사실로 설명하고, 실제로 확인하지 못한 핵심 조건만 한곳에서 구체적으로 밝힌다. 근거가 마감일뿐이면 제목이 약속하지 않은 신청 자격·혜택까지 아는 척하지 않는다. 필수 분량 안에서 독자 질문에 충분히 답한다.',
@@ -107,6 +108,7 @@ function writerPrompt(options,previous) {
 }
 function reviewPrompt(options) {
   return [
+    options.tagCount===30?'같은 최종 검수에서 tags의 주제 관련성도 확인한다. 본문에서 실제 다룬 내용에 맞는지 확인하고 무관한 인기어·허위 치료효과·홍보·허구의 경험을 태그로 추가하지 않는다. 태그는 본문 글자수에 포함하지 않는다.':'',
     'You perform one final factual and usefulness review. '+policyFor(options),
     naturalWritingPolicy,
     options.contentPolicy||'',

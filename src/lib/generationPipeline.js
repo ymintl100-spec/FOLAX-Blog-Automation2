@@ -10,6 +10,7 @@ const naverQuality=require('./naverQuality');
 const blogLayout=require('./blogLayout');
 const formats=require('./blogFormatProfiles'),rhythm=require('./readingRhythm');
 const imageLayout=require('./imageLayout');
+const articleTags=require('./articleTags');
 const {humanize,applyReview}=require('../../packages/blog-humanizer');
 const {resolveImageStyle}=require('./accountImageStyle');
 const normalizeTitle=s=>String(s || '').trim();
@@ -131,6 +132,18 @@ async function generateAttempt(options, log, deps) {
     }
     const structural=reasons([textStructural,imageStructural]);
     if(structural){progress(`본문 ${attempt}차 형식 확인 실패: ${structural}`,'warn','writer');if(attempt===1 && writer.failureCode!=='INSUFFICIENT_EVIDENCE'){feedback=structural;continue;}return failed('writer',structural);}
+    if(effective.tagCount===30){
+      writer={...writer,tags:articleTags.normalize(writer.tags)};
+      const tagIssue=articleTags.issue(writer,effective);
+      if(tagIssue){
+        progress('본문 문장 보존 · 태그만 30개로 정리합니다: '+tagIssue,'warn','writer');
+        try{
+          const tagResult=await run('writer',articleTags.repairPrompt(writer),`tags-repair-${attempt}.txt`,`tags-result-${attempt}.json`);
+          writer=articleTags.applyRepair(writer,tagResult);
+        }catch(error){return {...failed('tags','본문을 보존했습니다. 태그 정리 확인이 필요합니다: '+error.message,'execution'),failureStep:`tags-repair-${attempt}.txt`};}
+      }
+      progress('주제 관련 태그 30개 정리 완료 · 본문과 별도로 저장','info','writer');
+    }
     let humanized={article:writer.article,changes:[],cached:false};
     if(effective.tokenSaving!==false){
       progress('작성 응답에서 문장 다듬기 완료 · 별도 윤문 호출 없이 최종 검수로 이동','info','writer');
@@ -224,10 +237,10 @@ async function generate(options,log,deps) {
   options={tokenSaving:true,qualityPolicyVersion:1,...options};
   const restored=options.generationCheckpoint;
   if(restored && restored.version!==2)throw new Error('재개 기록 버전을 확인할 수 없습니다. 기존 작업을 취소한 뒤 다시 시작하세요.');
-  const optionKeys=['tokenSaving','qualityPolicyVersion','writingGuidance','formatGuidance','compactWriting','articleLengthPolicy','requireApproval','operationsTopicId','operationsDraft','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','blogDirection','experienceNotes','experienceNotesId','topic','keyword','category','topicMode','currentDateLabel','includeTitleImage','maxBodyImages','minimumImageCount','titleImageAspectRatio','bodyImageAspectRatio','excludedTopics','publishPurpose','preferredTone','freshnessLevel','searchChannel','trustBlogAsSource','keywordLanes','recommendedKeywordLanes','historyTitles','searchResults','sourceQuality'];
+  const optionKeys=['tokenSaving','qualityPolicyVersion','writingGuidance','formatGuidance','compactWriting','articleLengthPolicy','tagCount','requireApproval','operationsTopicId','operationsDraft','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','blogDirection','experienceNotes','experienceNotesId','topic','keyword','category','topicMode','currentDateLabel','includeTitleImage','maxBodyImages','minimumImageCount','titleImageAspectRatio','bodyImageAspectRatio','excludedTopics','publishPurpose','preferredTone','freshnessLevel','searchChannel','trustBlogAsSource','keywordLanes','recommendedKeywordLanes','historyTitles','searchResults','sourceQuality'];
   const recovery=restored?JSON.parse(JSON.stringify(restored)):{version:2,steps:{},retrievals:{},generationOptions:Object.fromEntries(optionKeys.filter(k=>options[k]!==undefined).map(k=>[k,options[k]])),attemptNumber:1};
   options={...options,...recovery.generationOptions};
-  if(restored)for(const key of ['minimumImageCount','articleLengthPolicy','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','requireApproval','operationsTopicId','operationsDraft','compactWriting','experienceNotes','experienceNotesId','blogDirection','writingGuidance','formatGuidance'])if(!Object.hasOwn(recovery.generationOptions,key))options[key]=undefined;
+  if(restored)for(const key of ['tagCount','minimumImageCount','articleLengthPolicy','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','requireApproval','operationsTopicId','operationsDraft','compactWriting','experienceNotes','experienceNotesId','blogDirection','writingGuidance','formatGuidance'])if(!Object.hasOwn(recovery.generationOptions,key))options[key]=undefined;
   if(typeof(options.experienceNotes??'')!=='string'||String(options.experienceNotes||'').length>2000)throw new Error('이번 글의 실제 경험 메모는 2,000자 이내로 입력하세요.');
   if(options.formatGuidance?.version>=3&&options.formatGuidance.id==='essay'&&!String(options.experienceNotes||'').trim())return {status:'failed',failureKind:'execution',failurePhase:'input',failureReason:'일상·경험형에는 이번 글의 실제 경험 메모가 필요합니다. 경험을 입력하거나 자동·건강 설명형을 선택하세요.',article:'',title:''};
   const saveRecovery=async()=>{await options.onGenerationCheckpoint?.(JSON.parse(JSON.stringify(recovery)));};
@@ -252,7 +265,7 @@ async function generate(options,log,deps) {
         log(`${args.agent} 완료 결과 재사용`,'info','main');
         return {...JSON.parse(JSON.stringify(recovery.steps[key])),tokenUsage:{}};
       }
-      const step={step:entry.steps.length+1,agent:args.agent,kind:args.promptFileName.startsWith('image-layout-repair-')?'image_layout':args.agent,startedAt:new Date().toISOString()};entry.steps.push(step);persist();
+      const step={step:entry.steps.length+1,agent:args.agent,kind:args.promptFileName.startsWith('tags-repair-')?'tags':args.promptFileName.startsWith('image-layout-repair-')?'image_layout':args.agent,startedAt:new Date().toISOString()};entry.steps.push(step);persist();
       const adjusted={...args};
       for(const [offset,key] of Object.entries({tokenOffset:'total',grossTokenOffset:'grossTotal',inputTokenOffset:'inputTokens',cachedInputTokenOffset:'cachedInputTokens',outputTokenOffset:'outputTokens',promptCharacterOffset:'promptCharacters'}))adjusted[offset]=(args[offset] || 0)+totals[key];
       adjusted.agentTokenOffset=(args.agentTokenOffset || 0)+(totals.agents[args.agent] || 0);
@@ -307,8 +320,8 @@ async function generate(options,log,deps) {
     if(result.failureKind==='execution'){
       // A returned but invalid response is not a completed step. Re-run only
       // that agent, retaining its preceding accepted results.
-      const agent=result.failurePhase==='humanizer'?'humanizer':result.failurePhase==='main_review'?'main':result.failurePhase==='image_layout'?'image_layout':null;
-      if(agent){const prefix=number+':';const keys=Object.keys(recovery.steps).filter(k=>k.startsWith(prefix) && (agent==='humanizer'?k.includes('humanizer-prompt'):agent==='image_layout'?k.includes('image-layout-repair-'):k.includes('main-review')));if(keys.length)delete recovery.steps[keys.at(-1)];await saveRecovery();}
+      const agent=result.failurePhase==='humanizer'?'humanizer':result.failurePhase==='main_review'?'main':result.failurePhase==='image_layout'?'image_layout':result.failurePhase==='tags'?'tags':null;
+      if(agent){const prefix=number+':';const keys=Object.keys(recovery.steps).filter(k=>k.startsWith(prefix) && (agent==='tags'?k===prefix+result.failureStep:agent==='humanizer'?k.includes('humanizer-prompt'):agent==='image_layout'?k.includes('image-layout-repair-'):k.includes('main-review')));if(keys.length)delete recovery.steps[keys.at(-1)];await saveRecovery();}
       break;
     }
     if(['writer','main_review','humanizer'].includes(result.failurePhase)){
