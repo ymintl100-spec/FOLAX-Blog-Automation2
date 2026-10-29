@@ -60,11 +60,11 @@ test('a 1000–1200 character article produces four verified image files and reu
  const paragraphs=[...article.split('\n\n')];
  w.article=paragraphs.slice(0,9).map((p,i)=>p+(i>=3&&i<=5?'\n[IMAGE INSERT - '+(i-2)+']':'')).join('\n\n').trim();
  const count=require('../src/lib/articleRequirements').articleCharacterCount(w.article);assert(count>=1000&&count<=1200,'fixture length: '+count);
- const h=harness({writerResult:w,options:{includeTitleImage:true,maxBodyImages:3,minimumImageCount:4,articleLengthPolicy:1,tagCount:30}});
+ const h=harness({writerResult:w,options:{includeTitleImage:true,maxBodyImages:3,minimumImageCount:4,articleLengthPolicy:1,tagCount:30,relevancePolicy:1}});
  Object.assign(h.deps,{bodyImageLimit:Number,writerIssue:runner.writerOutputIssueReason,imagePromptIssue:runner.writerImageContractIssueReason,imagePrompt:runner.buildImageWorkerPrompt,imageIssue:runner.imageWorkerContractIssueReason,pendingImages:runner.pendingImageWriterResult,mergeImages:runner.mergeImageWorkerAttempts,applyImages:(w,i)=>({...w,...i})});
  const original=h.deps.runTask;let images=0;
  const file=n=>{const f=path.join(h.opts.jobDir,n+'.png');fs.writeFileSync(f,'file fixture '+n);return f;};
- h.deps.runTask=async args=>{if(args.agent!=='image')return original(args);h.calls.push(args);images++;
+ h.deps.runTask=async args=>{if(args.agent==='main'){const r=await original(args);return {...r,relevanceEvidence:{...relevanceEvidenceFixture(),tagExamples:[{tag:thirtyTags[0],quote:opening}],imageChecks:require('../src/lib/articleRelevance').imagePlans(w).map(i=>({key:i.key,promptQuote:i.prompt,articleQuote:opening,aligned:true}))}};}if(args.agent!=='image')return original(args);h.calls.push(args);images++;
   if(images===1)return {status:'partial',titleImagePath:file('title'),titleImageVerified:true,bodyImages:[{...w.bodyImages[0],path:file('body-1'),summaryVerified:true}]};
   const handoff=JSON.parse(args.prompt.split('Writer Agent image handoff:\n')[1].split('\nRequired output:')[0]);assert.deepEqual(handoff.bodyImages.map(b=>b.sequence),[2,3]);assert.equal(handoff.titleImagePrompt,'');assert(args.prompt.includes('Do not generate a title image.'));
   return {status:'success',titleImagePath:'',titleImageVerified:false,bodyImages:w.bodyImages.slice(1).map(b=>({...b,path:file('body-'+b.sequence),summaryVerified:true}))};};
@@ -72,7 +72,7 @@ test('a 1000–1200 character article produces four verified image files and reu
  assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main','image','image']);
  const checkpoint=h.checkpoints.at(-1);assert.equal(checkpoint.generationOptions.minimumImageCount,4);h.calls.length=0;
  h.deps.runTask=async()=>{throw Error('No new model call expected for complete images');};
- const resumed=await generate({...h.opts,generationCheckpoint:checkpoint},()=>{},h.deps);assert.equal(resumed.publishable,true);assert.equal(resumed.article,result.article);assert.equal(resumed.bodyImages.length,3);assert.deepEqual(resumed.tags,thirtyTags);
+ const resumed=await generate({...h.opts,generationCheckpoint:checkpoint},()=>{},h.deps);assert.equal(resumed.publishable,true);assert.equal(resumed.article,result.article);assert.equal(resumed.bodyImages.length,3);assert.deepEqual(resumed.tags,thirtyTags);assert.equal(resumed.relevanceReport.score,100);
 });
 for(const invalidFirst of [false,true])test(`marker mismatch repairs placement only and preserves cached prose across retry (invalidFirst=${invalidFirst})`,async()=>{
  const L=require('../src/lib/imageLayout');
@@ -281,4 +281,26 @@ test('a genuine prose correction keeps its own bounded tag repair and retries on
  const checkpoint=h.checkpoints.at(-1);assert(checkpoint.steps['1:tags-repair-1.txt']);assert(!checkpoint.steps['1:tags-repair-2.txt']);h.calls.length=0;
  const result=await generate({...h.opts,generationCheckpoint:checkpoint},()=>{},h.deps);assert.equal(result.publishable,true,result.failureReason);
  assert.deepEqual(h.calls.map(c=>c.promptFileName),['tags-repair-2.txt','main-review-2.txt']);
+});
+
+function relevanceEvidenceFixture(naturalUsage=true){
+ return {primaryKeyword:'책상',answerAligned:true,answerQuote:opening,conceptChecks:[{term:'물건',quote:opening,relevant:true},{term:'도구',quote:help,relevant:true}],tagsAligned:true,tagExamples:[{tag:'물건정리',quote:opening}],imagesAligned:true,imageChecks:[],naturalUsage,reason:'원고의 실제 설명'};
+}
+test('relevance evidence uses the existing three agents and missing quotes retry only Main',async()=>{
+ const h=harness({options:{relevancePolicy:1},writerResult:{...writer,tags:['물건정리']},review:n=>({...goodReview(),relevanceEvidence:{...relevanceEvidenceFixture(),answerQuote:n===1?'원고에 없는 답변을 임의로 만들어 평가할 수 없습니다.':opening}})});
+ const first=await h.run();assert.equal(first.failurePhase,'main_review');assert.equal(first.failureKind,'execution');assert.equal(first.relevanceReport.score,null);
+ const checkpoint=h.checkpoints.at(-1);assert.equal(checkpoint.generationOptions.relevancePolicy,1);h.calls.length=0;
+ const resumed=await generate({...h.opts,generationCheckpoint:checkpoint},()=>{},h.deps);assert.equal(resumed.publishable,true,resumed.failureReason);assert.equal(resumed.relevanceReport.score,100);assert.equal(resumed.relevanceReport.externalScore,null);assert.deepEqual(h.calls.map(c=>c.agent),['main']);
+});
+test('poor topical usage gets only the existing single prose correction, never a score-only agent',async()=>{
+ const h=harness({options:{relevancePolicy:1},writerResult:{...writer,tags:['물건정리']},review:()=>({...goodReview(),relevanceEvidence:relevanceEvidenceFixture(false)})});
+ const result=await h.run();assert.equal(result.status,'failed');assert.equal(result.failurePhase,'main_review');assert.equal(result.failureKind,'quality');assert(result.relevanceReport.score<95);assert.equal(h.calls.filter(c=>c.agent==='writer').length,2);assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main','writer','main']);
+});
+test('an older checkpoint does not acquire the new relevance gate while resuming',async()=>{
+ const h=harness();await h.run();const checkpoint=h.checkpoints.at(-1);h.calls.length=0;
+ const result=await generate({...h.opts,relevancePolicy:1,generationCheckpoint:checkpoint},()=>{},h.deps);assert.equal(result.publishable,true);assert.equal(h.calls.length,0);assert.equal(result.relevanceReport.score,null);
+});
+test('a substantive Main block is not retried as a missing relevance response',async()=>{
+ const h=harness({options:{relevancePolicy:1},review:()=>({...goodReview(),status:'BLOCK',publishable:false,failureReason:'제목이 약속한 핵심 결론을 기존 근거로 뒷받침할 수 없습니다.'})});
+ const result=await h.run();assert.equal(result.failureKind,'quality');assert.equal(result.failurePhase,'main_review');assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main']);
 });

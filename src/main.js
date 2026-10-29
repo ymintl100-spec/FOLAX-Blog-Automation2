@@ -339,7 +339,7 @@ function buildPendingNaverPublishDraft({
     reserveAfterHours,
     breakSentencesInBody,
     preserveParagraphs:agentResult.writingApplication?.guideVersion>=2,
-    writingApplication:agentResult.writingApplication,
+    relevanceReport:agentResult.relevanceReport,writingApplication:agentResult.writingApplication,
     presentation:agentResult.writingApplication?.presentation,
     publishToTistoryAfterNaver,
     tistoryBlogId,
@@ -1044,6 +1044,7 @@ async function startJob(form) {
         compactWriting:true,
         articleLengthPolicy:1,
         tagCount:30,
+        relevancePolicy:1,
         requireApproval,operationsTopicId,operationsDraft:form.operationsDraft===true,
         requiredWritingInstructions:operations?require('./lib/operations/editorial').profile(operations.db,account.id).instructions:'',
         approvedEditorial:operations?operations.promptProfile(account.id):undefined,
@@ -1101,7 +1102,7 @@ async function startJob(form) {
           if(operationsTopicId)operations?.progressTopic(account.id,operationsTopicId,draft.previewStage==='humanizing'?'writing':'ai_review');
           // Preview only: unreviewed text is never a resumable publish draft.
           emit("job:preview", {jobId,title:draft.title,article:draft.article,
-            previewStage:draft.previewStage,writerAttempt:draft.writerAttempt,writingApplication:draft.writingApplication,
+            relevanceReport:draft.relevanceReport,previewStage:draft.previewStage,writerAttempt:draft.writerAttempt,writingApplication:draft.writingApplication,
             images:[],imageNotes:[],tags:draft.tags || []});
         },
         onResearchTitle: (researchResult) => {
@@ -1328,6 +1329,7 @@ async function startJob(form) {
       result: codexResult
     });
     agentResult.writingApplication=codexResult.writingApplication;
+    agentResult.relevanceReport=codexResult.relevanceReport;
     latestAgentResultForResume = agentResult;
     if(codexResult.publishable===false || agentResult.imageWarnings?.length){
       throw Object.assign(new Error([...(codexResult.notes || []),...(agentResult.imageWarnings || [])].join(' / ') || '이미지 생성을 완료하지 못했습니다. 본문을 보존하고 자동 진행을 중지합니다.'),{failureKind:'execution',failurePhase:'image'});
@@ -1346,7 +1348,7 @@ async function startJob(form) {
       jobId,
       title: agentResult.title,
       article: agentResult.article,
-      writingApplication:codexResult.writingApplication,
+      relevanceReport:codexResult.relevanceReport,writingApplication:codexResult.writingApplication,
       images: getPreviewImages(agentResult),
       imageNotes: [...(agentResult.imageWarnings || []),...(codexResult.publishable===false ? codexResult.notes || [] : [])],
       tokenUsage: jobTokenUsage,

@@ -185,6 +185,8 @@ function register({ ipcMain, dialog, safeStorage, window, root, ...hooks }) {
             expectedVersion: d.current_version,
           });
         }
+        case "analyzeRelevance":
+          return service.review(accountId,payload.id,{analyzeRelevance:true});
         case "review":
           return service.review(accountId, payload.id);
         case "repair":

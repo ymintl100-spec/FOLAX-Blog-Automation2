@@ -430,3 +430,12 @@ test('approved Naver publication receives all 30 tags and the stored version rem
  assert.deepEqual(calls[0].options.tags,tags);
  assert.deepEqual(ops.document('a',d.id).current.data.writer.tags,tags);
 });
+
+test('explicit relevance analysis uses one current-version review, preserves text, and clears stale approval',async t=>{
+ const {ops,calls}=setup(t),d=document(ops,{writer:{status:'success',tags:['도구정리'],bodyImages:[],titleImagePrompt:''}});
+ ops.approve('a',d.id,{version:1,confirmed:true});const before=d.current.article;
+ ops.hooks.runTask=async args=>{calls.push({agent:args.agent,prompt:args.prompt});assert.equal(args.options.relevancePolicy,1);return {...review(),relevanceEvidence:{primaryKeyword:'도구',answerAligned:true,answerQuote:opening,conceptChecks:[{term:'자리',quote:help,relevant:true}],tagsAligned:true,tagExamples:[{tag:'도구정리',quote:opening}],imagesAligned:true,imageChecks:[],naturalUsage:true}};};
+ const result=await ops.review('a',d.id,{analyzeRelevance:true});
+ assert.equal(result.current.article,before);assert.equal(result.current_version,1);assert.equal(result.approved_version,null);assert.equal(result.relevanceReport.score,100);assert.equal(calls.length,1);assert.equal(calls[0].agent,'main');
+ const edited=ops.save('a',d.id,{expectedVersion:1,title:result.current.title,article:before+'\n\n수정본은 새로운 검수를 받아야 합니다.'});assert.equal(edited.relevanceReport.score,null);
+});

@@ -182,6 +182,7 @@
     $("#opsDocument").innerHTML =
       `<section class="ops-detail"><h2>${esc(d.platform)} 원고 · v${d.current_version}</h2><p class="hint">수정 후 저장하면 이전 승인·AI 검수가 해제됩니다. 최초 AI 원고와 이전 버전은 보존합니다. 로컬 원고 수정·승인 취소는 이미 게시한 글을 변경하지 않습니다.</p><label>제목<input id="opsDocTitle" maxlength="200" value="${esc(d.current.title)}"/></label><label>현재 원고<textarea id="opsDocArticle" class="ops-article" maxlength="30000">${esc(d.current.article)}</textarea></label><div class="button-row">${button("saveDocument", "수정본 저장", d.id, "primary")}${button("review", "현재 버전 AI 검수 요청", d.id)}${button("repair", "선택 문단만 AI 보완", d.id)}${button("variant", d.platform === "naver" ? "티스토리 별도 원고 작성" : "네이버 별도 원고 작성", d.id)}</div><label>선택 문단 수정 요청<input id="opsRepairInstruction" maxlength="1000" placeholder="수정할 문단을 원고에서 선택하고 요청을 적어주세요."/></label><p class="hint">AI 부분 보완은 선택 문단만 바꾸며 최종 승인 전 다시 검수합니다. 플랫폼별 별도 원고도 각각 검수·승인해야 합니다.</p>
  <details><summary>주제 관련 태그 ${tags.length}개</summary><textarea id="opsDocTags" rows="3" readonly aria-label="원고 태그">${esc(tags.map(t=>'#'+t.replace(/^#+/, '')).join(' '))}</textarea>${button("copyTags", "태그 복사")}<p class="hint">본문 글자수에 포함하지 않습니다. ${d.platform==='tistory'?'티스토리는 우선순위가 높은 앞 10개를 발행합니다.':'네이버 발행 설정에 최대 30개를 전달합니다.'} 기존 원고의 태그는 자동 변경하지 않습니다.</p></details>
+ <div id="opsRelevance" class="ops-notice"></div><div class="button-row">${button("analyzeRelevance", "연관성 포함 AI 검수", d.id)}<button type="button" class="ghost small" data-source="https://www.ndex.kr/post">NDEX에서 게시글 분석</button></div><p class="hint">현재 저장 원고만 분석합니다. 기존 최종 검수 한 번에 연관성을 함께 확인하며 본문을 자동으로 바꾸지 않습니다. 검수 후에는 다시 최종 승인하세요.</p>
  <div class="ops-document-preview" id="opsDocPreview"></div><div class="ops-images">${(d.current.data.images || []).map((i) => `<figure><img src="${esc(i.url)}" alt="${esc(i.role)} 이미지"/><figcaption>${esc(i.role)} ${esc(i.sequence)}</figcaption></figure>`).join("")}</div>
  <details><summary>최초 AI 원고</summary><pre class="ops-notes">${esc(d.original.title + "\n\n" + d.original.article)}</pre></details><details><summary>최초 원고와 현재 수정본 차이</summary>${d.diff.paragraphs.map((p) => `<div class="ops-diff ${esc(p.type)}"><small>${{ added: "추가", removed: "삭제", same: "유지" }[p.type]}</small><p>${esc(p.text)}</p></div>`).join("")}${d.diff.truncated ? "<p>비교 화면은 앞 200문단까지만 표시합니다. 원문 버전은 보존합니다.</p>" : ""}</details>
  <details><summary>이전 버전 ${d.versions.length}개</summary>${d.versions.map((v) => `<p>v${v.version} · ${esc(v.created_at)} · ${esc(v.data.source)} ${button("restoreVersion", "이 버전을 새 수정본으로 복원", v.version)}</p>`).join("")}</details><details><summary>사용자 승인·취소 이력</summary>${d.approvalHistory.map((e) => `<p>${esc(e.type === "approved" ? "최종 승인" : "승인 취소")} · v${e.data.version ?? "?"} · ${esc(e.created_at)}</p>`).join("") || "<p>기록 없음</p>"}</details><h3>AI 검수 기록</h3>${
@@ -196,6 +197,9 @@
  <div class="ops-notice"><label class="compact-check"><input id="opsFinalApproval" type="checkbox"/>현재 버전의 사실·중복·허위 경험·무단 복제·과장된 효능·제품 홍보 제한을 직접 확인했고 최종 승인합니다.</label><label class="compact-check"><input id="opsImagesConfirmed" type="checkbox"/>이미지와 설명을 직접 확인했습니다(이미지 있는 원고).</label>${button("approve", "현재 버전 최종 승인", d.id, "primary")}${button("revoke", "승인 취소", d.id)}<p>현재 상태: ${esc(status(d.status))} · 승인 버전 ${d.approved_version == null ? "없음" : "v" + d.approved_version}</p></div>
  <h3>발행 준비</h3><div class="ops-grid"><label>공개 범위<select id="opsVisibility"><option value="private">비공개</option><option value="public">공개</option>${d.platform === "naver" ? '<option value="draft">네이버 임시저장</option>' : ""}</select></label><label>발행 시점<select id="opsPublishWhen"><option value="now">지금 바로 발행</option><option value="reserve">예약 발행</option></select></label><label id="opsReserveLabel" hidden>몇 시간 뒤<input id="opsReserve" type="number" min="1" value="3"/></label>${button("prepare", "승인 원고 발행 준비", d.id)}</div>${button("publish", "지금 바로 발행", d.id, "primary")}<p id="opsPublishSummary" class="hint"></p><p id="opsPublishProgress" role="status" aria-live="polite"></p><p class="hint">현재 선택한 공개 범위와 발행 시점으로 연결된 Chrome에 발행을 요청합니다. 네이버와 티스토리는 각각 실행합니다. 결과 불확실 시 자동 재시도하지 않습니다.</p>
  <h3>플랫폼별 발행 기록</h3>${d.publications.map((p) => `<div><b>${esc(p.platform)} v${p.version} · ${esc(p.state)}</b><p>${esc(p.updated_at)} · ${esc(p.data.visibility || "")} · ${esc(p.data.scheduleMode || "")}</p>${sourceLink(p.data.url || p.data.result?.url || "")}${p.state === "uncertain" ? `<label>Chrome에서 확인한 결과<select id="opsResolveDecision"><option value="published">이미 발행·예약됨</option><option value="not_published">미발행임을 직접 확인</option></select></label><label>실제 게시글 주소<input id="opsResolveUrl" type="url"/></label><label class="compact-check"><input id="opsResolveConfirmed" type="checkbox"/>공개·예약·임시저장 목록에서 직접 확인했습니다.</label>${button("resolvePublication", "확인 결과 기록", p.id)}` : ""}</div>`).join("") || "<p>아직 발행 요청이 없습니다.</p>"}</section>`;
+    window.blogRelevanceView.render($('#opsRelevance'),d.relevanceReport);
+    const invalidateRelevance=()=>{const panel=$('#opsRelevance');panel.replaceChildren();panel.textContent='수정 중인 원고입니다. 저장 후 현재 버전의 연관성 검수를 요청하세요.';};
+    $('#opsDocTitle').addEventListener('input',invalidateRelevance);
     const prepared=d.publications.find(p=>p.version===d.current_version && p.state==='prepared');
     if(prepared){
       $('#opsVisibility').value=prepared.data.visibility;
@@ -205,6 +209,7 @@
     for(const selector of ['#opsVisibility','#opsPublishWhen','#opsReserve'])$(selector).addEventListener('change',updatePublicationControls);
     updatePublicationControls();
     $("#opsDocArticle").addEventListener("input", () => {
+      invalidateRelevance();
       const now = Date.now();
       if (lastTyping) editingSeconds += Math.min(30, (now - lastTyping) / 1000);
       lastTyping = now;
@@ -479,7 +484,7 @@
         }),
       );
     if (
-      ["review", "repair", "variant", "approve", "prepare", "publish"].includes(
+      ["review", "analyzeRelevance", "repair", "variant", "approve", "prepare", "publish"].includes(
         actionName,
       ) &&
       doc &&
@@ -488,6 +493,7 @@
     )
       throw Error("수정본을 먼저 저장하세요.");
     if (
+      actionName === "analyzeRelevance" ||
       actionName === "review" ||
       actionName === "variant" ||
       actionName === "revoke"

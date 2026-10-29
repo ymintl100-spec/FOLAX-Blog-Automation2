@@ -40,6 +40,7 @@ function writerHandoff(value){
 function researchPrompt(options,previous) {
   return [
     'You select and research a Korean blog article. '+policyFor(options),
+    options.relevancePolicy===1?require('./articleRelevance').planningInstruction:'',
     options.contentPolicy||'',categoryGuidance(options.category),options.requiredWritingInstructions?'사용자 필수 작성 지침: '+options.requiredWritingInstructions:'',
     options.compactWriting===true||options.formatGuidance?.version>=4?'주제 범위는 한 질문으로 좁힌다. 제목이 여러 효과·원인·방법을 약속하지 않게 한다. recommendedStructure는 필요한 1~3개의 내용 역할만 설계하고 후속 질문을 별도 설명으로 확장하지 않는다. 사용자가 명시한 주제와 핵심 조건은 유지한다.':'',
     options.formatGuidance?'같은 조사 응답에서 formatGuide.catalog가 있으면 explanation/practical/comparison/essay 중 주제·근거·이번 experienceNotes에 맞는 하나를 writerContract.articleFormat으로 고른다. experienceNotes가 없으면 essay를 고르지 않는다. 고정 형식이면 해당 id를 따른다. writerContract.editorialArc에는 readerSituation(독자의 구체적인 상황), turn(오해·선택이 달라지는 지점), everydayAnchor(설명을 연결할 일상 장면), closingEcho(도입을 다시 비추는 마무리)를 각각 짧게 설계한다. 구조는 이런 전개에 맞춰 만들고 원문 목차를 복사하지 않는다. 개인 장면·자격·경험의 사실은 이번 experienceNotes에서만 가져온다. 형식을 위한 새 검색이나 별도 기획 호출은 하지 않는다.':'',
@@ -73,6 +74,7 @@ function writerPrompt(options,previous) {
   const images=Number(options.maxBodyImages)>0;
   return [
     'You write the final Korean blog article. '+policyFor(options),
+    options.relevancePolicy===1?require('./articleRelevance').writingInstruction:'',
     naturalWritingPolicy,
     options.contentPolicy||'',
     categoryGuidance(options.category),
@@ -110,6 +112,7 @@ function reviewPrompt(options) {
   return [
     options.tagCount===30?'같은 최종 검수에서 tags의 주제 관련성도 확인한다. 본문에서 실제 다룬 내용에 맞는지 확인하고 무관한 인기어·허위 치료효과·홍보·허구의 경험을 태그로 추가하지 않는다. 태그는 본문 글자수에 포함하지 않는다.':'',
     'You perform one final factual and usefulness review. '+policyFor(options),
+    require('./articleRelevance').reviewInstruction(options.writerResult,options),
     naturalWritingPolicy,
     options.contentPolicy||'',
     categoryGuidance(options.category),
