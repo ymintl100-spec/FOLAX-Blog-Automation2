@@ -302,6 +302,7 @@
 왼쪽에서 블로그와 주제를 선택하고 작업을 시작하세요."></textarea>
           <p id="writingApplicationStatus" class="hint" role="status">글 생성 후 적용한 형식과 승인 예시 수를 표시합니다.</p>
           <details id="articleTagsPanel" hidden><summary>주제 관련 태그 · <span id="articleTagsCount">0</span>개</summary><textarea id="articleTags" rows="3" readonly aria-label="생성된 태그 목록"></textarea><button id="copyArticleTags" type="button" class="ghost small">태그 복사</button><span id="articleTagsStatus" class="hint" role="status"></span></details>
+          <details id="articleRelevancePanel" hidden><summary>제목·본문·태그·이미지 설명 연관성</summary><div id="articleRelevance"></div></details>
           <details id="writingLearning" class="writing-learning">
             <summary>내 글 문체 학습 · <span id="writingLearningStatus">계정을 선택하세요</span></summary>
             <p class="hint" id="writingLearningAccount"></p>
@@ -405,7 +406,7 @@
     <div class="button-row"><button id="prepareExtensionFolder" class="primary" type="button">설치 폴더 준비 · 경로 복사</button><button id="copyExtensionsUrl" class="ghost" type="button">Chrome 설정 주소 복사</button></div>
     <p id="extensionFolder" class="hint"></p><strong id="pairingCode" class="pairing-code">계정의 ‘브라우저 연결’을 눌러 주세요.</strong><p id="pairingHelp">업데이트 후에는 Chrome 확장 관리 화면에서 BlogAuto의 새로고침 버튼을 누르세요. 최초 설치 후 이 폴더를 이동하거나 삭제하지 마세요.</p>
     <p class="hint">각 블로그 창의 로그인은 별도 로컬 폴더에 Chrome이 보관합니다. 앱은 쿠키를 읽거나 교체하지 않습니다. 처음에는 계정 창마다 확장을 설치하세요. 이후 세션 만료 시에만 직접 로그인하며 앱은 완료될 때까지 대기합니다.</p>
-    </section></div><script src="./app.js"></script><script src="./operations.js"></script>
+    </section></div><script src="./relevance-view.js"></script><script src="./app.js"></script><script src="./operations.js"></script>
     <div id="modelErrorLayer" class="modal-backdrop" hidden>
       <section class="startup-card" role="dialog" aria-modal="true" aria-labelledby="modelErrorTitle">
         <h2 id="modelErrorTitle">모델 응답 대기</h2>

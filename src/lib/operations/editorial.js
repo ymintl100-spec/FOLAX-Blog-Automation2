@@ -42,6 +42,7 @@ function read(db, account, id) {
     )
     .all(id)
     .map((e) => ({ ...e, data: JSON.parse(e.data) }));
+  d.relevanceReport = require("../articleRelevance").documentReport(d);
   d.original = d.versions.at(-1);
   d.diff = diff(d.original?.article || "", d.current.article);
   return d;

@@ -1288,6 +1288,10 @@ function setTargetProgress(target,status,detail=''){
   state.targetProgress[progressKey(target)]={account:accountDisplayName(target.account),category:target.category.name,status,detail};
   renderTargetProgress();
 }
+function renderRelevance(report){
+  $('#articleRelevancePanel').hidden=!report;
+  window.blogRelevanceView.render($('#articleRelevance'),report);
+}
 function renderArticleTags(values){
   const tags=(Array.isArray(values)?values:[]).filter(t=>typeof t==='string');
   $('#articleTagsPanel').hidden=!tags.length;
@@ -1297,6 +1301,7 @@ function renderArticleTags(values){
 }
 function resetJobPreview(target){
   renderArticleTags([]);
+  renderRelevance(null);
   state.currentJobId='';
   $('#articlePreview').value='';$('#selectedTitle').textContent='주제 선정 중';
   $('#writingApplicationStatus').textContent='새 작업의 형식 적용 준비 중';
@@ -1437,6 +1442,7 @@ async function boot() {
   renderHistory(initial.history || []);
   if(initial.pendingPreview){
     const draft=initial.pendingPreview;
+    renderRelevance(draft.relevanceReport);
     $('#articlePreview').value=draft.article || '';$('#selectedTitle').textContent=draft.title || '';
     renderArticleTags(draft.tags);
     renderFormattedArticle({...draft,article:draft.article,writingApplication:draft.writingApplication});
@@ -1475,6 +1481,7 @@ async function boot() {
     if (payload.rateLimits) setCodexRateLimits(payload.rateLimits);
   });
   window.blogAuto.onPreview((payload) => {
+    renderRelevance(payload.relevanceReport);
     renderArticleTags(payload.tags);
     $("#articlePreview").value = payload.article || "";
     const applied=payload.writingApplication;

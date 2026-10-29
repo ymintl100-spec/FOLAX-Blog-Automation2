@@ -668,14 +668,15 @@ class Operations {
     });
     return result;
   }
-  async review(account, id) {
+  async review(account, id, { analyzeRelevance = false } = {}) {
     this.account(account);
     return this.lock(async () => {
       const d = E.read(this.db, account, id),
         dir = path.join(this.root, "jobs", "review_" + S.id());
       fs.mkdirSync(dir, { recursive: true });
-      const options = this.options(account, d, dir),
-        runner = require("../codexRunner")._private;
+      const options = this.options(account, d, dir);
+      if(analyzeRelevance)options.relevancePolicy=1;
+      const runner = require("../codexRunner")._private;
       const structural = [
         runner.writerOutputIssueReason(options.writerResult, options),
         runner.writerImageContractIssueReason(options.writerResult, options),
@@ -691,8 +692,11 @@ class Operations {
             "main",
             require("../generationPrompts").reviewPrompt(options),
             options,
-          ),
-          issues = [
+          );
+        if(review.relevanceEvidence)review.relevanceInputHash=require('../articleRelevance').inputHash(options.writerResult);
+        const issues = [
+            require("../articleRelevance").evidenceIssue(review,options.writerResult,options),
+            require("../articleRelevance").qualityIssue(options.writerResult,options,review),
             runner.mainReviewPassIssueReason(review),
             require("../naverQuality").reviewEvidenceIssue(
               review,
@@ -793,6 +797,7 @@ class Operations {
         platformVariant: true,
         articleLengthPolicy: 1,
         tagCount: 30,
+        relevancePolicy: 1,
         includeTitleImage: false,
         maxBodyImages: 0,
         minimumImageCount: 0,
@@ -837,6 +842,7 @@ class Operations {
             ...d.data.options,
             articleLengthPolicy: 1,
             tagCount: 30,
+            relevancePolicy: 1,
             includeTitleImage: false,
             maxBodyImages: 0,
             minimumImageCount: 0,
