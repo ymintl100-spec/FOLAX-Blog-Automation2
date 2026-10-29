@@ -202,14 +202,15 @@ test("platform variants must have different body, separate review and separate h
   ops.hooks.runTask = async () => ({
     ...d.data.writer,
     status: "success",
+    tags:Array.from({length:30},(_,i)=>"주제태그"+i),
     article:sourceArticle,
     title: "제목만 다름",
     tokenUsage: { total: 5 },
   });
   await assert.rejects(() => ops.variant("a", d.id), /본문이 동일/);
   ops.hooks.runTask=async args=>{
-    assert.equal(args.options.articleLengthPolicy,1);assert(args.prompt.includes('1000~1200자'));
-    return {...d.data.writer,status:'success',article:sourceArticle.replace('좋습니다','좋아요'),title:'플랫폼별 별도 제목'};
+    assert.equal(args.options.tagCount,30);assert.equal(args.options.articleLengthPolicy,1);assert(args.prompt.includes('1000~1200자'));
+    return {...d.data.writer,status:'success',tags:Array.from({length:30},(_,i)=>'주제태그'+i),article:sourceArticle.replace('좋습니다','좋아요'),title:'플랫폼별 별도 제목'};
   };
   const variant=await ops.variant('a',d.id);
   assert.equal(variant.data.options.articleLengthPolicy,1);assert.equal(variant.approved_version,null);
@@ -419,4 +420,13 @@ test("capture analysis is explicit, cached by image hash and stores only bounded
   assert.deepEqual(calls, ["imageStyle"]);
   assert.equal(E.profile(ops.db, "a").exampleCount, 0);
   assert.equal(memory.list(root, "a").eligibleCount, 0);
+});
+
+test('approved Naver publication receives all 30 tags and the stored version remains unchanged',async t=>{
+ const {ops,calls}=setup(t),tags=Array.from({length:30},(_,i)=>'정리태그'+i);
+ const d=document(ops,{writer:{status:'success',tags,bodyImages:[],titleImagePath:''}});
+ ops.approve('a',d.id,{version:1,confirmed:true});
+ await ops.publish('a',d.id,{preparation:{version:1,visibility:'public',scheduleMode:'now'}});
+ assert.deepEqual(calls[0].options.tags,tags);
+ assert.deepEqual(ops.document('a',d.id).current.data.writer.tags,tags);
 });

@@ -1288,7 +1288,15 @@ function setTargetProgress(target,status,detail=''){
   state.targetProgress[progressKey(target)]={account:accountDisplayName(target.account),category:target.category.name,status,detail};
   renderTargetProgress();
 }
+function renderArticleTags(values){
+  const tags=(Array.isArray(values)?values:[]).filter(t=>typeof t==='string');
+  $('#articleTagsPanel').hidden=!tags.length;
+  $('#articleTagsCount').textContent=String(tags.length);
+  $('#articleTags').value=tags.map(t=>'#'+t.replace(/^#+/,'')).join(' ');
+  $('#articleTagsStatus').textContent='본문 글자수 제외 · 네이버 최대 30개 / 티스토리 앞 10개';
+}
 function resetJobPreview(target){
+  renderArticleTags([]);
   state.currentJobId='';
   $('#articlePreview').value='';$('#selectedTitle').textContent='주제 선정 중';
   $('#writingApplicationStatus').textContent='새 작업의 형식 적용 준비 중';
@@ -1403,6 +1411,10 @@ async function startTistoryTestPublish() {
 async function boot() {
   const initial = await window.blogAuto.getInitialData();
   $('#appVersion').textContent=initial.appVersion?'v'+initial.appVersion:'';
+  $('#copyArticleTags').addEventListener('click',async()=>{
+    try{await navigator.clipboard.writeText($('#articleTags').value);$('#articleTagsStatus').textContent='태그를 복사했습니다.';}
+    catch{$('#articleTags').focus();$('#articleTags').select();$('#articleTagsStatus').textContent='Ctrl+C로 복사하세요.';}
+  });
   $('#showMobilePreview').addEventListener('click',()=>{mobilePreviewChosen=true;$('#articlePreview').hidden=true;$('#articleFormattedPreview').hidden=false;});
   $('#showRawPreview').addEventListener('click',()=>{mobilePreviewChosen=false;$('#articlePreview').hidden=false;$('#articleFormattedPreview').hidden=true;});
   window.blogAuto.onExperienceConsumed(payload=>{
@@ -1426,6 +1438,7 @@ async function boot() {
   if(initial.pendingPreview){
     const draft=initial.pendingPreview;
     $('#articlePreview').value=draft.article || '';$('#selectedTitle').textContent=draft.title || '';
+    renderArticleTags(draft.tags);
     renderFormattedArticle({...draft,article:draft.article,writingApplication:draft.writingApplication});
     $('#articleMeta').textContent=draft.status==='publish_uncertain'?'이전 발행 결과 확인 필요':'저장된 글 복구됨 · 같은 계정·카테고리에서 작업 시작 시 생성 없이 발행 재시도';
     renderImages(draft.images || []);
@@ -1462,6 +1475,7 @@ async function boot() {
     if (payload.rateLimits) setCodexRateLimits(payload.rateLimits);
   });
   window.blogAuto.onPreview((payload) => {
+    renderArticleTags(payload.tags);
     $("#articlePreview").value = payload.article || "";
     const applied=payload.writingApplication;
     $('#writingApplicationStatus').textContent=applied?`${applied.label} v${applied.guideVersion} · 본문 ${applied.articleCharacters??'?'}자${applied.lengthBudget?.target?' / 목표 '+applied.lengthBudget.target+'자 안팎':''} · 참고자료 미표시 · 소제목 ${applied.sectionCount}개 · 문단 ${applied.paragraphCount}개 · 수정·승인 예시 ${applied.approvedExamples}개${applied.presentation?' · 줄 '+applied.presentation.lineTarget+'자 안팎 / '+(applied.presentation.alignment==='center'?'중앙':'왼쪽')+' 정렬':''}`:'본문 형식 점검 전 · 기존 원고를 불러온 경우 새 형식으로 재작성하지 않습니다.';
@@ -1482,6 +1496,7 @@ async function boot() {
     $("#articleMeta").textContent = payload.verdict || payload.status || "제목 선정 완료";
   });
   window.blogAuto.onComplete((payload) => {
+    if(Array.isArray(payload.tags))renderArticleTags(payload.tags);
     if (!state.autoRunning && !state.retryingHistory) {
       state.running = false;
       $("#startButton").disabled = false;updateRunControls();

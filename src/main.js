@@ -281,16 +281,8 @@ function reusableTistorySession(key) {
   return session;
 }
 
-function sanitizeNaverTag(value) {
-  return String(value || "")
-    .replace(/^#+/, "")
-    .replace(/\s+/g, "")
-    .replace(/[^\p{L}\p{N}]/gu, "")
-    .trim();
-}
-
 function buildTags(_topic,_keyword,articleTags) {
-  return [...new Set((Array.isArray(articleTags)?articleTags:[]).map(sanitizeNaverTag).filter(Boolean))].slice(0,10);
+  return require('./lib/articleTags').normalize(articleTags);
 }
 
 function clearPendingNaverPublishDraft(runtimeRoot) {
@@ -1051,6 +1043,7 @@ async function startJob(form) {
         qualityPolicyVersion: 1,
         compactWriting:true,
         articleLengthPolicy:1,
+        tagCount:30,
         requireApproval,operationsTopicId,operationsDraft:form.operationsDraft===true,
         requiredWritingInstructions:operations?require('./lib/operations/editorial').profile(operations.db,account.id).instructions:'',
         approvedEditorial:operations?operations.promptProfile(account.id):undefined,

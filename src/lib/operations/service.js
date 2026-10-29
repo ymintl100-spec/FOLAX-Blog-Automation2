@@ -792,6 +792,7 @@ class Operations {
         platform,
         platformVariant: true,
         articleLengthPolicy: 1,
+        tagCount: 30,
         includeTitleImage: false,
         maxBodyImages: 0,
         minimumImageCount: 0,
@@ -813,11 +814,12 @@ class Operations {
             options,
           ),
         ),
-        issue = require("../codexRunner")._private.writerOutputIssueReason(
+        issue = require('../articleTags').issue(result,options) || require("../codexRunner")._private.writerOutputIssueReason(
           result,
           options,
         );
       if (issue) throw Error(issue);
+      result.tags=require('../articleTags').normalize(result.tags);
       if (
         E.normalArticle(result.article) === E.normalArticle(d.current.article)
       )
@@ -834,6 +836,7 @@ class Operations {
           options: {
             ...d.data.options,
             articleLengthPolicy: 1,
+            tagCount: 30,
             includeTitleImage: false,
             maxBodyImages: 0,
             minimumImageCount: 0,
@@ -977,7 +980,7 @@ class Operations {
         article: require('../publicationFormat').omitReferences(d.current.article),
         titleImagePath: writer.titleImagePath || "",
         bodyImages: writer.bodyImages || [],
-        tags: writer.tags || [],
+        tags: require('../articleTags').forPlatform(writer.tags,d.platform),
         category: d.data.category,
         publishVisibility: prepared.data.visibility,
         publishScheduleMode: prepared.data.scheduleMode,

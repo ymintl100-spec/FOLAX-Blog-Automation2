@@ -26,7 +26,7 @@ async function publishToNaver(options={}) {
   const bridge=getBridge(), id=accountId(options);
   const result=await bridge.request(id,'publish',{
     title:options.title,article:require('./publicationFormat').omitReferences(options.article),titleImagePath:options.titleImagePath,
-    bodyImages:options.bodyImages || [],tags:options.tags || [], category:options.category || '',
+    bodyImages:options.bodyImages || [],tags:require('./articleTags').forPlatform(options.tags,'naver'), category:options.category || '',
     publishVisibility:options.publishVisibility || (options.publishPrivate===false?'public':'private'),
     publishScheduleMode:options.publishVisibility==='draft'?'now':options.publishScheduleMode || 'now',reserveAfterHours:options.reserveAfterHours || 3,
     scheduledAt:options.publishVisibility!=='draft' && options.publishScheduleMode==='reserve' ? naverScheduledAt(options.reserveAfterHours) : undefined,

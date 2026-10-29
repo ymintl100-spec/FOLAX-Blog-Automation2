@@ -10,6 +10,7 @@ const article=opening+'\n\n[SECTION - 실제로 쓰는 물건]\n'+help+'\n\n'+Ar
 const writer={status:'success',title,article,citations:[],tags:[],bodyImages:[],titleImagePrompt:'',titleImageText:[],titleImagePath:'',imageOmissions:[]};
 const goodReview=()=>({status:'PASS',failureReason:'',articleAnswersTitle:true,topicPreserved:true,factualityPass:true,sourceUsePass:true,riskExpressionPass:true,publishable:true,naturalnessPass:true,naverReadabilityPass:true,readerValueAssessment:{openingAnswer:opening,decisionHelp:help},humanizerDecisions:[],revisionInstructions:[],issues:[]});
 let index=0;
+const thirtyTags=Array.from({length:30},(_,i)=>'정리태그'+i);
 function harness({review,blockResearch=false,options={},writerResult=writer}={}){
  const calls=[],checkpoints=[];let reviews=0;
  const opts={jobDir:path.join(root,String(++index)),topicMode:'auto',includeTitleImage:false,maxBodyImages:0,...options,onGenerationCheckpoint:c=>checkpoints.push(JSON.parse(JSON.stringify(c)))};
@@ -55,11 +56,11 @@ test('the new length policy is checkpointed and retained across image-only resum
  const resumed=await generate({...h.opts,articleLengthPolicy:undefined,generationCheckpoint:checkpoint},()=>{},h.deps);assert.equal(resumed.publishable,true);assert.equal(resumed.writingApplication.lengthBudget.min,1000);assert.equal(resumed.writingApplication.lengthBudget.max,1200);
 });
 test('a 1000–1200 character article produces four verified image files and reuses accepted files on resume',async()=>{
- const w={...writer,titleImagePrompt:'제목의 핵심 내용을 보여주는 장면',titleImageText:['정리 기준'],bodyImages:[1,2,3].map(sequence=>({sequence,sectionHeading:'실제로 쓰는 물건',prompt:'각기 다른 배치 조건 '+sequence}))};
+ const w={...writer,tags:thirtyTags,titleImagePrompt:'제목의 핵심 내용을 보여주는 장면',titleImageText:['정리 기준'],bodyImages:[1,2,3].map(sequence=>({sequence,sectionHeading:'실제로 쓰는 물건',prompt:'각기 다른 배치 조건 '+sequence}))};
  const paragraphs=[...article.split('\n\n')];
  w.article=paragraphs.slice(0,9).map((p,i)=>p+(i>=3&&i<=5?'\n[IMAGE INSERT - '+(i-2)+']':'')).join('\n\n').trim();
  const count=require('../src/lib/articleRequirements').articleCharacterCount(w.article);assert(count>=1000&&count<=1200,'fixture length: '+count);
- const h=harness({writerResult:w,options:{includeTitleImage:true,maxBodyImages:3,minimumImageCount:4,articleLengthPolicy:1}});
+ const h=harness({writerResult:w,options:{includeTitleImage:true,maxBodyImages:3,minimumImageCount:4,articleLengthPolicy:1,tagCount:30}});
  Object.assign(h.deps,{bodyImageLimit:Number,writerIssue:runner.writerOutputIssueReason,imagePromptIssue:runner.writerImageContractIssueReason,imagePrompt:runner.buildImageWorkerPrompt,imageIssue:runner.imageWorkerContractIssueReason,pendingImages:runner.pendingImageWriterResult,mergeImages:runner.mergeImageWorkerAttempts,applyImages:(w,i)=>({...w,...i})});
  const original=h.deps.runTask;let images=0;
  const file=n=>{const f=path.join(h.opts.jobDir,n+'.png');fs.writeFileSync(f,'file fixture '+n);return f;};
@@ -71,7 +72,7 @@ test('a 1000–1200 character article produces four verified image files and reu
  assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main','image','image']);
  const checkpoint=h.checkpoints.at(-1);assert.equal(checkpoint.generationOptions.minimumImageCount,4);h.calls.length=0;
  h.deps.runTask=async()=>{throw Error('No new model call expected for complete images');};
- const resumed=await generate({...h.opts,generationCheckpoint:checkpoint},()=>{},h.deps);assert.equal(resumed.publishable,true);assert.equal(resumed.article,result.article);assert.equal(resumed.bodyImages.length,3);
+ const resumed=await generate({...h.opts,generationCheckpoint:checkpoint},()=>{},h.deps);assert.equal(resumed.publishable,true);assert.equal(resumed.article,result.article);assert.equal(resumed.bodyImages.length,3);assert.deepEqual(resumed.tags,thirtyTags);
 });
 for(const invalidFirst of [false,true])test(`marker mismatch repairs placement only and preserves cached prose across retry (invalidFirst=${invalidFirst})`,async()=>{
  const L=require('../src/lib/imageLayout');
@@ -238,4 +239,46 @@ test('image-resume evidence mismatch preserves the draft as an execution problem
  h.deps.writerIssue=()=> '본문 출처가 전달한 원문과 일치하지 않습니다. 제공된 sourceId와 URL을 사용하세요.';
  const r=await generate({...h.opts,generationCheckpoint:checkpoint},()=>{},h.deps);
  assert.equal(r.failureKind,'execution');assert.equal(r.failurePhase,'image_resume');assert.equal(r.article,article.trim());assert.equal(h.calls.length,0);assert(h.checkpoints.at(-1).imageCheckpoint);
+});
+
+test('thirty tags use the existing writer and final review without an extra model call',async()=>{
+ const h=harness({writerResult:{...writer,tags:thirtyTags},options:{tagCount:30}});
+ const result=await h.run();assert.equal(result.publishable,true);assert.deepEqual(result.tags,thirtyTags);
+ assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main']);
+ assert(h.calls[1].prompt.includes('정확히 30개'));assert(h.calls[2].prompt.includes('tags의 주제 관련성'));
+ assert.equal(h.checkpoints.at(-1).generationOptions.tagCount,30);
+});
+test('invalid tag response preserves prose and retry reuses research and writer, charging only the tag correction',async()=>{
+ const h=harness({options:{tagCount:30}}),original=h.deps.runTask;let repairs=0;
+ h.deps.runTask=async args=>{
+  if(!args.promptFileName.startsWith('tags-repair-'))return original(args);
+  h.calls.push(args);repairs++;
+  const fingerprint=JSON.parse(args.prompt.split('\n').at(-1)).fingerprint;
+  return {status:'success',fingerprint:repairs===1?'stale':fingerprint,tags:thirtyTags,article:'이 응답은 본문을 바꾸지 못합니다.',tokenUsage:{total:4}};
+ };
+ const first=await h.run();assert.equal(first.failurePhase,'tags');assert.equal(first.failureKind,'execution');assert.equal(first.article,writer.article.trim());assert(!h.calls.some(c=>c.agent==='main'));
+ const checkpoint=h.checkpoints.at(-1);assert(checkpoint.steps['1:prompt.txt']);assert(!checkpoint.steps['1:tags-repair-1.txt']);
+ h.calls.length=0;
+ const result=await generate({...h.opts,generationCheckpoint:checkpoint},()=>{},h.deps);
+ assert.equal(result.publishable,true,result.failureReason);assert.equal(result.article,writer.article.trim());assert.deepEqual(result.tags,thirtyTags);
+ assert.deepEqual(h.calls.map(c=>c.promptFileName),['tags-repair-1.txt','main-review-1.txt']);assert.equal(result.tokenUsage.total,14);
+ assert.equal(result.attempts.at(-1).steps[0].kind,'tags');
+});
+test('resuming a legacy job does not retrofit tag policy or alter its saved tags',async()=>{
+ const h=harness({writerResult:{...writer,tags:['기존태그']}});await h.run();const checkpoint=h.checkpoints.at(-1);h.calls.length=0;
+ const result=await generate({...h.opts,tagCount:30,generationCheckpoint:checkpoint},()=>{},h.deps);
+ assert.equal(result.publishable,true);assert.deepEqual(result.tags,['기존태그']);assert.equal(h.calls.length,0);
+});
+test('a genuine prose correction keeps its own bounded tag repair and retries only its invalid response',async()=>{
+ const h=harness({options:{tagCount:30},review:n=>n===1?{...goodReview(),status:'REVISION',publishable:false,failureReason:'설명 보완',revisionInstructions:['기존 문장의 설명을 보완하세요.']}:goodReview()}),original=h.deps.runTask;let secondRepairs=0;
+ h.deps.runTask=async args=>{
+  if(!args.promptFileName.startsWith('tags-repair-'))return original(args);
+  h.calls.push(args);const second=args.promptFileName==='tags-repair-2.txt';if(second)secondRepairs++;
+  const fingerprint=JSON.parse(args.prompt.split('\n').at(-1)).fingerprint;
+  return {status:'success',fingerprint:second&&secondRepairs===1?'invalid':fingerprint,tags:thirtyTags};
+ };
+ const first=await h.run();assert.equal(first.failurePhase,'tags');assert.equal(first.failureStep,'tags-repair-2.txt');
+ const checkpoint=h.checkpoints.at(-1);assert(checkpoint.steps['1:tags-repair-1.txt']);assert(!checkpoint.steps['1:tags-repair-2.txt']);h.calls.length=0;
+ const result=await generate({...h.opts,generationCheckpoint:checkpoint},()=>{},h.deps);assert.equal(result.publishable,true,result.failureReason);
+ assert.deepEqual(h.calls.map(c=>c.promptFileName),['tags-repair-2.txt','main-review-2.txt']);
 });
