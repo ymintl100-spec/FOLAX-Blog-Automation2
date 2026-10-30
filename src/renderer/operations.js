@@ -40,7 +40,14 @@
     busy = 0,
     lastTyping = 0,
     editingSeconds = 0,
-    sequence = 0;
+    sequence = 0,
+    accountsKey = null,
+    pendingAccountRefresh = false,
+    initialization = 0,
+    detailAccount = '',
+    detailTarget = '';
+  const targetKey = a => JSON.stringify([a?.id,a?.blogId,a?.tistoryBlogId||'']);
+  const accountListKey = store => JSON.stringify((store?.accounts || []).map(a=>[a.id,a.label,a.blogId,a.tistoryBlogId]));
   const account = () => $("#opsAccount").value;
   const button = (action, label, id = "", cls = "ghost small") =>
     `<button type="button" class="${cls}" data-action="${action}" data-id="${esc(id)}">${esc(label)}</button>`;
@@ -63,13 +70,15 @@
   function message(text, error = false) {
     $("#opsStatus").textContent = text;
     $("#opsStatus").classList.toggle("ops-error", error);
+    const topicStatus=$('#opsTopicStatus');
+    if($('#opsTopicDialog').open){topicStatus.textContent=text;topicStatus.classList.toggle('ops-error',error);}
     const progress=$('#opsPublishProgress');
     if(progress){progress.textContent=text;progress.classList.toggle('ops-error',error);}
   }
   async function run(fn) {
     busy++;
     document
-      .querySelectorAll("#operationsPanel button")
+      .querySelectorAll("#operationsPanel button, #opsTopicDetail button")
       .forEach((b) => (b.disabled = true));
     try {
       message("작업 중…");
@@ -83,8 +92,9 @@
       busy--;
       if (!busy)
         document
-          .querySelectorAll("#operationsPanel button")
+          .querySelectorAll("#operationsPanel button, #opsTopicDetail button")
           .forEach((b) => (b.disabled = false));
+      if(!busy&&pendingAccountRefresh){pendingAccountRefresh=false;init().catch(e=>message(e.message,true));}
     }
   }
   const action = (action, payload = {}) =>
@@ -109,6 +119,8 @@
     return `<div class="ops-notice"><b>${snapshot.publicationMode === "approval" ? "사용자 최종 승인 모드" : "이전 자동 발행 설정 유지 중"}</b><p>${snapshot.publicationMode === "approval" ? "AI 검수 후 사용자 검수에서 멈춥니다. 승인과 발행 실행은 별도 작업입니다." : "기존 발행 설정은 변경하지 않았습니다. 추천 화면에서 시작한 새 원고는 항상 사용자 승인 대기로 저장합니다."}</p><label>기존 작업 전체에 적용할 발행 정책<select id="opsPublicationMode"><option value="approval" ${snapshot.publicationMode === "approval" ? "selected" : ""}>사용자 최종 승인 후 발행</option><option value="legacy_auto" ${snapshot.publicationMode === "legacy_auto" ? "selected" : ""}>이전 자동 발행 방식 유지</option></select></label>${button("publicationMode", "선택한 정책 저장")}</div>`;
   }
   function overview() {
+    const host=$('#opsContent');
+    const expanded=host.dataset.view==='overview'&&host.dataset.account===account()?Array.from(host.querySelectorAll('details')).map(el=>el.open):[];
     const a = snapshot.analytics,
       docs = snapshot.documents,
       measured = a.platforms[0]?.metrics.visitors.last7;
@@ -121,7 +133,9 @@
   <p class="hint">월 검색량은 핵심 키워드의 PC·모바일 통합 수치입니다. 질문 제안 문장 자체의 검색량과 구분합니다. ${esc(snapshot.topics.coverage.note)}</p>
   <details><summary>전체 후보 ${snapshot.topics.candidates.length}개 · 미검증 질문 포함</summary>${topicTable(snapshot.topics.candidates.slice(0, 100), false)}</details>
   <details><summary>보관·제외한 주제 ${snapshot.savedTopics.length}개</summary>${snapshot.savedTopics.map((t) => `<p>${esc(t.title)} · ${esc(status(t.status))} ${button("restoreTopic", "후보로 복원", t.id)}</p>`).join("") || "<p>없음</p>"}</details>
-  <details><summary>계정 운영 카테고리</summary><p>기존 카테고리·설정은 유지하고 누락된 운영 카테고리만 선택 해제 상태로 추가합니다.</p>${button("installCategories", "누락된 운영 카테고리 추가")}</details><details><summary>주제 직접 등록</summary><div class="ops-grid"><label>제목·핵심 질문<input id="opsNewTitle" maxlength="160" /></label><label>핵심 키워드<input id="opsNewKeyword" maxlength="100"/></label><label>카테고리<select id="opsNewCategory">${options(snapshot.categories, snapshot.categories[0], null)}</select></label>${button("addTopic", "미검증 후보로 등록")}</div></details><div id="opsTopicDetail"></div>`;
+  <details><summary>계정 운영 카테고리</summary><p>기존 카테고리·설정은 유지하고 누락된 운영 카테고리만 선택 해제 상태로 추가합니다.</p>${button("installCategories", "누락된 운영 카테고리 추가")}</details><details><summary>주제 직접 등록</summary><div class="ops-grid"><label>제목·핵심 질문<input id="opsNewTitle" maxlength="160" /></label><label>핵심 키워드<input id="opsNewKeyword" maxlength="100"/></label><label>카테고리<select id="opsNewCategory">${options(snapshot.categories, snapshot.categories[0], null)}</select></label>${button("addTopic", "미검증 후보로 등록")}</div></details>`;
+    host.dataset.view='overview';host.dataset.account=account();
+    Array.from(host.querySelectorAll('details')).forEach((el,i)=>{el.open=expanded[i]||false;});
   }
   function topicTable(rows, rank) {
     return `<div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>${rank ? "순위" : "구분"}</th><th>주제 · 핵심 키워드</th><th>핵심 키워드 월 검색량</th><th>추세</th><th>경쟁 환경</th><th>내부 점수</th><th>카테고리 · 중복</th><th>기준일 · 상태</th><th>작업</th></tr></thead><tbody>${rows.map((t) => `<tr><td>${rank ? t.rank : t.demand ? "검색량 확인" : "질문 제안"}</td><td><b>${esc(t.title)}</b><small>${esc(t.keyword)}${t.origin !== "measured_keyword" ? " · 질문 문장 검색량 미확인" : ""}</small></td><td>${esc(t.demand ? volume(t.demand) : "미확인")}</td><td>${esc(t.trend.label)}</td><td>${t.competition.length ? esc(t.competition.length + "건 · 근거 확인 필요") : "미확인"}</td><td>${t.score == null ? "미평가" : t.score + "/100"}<small>평가 배점 ${t.assessedMax}/100 · 신뢰 ${esc(t.confidence)}</small></td><td>${esc(t.category)}<small>${esc({ new: "신규(확인 범위 내)", similar: "유사", existing: "기존" }[t.duplicate.status])}</small></td><td>${esc(t.dataDate || "미확인")}<small>${esc(status(t.status))}</small></td><td>${button("detail", "상세 분석", t.id)}${button("generateOptions", "원고 작성", t.id)}${button("archive", "보관", t.id)}${button("exclude", "제외", t.id)}</td></tr>`).join("")}</tbody></table></div>`;
@@ -135,6 +149,11 @@
     return "통합 미확인";
   }
   function detail(id, generate = false) {
+    const dialog=$('#opsTopicDialog');
+    const sameTopic=dialog.open&&detailAccount===account()&&topic?.id===id;
+    const saved=sameTopic?Array.from(dialog.querySelectorAll('input,textarea,select')).map(el=>({id:el.id,value:el.value,checked:el.checked})):[];
+    const openDetails=sameTopic?Array.from(dialog.querySelectorAll('details')).map(el=>el.open):[];
+    const scrollTop=sameTopic?$('#opsTopicDetail').scrollTop:0;
     topic = snapshot.topics.candidates.find((t) => t.id === id);
     if (!topic) return;
     const t = topic,
@@ -155,8 +174,13 @@
     .join(
       "",
     )}<div class="ops-notice"><h3>선택한 주제만 작성</h3><label>원고 플랫폼<select id="opsGeneratePlatform"><option value="naver">네이버</option><option value="tistory">티스토리(등록 계정)</option></select></label><label class="compact-check"><input id="opsGenerateImages" type="checkbox" checked/>이미지 총 4장 이상 생성 · 대표 1장 + 본문 최소 3장(추가 사용량)</label><label>이번 글의 실제 경험 메모<textarea id="opsExperience" maxlength="2000" placeholder="직접 겪은 사실만 입력. 없으면 1인칭 경험을 만들지 않습니다."></textarea></label>${button("generate", "이 주제로 원고 작성 · 사용자 검수 대기", id, "primary")}</div></section>`;
-    $("#opsTopicDetail").scrollIntoView({ behavior: "smooth", block: "start" });
-    if (generate) $("#opsExperience").focus();
+    detailAccount=account();
+    detailTarget=targetKey(snapshot.account);
+    for(const field of saved){const el=document.getElementById(field.id);if(el){el.value=field.value;el.checked=field.checked;}}
+    Array.from(dialog.querySelectorAll('details')).forEach((el,i)=>{el.open=openDetails[i]||false;});
+    $('#opsTopicDetail').scrollTop=scrollTop;
+    if(!dialog.open){$('#opsTopicStatus').textContent='';dialog.showModal();}
+    if(generate)$('#opsExperience').focus({preventScroll:true});
   }
   function dataPage() {
     const prefs = snapshot.preferences;
@@ -268,6 +292,7 @@
   }
   function render() {
     if (!snapshot) return;
+    if(tab!=='overview')$('#opsContent').dataset.view=tab;
     if (tab === "overview") overview();
     else if (tab === "data") dataPage();
     else if (tab === "drafts") drafts();
@@ -282,6 +307,7 @@
     $("#opsDocument")?.scrollIntoView({ block: "start" });
   }
   function showTab(next) {
+    if(next!=='overview')closeTopicDetail();
     tab = next;
     const legacy = next === "legacy";
     $("#operationsPanel").hidden = legacy;
@@ -598,12 +624,13 @@
       run(() => action("openSource", { url: source.dataset.source }));
       return;
     }
-    const target = event.target.closest("#opsContent [data-action]");
+    const target = event.target.closest("#opsContent [data-action], #opsTopicDetail [data-action]");
     if (target && !busy)
       run(() => handle(target.dataset.action, target.dataset.id));
   });
   $("#opsReload").addEventListener("click", () => run(refresh));
   $("#opsAccount").addEventListener("change", () => {
+    closeTopicDetail();
     sequence++;
     doc = null;
     topic = null;
@@ -624,27 +651,40 @@
     if (tab !== "legacy" && account())
       refresh().catch((e) => message(e.message, true));
   });
-  async function init() {
-    const initial = await api.getInitialData(),
-      accounts = initial.accountStore?.accounts || [],
-      selected =
-        $("#opsAccount").value || initial.accountStore?.selectedAccountId;
-    $("#opsAccount").replaceChildren();
-    for (const a of accounts) {
-      const option = document.createElement("option");
-      option.value = a.id;
-      option.textContent = (a.label || a.blogId) + " · " + a.blogId;
-      option.selected = a.id === selected;
-      $("#opsAccount").append(option);
-    }
-    showTab(tab);
-    if (accounts.length) {
-      await refresh();
-      message("준비됨");
-    } else renderEmpty();
+  function closeTopicDetail(){
+    const dialog=$('#opsTopicDialog');
+    if(dialog.open)dialog.close();
   }
-  api.onAccountsUpdate(() => {
-    if (!busy) init().catch((e) => message(e.message, true));
+  $('#opsTopicClose').addEventListener('click',closeTopicDetail);
+  $('#opsTopicDialog').addEventListener('close',()=>{
+    if($('#opsTopicDialog').open)return;
+    const id=topic?.id;
+    topic=null;detailAccount='';detailTarget='';
+    if(id&&tab==='overview')document.querySelector('#opsContent [data-action="detail"][data-id="'+CSS.escape(id)+'"]')?.focus({preventScroll:true});
+  });
+  async function init() {
+    const request=++initialization;
+    const initial = await api.getInitialData();
+    if(request!==initialization)return;
+    const accounts = initial.accountStore?.accounts || [],
+      previous=account(),
+      selected=accounts.some(a=>a.id===previous)?previous:initial.accountStore?.selectedAccountId;
+    accountsKey=accountListKey(initial.accountStore);
+    $('#opsAccount').replaceChildren();
+    for(const a of accounts){
+      const option=document.createElement('option');
+      option.value=a.id;option.textContent=(a.label||a.blogId)+' · '+a.blogId;option.selected=a.id===selected;
+      $('#opsAccount').append(option);
+    }
+    if(detailAccount&&(detailAccount!==account()||detailTarget!==targetKey(accounts.find(a=>a.id===account()))))closeTopicDetail();
+    if(previous&&previous!==account()){doc=null;topic=null;filters={excludeDuplicate:true};}
+    showTab(tab);
+    if(accounts.length){await refresh();message('준비됨');}else{snapshot=null;renderEmpty();}
+  }
+  api.onAccountsUpdate(store=>{
+    if(accountsKey===accountListKey(store))return;
+    if(busy){pendingAccountRefresh=true;return;}
+    init().catch(e=>message(e.message,true));
   });
   init().catch((e) => message(e.message, true));
 })();
