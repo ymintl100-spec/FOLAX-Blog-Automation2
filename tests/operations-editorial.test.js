@@ -439,3 +439,11 @@ test('explicit relevance analysis uses one current-version review, preserves tex
  assert.equal(result.current.article,before);assert.equal(result.current_version,1);assert.equal(result.approved_version,null);assert.equal(result.relevanceReport.score,100);assert.equal(calls.length,1);assert.equal(calls[0].agent,'main');
  const edited=ops.save('a',d.id,{expectedVersion:1,title:result.current.title,article:before+'\n\n수정본은 새로운 검수를 받아야 합니다.'});assert.equal(edited.relevanceReport.score,null);
 });
+for(const repeat of [false,true])test(`saved-document review corrects only the invalid review scope once (repeat=${repeat})`,async t=>{
+ const {ops,calls}=setup(t),d=document(ops);let count=0;
+ const bad={...review(),status:'REVISION',publishable:false,failureReason:'필수 이미지 4장의 생성 결과가 제공되지 않아 발행 준비 완료로 판정할 수 없습니다.'};
+ ops.hooks.runTask=async args=>{calls.push(args);return ++count===1||repeat?bad:review();};
+ if(repeat)await assert.rejects(()=>ops.review('a',d.id),/이미지 생성 전 검수/);
+ else{const result=await ops.review('a',d.id);assert.equal(result.status,'user_review');assert.equal(result.approved_version,null);}
+ assert.equal(count,2);assert(calls.every(c=>c.agent==='main'));const stored=ops.document('a',d.id);assert.equal(stored.current_version,1);assert.equal(stored.current.article,d.current.article);
+});

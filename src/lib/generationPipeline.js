@@ -12,6 +12,7 @@ const formats=require('./blogFormatProfiles'),rhythm=require('./readingRhythm');
 const imageLayout=require('./imageLayout');
 const articleTags=require('./articleTags');
 const relevance=require('./articleRelevance');
+const reviewContract=require('./reviewContract');
 const {humanize,applyReview}=require('../../packages/blog-humanizer');
 const {resolveImageStyle}=require('./accountImageStyle');
 const normalizeTitle=s=>String(s || '').trim();
@@ -104,7 +105,7 @@ async function generateAttempt(options, log, deps) {
   const duplicate=await options.onFinalTitleCandidate?.(finalTitle,research);
   if(duplicate?.duplicate)return {...failed('title_duplicate',duplicate.reason || '동일한 제목이 있습니다.'),status:'duplicate_retry',title:finalTitle};
   progress('주제 선정 통과 · 본문 작성으로 이동','info','research');
-  let feedback='',layoutRepairUsed=false;
+  let feedback='',layoutRepairUsed=false,scopeRepairUsed=false;
   // At most one targeted correction. No outer UI loop may rerun the whole pipeline.
   for(let attempt=1;attempt<=2;attempt++){
     const params={...effective,topic:finalTitle,researchTitleResult:research,writerRevisionFeedback:feedback,writerAttempt:attempt,maxWriterAttempts:2};
@@ -174,6 +175,15 @@ async function generateAttempt(options, log, deps) {
     }
     options.onArticleReady?.({...writer,previewStage:'reviewing',writerAttempt:attempt});
     review=await run('main',deps.reviewPrompt({...effective,researchTitleResult:research,writerResult:writer,finalTitle,humanizerChanges:humanized.changes}),`main-review-${attempt}.txt`,'main-review-result.json');
+    const scopeIssue=reviewContract.violation(review);
+    if(scopeIssue){
+      progress('본문 보존 · 검수 단계 오류를 한 번 바로잡습니다: '+scopeIssue,'warn','writer');
+      if(scopeRepairUsed)return failed('main_review',scopeIssue+' 본문과 완료 단계를 보존했습니다.','execution');
+      scopeRepairUsed=true;
+      review=await run('main',deps.reviewPrompt({...effective,researchTitleResult:research,writerResult:writer,finalTitle,humanizerChanges:humanized.changes,reviewContractCorrection:scopeIssue}),`main-review-scope-${attempt}.txt`,'main-review-result.json');
+      const repeatedScope=reviewContract.violation(review);
+      if(repeatedScope)return failed('main_review',repeatedScope+' 본문은 재작성하지 않았습니다.','execution');
+    }
     try {
       const reviewed=applyReview(writer.article,humanized.changes,review.humanizerDecisions);
       writer=imageLayout.normalize({...writer,article:reviewed.article});
