@@ -191,6 +191,8 @@ function register({ ipcMain, dialog, safeStorage, window, root, ...hooks }) {
           return service.review(accountId, payload.id);
         case "repair":
           return service.repair(accountId, payload.id, payload);
+        case "simplify":
+          return service.simplify(accountId,payload.id,{version:payload.version});
         case "approve":
           return service.approve(accountId, payload.id, payload);
         case "revoke":

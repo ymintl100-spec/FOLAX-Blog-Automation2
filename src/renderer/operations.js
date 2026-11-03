@@ -204,7 +204,7 @@
     lastTyping = 0;
     const tags=(d.current.data.writer?.tags || d.data.writer?.tags || []).filter(t=>typeof t==='string');
     $("#opsDocument").innerHTML =
-      `<section class="ops-detail"><h2>${esc(d.platform)} 원고 · v${d.current_version}</h2><p class="hint">수정 후 저장하면 이전 승인·AI 검수가 해제됩니다. 최초 AI 원고와 이전 버전은 보존합니다. 로컬 원고 수정·승인 취소는 이미 게시한 글을 변경하지 않습니다.</p><label>제목<input id="opsDocTitle" maxlength="200" value="${esc(d.current.title)}"/></label><label>현재 원고<textarea id="opsDocArticle" class="ops-article" maxlength="30000">${esc(d.current.article)}</textarea></label><div class="button-row">${button("saveDocument", "수정본 저장", d.id, "primary")}${button("review", "현재 버전 AI 검수 요청", d.id)}${button("repair", "선택 문단만 AI 보완", d.id)}${button("variant", d.platform === "naver" ? "티스토리 별도 원고 작성" : "네이버 별도 원고 작성", d.id)}</div><label>선택 문단 수정 요청<input id="opsRepairInstruction" maxlength="1000" placeholder="수정할 문단을 원고에서 선택하고 요청을 적어주세요."/></label><p class="hint">AI 부분 보완은 선택 문단만 바꾸며 최종 승인 전 다시 검수합니다. 플랫폼별 별도 원고도 각각 검수·승인해야 합니다.</p>
+      `<section class="ops-detail"><h2>${esc(d.platform)} 원고 · v${d.current_version}</h2><p class="hint">수정 후 저장하면 이전 승인·AI 검수가 해제됩니다. 최초 AI 원고와 이전 버전은 보존합니다. 로컬 원고 수정·승인 취소는 이미 게시한 글을 변경하지 않습니다.</p><label>제목<input id="opsDocTitle" maxlength="200" value="${esc(d.current.title)}"/></label><label>현재 원고<textarea id="opsDocArticle" class="ops-article" maxlength="30000">${esc(d.current.article)}</textarea></label><div class="button-row">${button("saveDocument", "수정본 저장", d.id, "primary")}${button("review", "현재 버전 AI 검수 요청", d.id)}${button("repair", "선택 문단만 AI 보완", d.id)}${button("simplify", "현재 원고 쉽게 다듬기 · AI 1회", d.id)}${button("variant", d.platform === "naver" ? "티스토리 별도 원고 작성" : "네이버 별도 원고 작성", d.id)}</div><label>선택 문단 수정 요청<input id="opsRepairInstruction" maxlength="1000" placeholder="수정할 문단을 원고에서 선택하고 요청을 적어주세요."/></label><p class="hint">쉽게 다듬기는 기존 자료로 본문을 수정본에 저장합니다. 이전 원고·이미지는 보존하며 다시 검수·승인해야 합니다. AI 부분 보완은 선택 문단만 바꿉니다. 플랫폼별 별도 원고도 각각 검수·승인해야 합니다.</p>
  <details><summary>주제 관련 태그 ${tags.length}개</summary><textarea id="opsDocTags" rows="3" readonly aria-label="원고 태그">${esc(tags.map(t=>'#'+t.replace(/^#+/, '')).join(' '))}</textarea>${button("copyTags", "태그 복사")}<p class="hint">본문 글자수에 포함하지 않습니다. ${d.platform==='tistory'?'티스토리는 우선순위가 높은 앞 10개를 발행합니다.':'네이버 발행 설정에 최대 30개를 전달합니다.'} 기존 원고의 태그는 자동 변경하지 않습니다.</p></details>
  <div id="opsRelevance" class="ops-notice"></div><div class="button-row">${button("analyzeRelevance", "연관성 포함 AI 검수", d.id)}<button type="button" class="ghost small" data-source="https://www.ndex.kr/post">NDEX에서 게시글 분석</button></div><p class="hint">현재 저장 원고만 분석합니다. 기존 최종 검수 한 번에 연관성을 함께 확인하며 본문을 자동으로 바꾸지 않습니다. 검수 후에는 다시 최종 승인하세요.</p>
  <div class="ops-document-preview" id="opsDocPreview"></div><div class="ops-images">${(d.current.data.images || []).map((i) => `<figure><img src="${esc(i.url)}" alt="${esc(i.role)} 이미지"/><figcaption>${esc(i.role)} ${esc(i.sequence)}</figcaption></figure>`).join("")}</div>
@@ -510,7 +510,7 @@
         }),
       );
     if (
-      ["review", "analyzeRelevance", "repair", "variant", "approve", "prepare", "publish"].includes(
+      ["review", "analyzeRelevance", "repair", "simplify", "variant", "approve", "prepare", "publish"].includes(
         actionName,
       ) &&
       doc &&
@@ -525,6 +525,7 @@
       actionName === "revoke"
     )
       return updatedDocument(await action(actionName, { id }));
+    if (actionName === "simplify") return updatedDocument(await action("simplify",{id,version:doc.current_version}));
     if (actionName === "repair") {
       const field = $("#opsDocArticle"),
         before = field.value.slice(field.selectionStart, field.selectionEnd);
