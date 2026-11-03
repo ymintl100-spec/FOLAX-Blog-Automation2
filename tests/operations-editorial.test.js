@@ -447,3 +447,18 @@ for(const repeat of [false,true])test(`saved-document review corrects only the i
  else{const result=await ops.review('a',d.id);assert.equal(result.status,'user_review');assert.equal(result.approved_version,null);}
  assert.equal(count,2);assert(calls.every(c=>c.agent==='main'));const stored=ops.document('a',d.id);assert.equal(stored.current_version,1);assert.equal(stored.current.article,d.current.article);
 });
+
+test('explicit simplification uses one Writer call, keeps source/images/tags and stores a new unapproved version',async t=>{
+ const {ops,calls}=setup(t);
+ const base=article+'\n\n2025년 기록을 읽고 필요한 물건을 구분합니다.\n[IMAGE INSERT - 1]';
+ const length=require('../src/lib/articleRequirements').articleCharacterCount(base),body=base+'\n\n'+'설'.repeat(1100-length);
+ const d=E.create(ops.db,'a',{title:'도구를 두는 기준',article:body,data:{options:{articleLengthPolicy:1},writer:{title:'도구를 두는 기준',article:body,tags:['도구정리'],citations:[{sourceId:'kept-source'}],bodyImages:[{sequence:1,sectionHeading:'도구를 두는 기준',prompt:'보존할 그림 설명',path:'existing-fixture.png'}]},images:[]}});
+ ops.hooks.runTask=async args=>{calls.push(args);assert.equal(args.agent,'writer');assert(args.prompt.includes('한 문장에는 핵심 뜻 하나'));assert(args.prompt.includes('1000~1200자'));return {after:body.replace('도구를 찾기 어렵다면','도구를 찾기 힘들다면'),reason:'쉬운 표현으로 수정'};};
+ const result=await ops.simplify('a',d.id,{version:1});assert.equal(calls.length,1);assert.equal(result.current_version,2);assert.equal(result.approved_version,null);assert.equal(result.original.article,body);assert(result.current.article.includes('도구를 찾기 힘들다면'));assert.equal(result.current.data.writer.bodyImages[0].path,'existing-fixture.png');assert.deepEqual(result.current.data.writer.tags,['도구정리']);assert.deepEqual(result.current.data.writer.citations,[{sourceId:'kept-source'}]);assert.equal(result.reviews.length,0);
+ await assert.rejects(()=>ops.simplify('a',d.id,{version:1}),/저장한 원고/);assert.equal(calls.length,1);
+});
+for(const defect of ['marker','number','length'])test(`simplification preserves the original draft when ${defect} is changed`,async t=>{
+ const {ops,calls}=setup(t),body=article+'\n\n2025년 기록을 확인해 설명합니다.\n[IMAGE INSERT - 1]',d=E.create(ops.db,'a',{title:'도구를 두는 기준',article:body,data:{options:{compactWriting:true},writer:{bodyImages:[]}}});
+ ops.hooks.runTask=async args=>{calls.push(args);return {after:defect==='marker'?body.replace('[IMAGE INSERT - 1]',''):defect==='number'?body.replace('2025','2026'):'[SECTION - 도구를 두는 기준]\n[IMAGE INSERT - 1]\n'+(body.replace(/\[(?:SECTION|IMAGE INSERT)[^\]]*\]/g,'').match(/\d+(?:[.,:/-]\d+)*/g)||[]).join(' ')};};
+ await assert.rejects(()=>ops.simplify('a',d.id,{version:1}),/보존|분량/);const stored=ops.document('a',d.id);assert.equal(stored.current_version,1);assert.equal(stored.current.article,body);assert.equal(calls.length,1);
+});

@@ -332,3 +332,7 @@ test('the 939 to 1038 character case preserves the second draft, accepts explain
  };
  const result=await h.run();assert.equal(result.publishable,true,result.failureReason);assert.equal(result.article.trim(),w2.article.trim());assert.equal(A.articleCharacterCount(result.article),1038);assert.equal(result.tags.length,30);assert.equal(result.relevanceReport.score,100);assert.equal(result.bodyImages.length,3);assert(fs.existsSync(result.titleImagePath));assert.equal(writers,2);assert.equal(reviews,2);assert.equal(h.calls.filter(c=>c.agent==='research').length,1);
 });
+test('hard-to-follow prose is revised once inside the existing Writer/Main budget',async()=>{
+ const h=harness({review:n=>({...goodReview(),naverReadabilityPass:n>1,status:n>1?'PASS':'REVISION',publishable:n>1,failureReason:n>1?'':'같은 주의점을 반대 방향의 부정문으로 반복해 독자가 다시 해석해야 합니다.',revisionInstructions:n>1?[]:['반복되는 단서 설명을 합치고 독자가 선택할 내용을 쉬운 말로 설명하세요.']})});
+ const result=await h.run();assert.equal(result.publishable,true,result.failureReason);assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main','writer','main']);assert(h.calls[1].prompt.includes('어려운 문장에 해요체만'));assert(h.calls[2].prompt.includes('형식적인 줄바꿈'));assert(h.calls[3].prompt.includes('반복되는 단서 설명을 합치고'));
+});
