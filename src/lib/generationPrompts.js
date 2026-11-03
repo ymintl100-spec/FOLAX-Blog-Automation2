@@ -112,6 +112,9 @@ function reviewPrompt(options) {
   return [
     options.tagCount===30?'같은 최종 검수에서 tags의 주제 관련성도 확인한다. 본문에서 실제 다룬 내용에 맞는지 확인하고 무관한 인기어·허위 치료효과·홍보·허구의 경험을 태그로 추가하지 않는다. 태그는 본문 글자수에 포함하지 않는다.':'',
     'You perform one final factual and usefulness review. '+policyFor(options),
+    require('./reviewContract').instruction,
+    JSON.stringify({reviewScope:require('./reviewContract').scope}),
+    options.reviewContractCorrection?'직전 검수 단계 오류를 바로잡아 같은 원고를 다시 검수한다: '+options.reviewContractCorrection+'. 이전 판정의 사실·본문·연관성 문제는 그대로 확인한다. 이미지 미생성만으로 본문을 다시 쓰거나 주제를 재선정하지 않는다.':'',
     require('./articleRelevance').reviewInstruction(options.writerResult,options),
     naturalWritingPolicy,
     options.contentPolicy||'',
@@ -131,7 +134,7 @@ function reviewPrompt(options) {
     '단순한 나열이 독자의 검색 목적 자체인 일정표·목록 글은 자동 반려하지 않는다. 필요한 정보가 잘 정리되어 독자의 질문을 해결하면 통과시킨다. 해요체/합니다체 취향, 임의의 소제목 수·키워드 횟수, FAQ 유무는 반려 사유가 아니다. 명시된 본문 분량과 이미지 요구사항은 필수 검수 대상이다. 재미를 위해 사실·경험·반전을 지어내도록 요구하지 않는다. 제목·도입·이미지 문구의 대상·기간·횟수·범위가 일치하고 본문이 그것을 이행하는지 확인한다.',
     referencePolicy,
     '추가 검색이나 주제 재선정을 요청하지 않는다. 이미 확보한 근거로 보완 가능한 문체·전개·출처 표시는 한 번의 Writer 수정에 묶는다. 빠진 선택적 정보 때문에 범위를 확장하지 않는다. BLOCK은 핵심 결론이 근거로 뒷받침되지 않고 주제 안에서 고칠 수 없을 때만 사용한다. 리뷰의 readerValueAssessment에는 openingAnswer와 decisionHelp를 실제 원고의 짧은 발췌로 적고, 부족하면 빈 문자열과 구체적인 이유를 적는다. 점수만 부여하거나 계획에 있다고 통과시키지 않는다.',
-    'PASS means publishable; return all eight booleans true only after both factuality and reader usefulness pass. REVISION needs specific repair instructions and the relevant boolean false. Preserve the existing maximum of one Writer correction; do not add SEO reviews or extra research. Do not rewrite the article or browse.',
+    'PASS means the text and image plans are acceptable for the next generation stage; publishable does not certify generated assets or authorize publication. Return all eight booleans true only after factuality and reader usefulness pass. REVISION needs specific repair instructions and the relevant boolean false. Preserve the existing maximum of one Writer correction; do not add SEO reviews or extra research. Do not rewrite the article, generate images, inspect files or browse.',
     options.tokenSaving!==false?'Writer가 같은 응답에서 자체 다듬은 본문이다. 별도 윤문 이력은 없으며 humanizerChanges와 humanizerDecisions는 빈 배열이다. 이 최종 검수에서 사실·의미 보존·자연스러움을 함께 평가한다.':'본문은 블로그 휴머나이저를 거쳤다. humanizerChanges의 수정 전후를 같은 검수 안에서 대조하여 대상·조건·부정·의무·가능성·고유명사·상업적 공개 문구가 바뀌거나 의미가 누락됐는지 확인한다. 문체 취향이나 수정량 자체는 반려 근거가 아니다. 의미가 바뀐 경우 해당 원문을 복원하도록 구체적으로 지시한다. 별도 문체 평가·윤문 호출은 하지 않는다.',
     options.tokenSaving===false?'humanizerChanges의 각 id에 대해 humanizerDecisions:[{id,action:"keep"|"restore"}]를 반드시 하나씩 반환한다(변경 없으면 []). 명확한 가독성 개선이며 원래 주장과 행동의 범위를 그대로 유지한 경우 keep. 단순한 어순·동의어 변주거나, 원문보다 강해지거나 약해졌다고 읽힐 여지가 있거나, 의미 보존이 확실하지 않으면 restore. 코어는 이 결정으로 해당 문단을 원문 그대로 복원한다. 복원만으로 해결되는 윤문 문제는 Writer 반려 사유로 삼지 않는다. 최종 status와 사실성·출처·독자 유용성은 restore를 적용한 원고를 기준으로 판정한다. 원문 자체의 사실 오류나 누락은 복원으로 해결되었다고 처리하지 말고 기존 REVISION/BLOCK 기준으로 판단한다.':'',
     '모든 주제에서 원문과 원고의 주체·대상·조건·시점·부정·인과·의무·가능성을 대조한다. 기관의 제공 의무를 독자의 수령 의무로 바꾸거나 개인의 감상을 보편적 사실로 바꾸지 않는다. 이 검수 응답의 meaningChecks:[{articleQuote,sourceQuote,meaningPreserved:boolean}]에 오해의 영향이 큰 실제 문장만 최대 3개 짧게 대조한다. 해당 문장이 없으면 빈 배열이다. 의미가 바뀌면 기존 REVISION에서 그 문장만 고치도록 지시한다. 별도 검수 호출은 하지 않는다. 필요한 조건을 직접 설명하고 판단 과정을 보고하는 문체는 피한다.',

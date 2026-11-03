@@ -304,3 +304,31 @@ test('a substantive Main block is not retried as a missing relevance response',a
  const h=harness({options:{relevancePolicy:1},review:()=>({...goodReview(),status:'BLOCK',publishable:false,failureReason:'제목이 약속한 핵심 결론을 기존 근거로 뒷받침할 수 없습니다.'})});
  const result=await h.run();assert.equal(result.failureKind,'quality');assert.equal(result.failurePhase,'main_review');assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main']);
 });
+const scopeRejection=()=>({...goodReview(),status:'REVISION',publishable:false,failureReason:'본문과 이미지 계획은 검수 기준에 부합하지만, 필수 이미지 4장의 생성 결과가 제공되지 않아 발행 준비 완료로 판정할 수 없습니다.',revisionInstructions:['대표 이미지 1장과 본문 이미지 3장의 생성 결과를 제공하세요.']});
+test('a future-image rejection re-reviews only Main and cannot bypass an actual image failure',async()=>{
+ const h=harness({review:n=>n===1?scopeRejection():goodReview(),options:{includeTitleImage:true,maxBodyImages:0}});
+ h.deps.imagePrompt=()=>'';h.deps.imageIssue=()=>'';h.deps.runTask=((original)=>async args=>{if(args.agent==='image'){h.calls.push(args);throw Error('fixture image failure');}return original(args);})(h.deps.runTask);
+ const result=await h.run();assert.equal(result.publishable,false);assert.equal(result.failurePhase,'image');assert.equal(h.calls.filter(c=>c.agent==='writer').length,1);assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main','main','image']);assert(h.calls[3].prompt.includes('직전 검수 단계 오류'));
+});
+test('a repeated scope error stops with the draft and retries only the invalid review response',async()=>{
+ const h=harness({review:()=>scopeRejection()});const first=await h.run();assert.equal(first.failurePhase,'main_review');assert.equal(first.failureKind,'execution');assert.equal(h.calls.filter(c=>c.agent==='writer').length,1);assert.equal(h.calls.filter(c=>c.agent==='main').length,2);
+ const checkpoint=h.checkpoints.at(-1);assert(checkpoint.steps['1:main-review-1.txt']);assert(!checkpoint.steps['1:main-review-scope-1.txt']);h.calls.length=0;
+ h.deps.runTask=async args=>{h.calls.push(args);assert.equal(args.promptFileName,'main-review-scope-1.txt');return goodReview();};const resumed=await generate({...h.opts,generationCheckpoint:checkpoint},()=>{},h.deps);assert.equal(resumed.publishable,true);assert.equal(h.calls.length,1);assert.equal(resumed.article,first.article);
+});
+test('the 939 to 1038 character case preserves the second draft, accepts explained aliases and generates four actual paths',async()=>{
+ const R=require('../src/lib/articleRelevance'),A=require('../src/lib/articleRequirements');
+ const sized=count=>{const w={...writer,tags:thirtyTags,titleImagePrompt:'책상 정리의 핵심 배치를 설명하는 대표 그림',titleImageText:['책상 정리'],bodyImages:[1,2,3].map(sequence=>({sequence,sectionHeading:'실제로 쓰는 물건',prompt:'각기 다른 물건 배치를 설명하는 그림 '+sequence}))};w.article=opening+'\n\n[SECTION - 실제로 쓰는 물건]\n'+help+'\n'+w.bodyImages.map(i=>'[IMAGE INSERT - '+i.sequence+']').join('\n')+'\n\n';w.article+='문'.repeat(count-A.articleCharacterCount(w.article));return w;};
+ const w1=sized(939),w2=sized(1038),h=harness({options:{articleLengthPolicy:1,includeTitleImage:true,maxBodyImages:3,minimumImageCount:4,tagCount:30,relevancePolicy:1}});
+ Object.assign(h.deps,{bodyImageLimit:Number,writerIssue:runner.writerOutputIssueReason,imagePromptIssue:runner.writerImageContractIssueReason,imagePrompt:runner.buildImageWorkerPrompt,imageIssue:runner.imageWorkerContractIssueReason,pendingImages:runner.pendingImageWriterResult,mergeImages:runner.mergeImageWorkerAttempts,applyImages:(w,i)=>({...w,...i})});
+ const original=h.deps.runTask;let writers=0,reviews=0;
+ h.deps.runTask=async args=>{if(args.agent==='research')return original(args);h.calls.push(args);
+  if(args.agent==='writer')return ++writers===1?w1:w2;
+  if(args.agent==='main'){
+   if(++reviews===1)return scopeRejection();
+   const e=relevanceEvidenceFixture();e.tagExamples=[{tag:thirtyTags[0],quote:opening}];e.conceptChecks=[{term:'물건',quote:opening,relevant:true},{term:'도구 배치',quote:help,relevant:true,matchedPhrase:'한곳에 모아두면',explanation:'같은 역할의 도구를 모으는 설명으로 배치 방법을 다룹니다.'}];e.imageChecks=R.imagePlans(w2).map(p=>({key:p.key,promptQuote:p.prompt,articleQuote:opening,aligned:true}));return {...goodReview(),relevanceEvidence:e};
+  }
+  if(args.agent==='image'){const file=n=>{const f=path.join(h.opts.jobDir,n+'.png');fs.writeFileSync(f,'fixture '+n);return f;};return {status:'success',titleImagePath:file('title'),titleImageVerified:true,bodyImages:w2.bodyImages.map(i=>({...i,path:file('body'+i.sequence),summaryVerified:true}))};}
+  throw Error('Unexpected stage');
+ };
+ const result=await h.run();assert.equal(result.publishable,true,result.failureReason);assert.equal(result.article.trim(),w2.article.trim());assert.equal(A.articleCharacterCount(result.article),1038);assert.equal(result.tags.length,30);assert.equal(result.relevanceReport.score,100);assert.equal(result.bodyImages.length,3);assert(fs.existsSync(result.titleImagePath));assert.equal(writers,2);assert.equal(reviews,2);assert.equal(h.calls.filter(c=>c.agent==='research').length,1);
+});

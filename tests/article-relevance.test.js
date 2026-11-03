@@ -44,3 +44,11 @@ test('review binding invalidates changed tags or prompt context even when the qu
  assert.equal(R.report({...writer,tags:[...writer.tags,'무관한변경태그']},options,review).score,null);
  assert.equal(R.report({...writer,article:writer.article+' 다른 의미를 추가한 문장입니다.'},options,review).score,null);
 });
+test('semantic concept explanations accept a grounded alternate phrase but never invented evidence',()=>{
+ const w={...writer,title:'맞춤형 깔창, 선택 조건을 어떻게 구분할까요?',article:'개인의 발 모양에 맞춰 제작한 제품과 기존 규격 제품은 선택 조건을 구분해 설명해야 합니다.',tags:['깔창'],bodyImages:[]};
+ const o={relevancePolicy:1,researchTitleResult:{writerContract:{relevancePlan:{primaryKeyword:'깔창',relatedConcepts:['맞춤형 깔창']}}}};
+ const e={primaryKeyword:'깔창',answerAligned:true,answerQuote:w.article,conceptChecks:[{term:'맞춤형 깔창',quote:w.article,relevant:true,matchedPhrase:'개인의 발 모양에 맞춰 제작한 제품',explanation:'개인별 형태에 맞춰 제작한 제품이라는 실제 설명으로 맞춤형 개념을 다룹니다.'}],tagsAligned:true,tagExamples:[{tag:'깔창',quote:w.article}],imagesAligned:true,imageChecks:[],naturalUsage:true};
+ assert.equal(R.evidenceIssue({relevanceEvidence:e},w,o),'');assert.equal(R.report(w,o,{relevanceEvidence:e}).components.find(c=>c.id==='concepts').points,20);
+ for(const change of [{matchedPhrase:'본문에는 없는 새로운 표현'},{explanation:''},{quote:'전달된 본문과 다른 인용을 만들어낼 수는 없습니다.'}]){const broken=structuredClone(e);Object.assign(broken.conceptChecks[0],change);assert(R.evidenceIssue({relevanceEvidence:broken},w,o));assert.equal(R.report(w,o,{relevanceEvidence:broken}).score,null);}
+ e.conceptChecks[0].relevant=false;assert(R.report(w,o,{relevanceEvidence:e}).score<95);
+});

@@ -686,13 +686,20 @@ class Operations {
       ].filter(Boolean);
       if (structural.length) throw Error(structural.join("\n"));
       try {
-        const review = await this.model(
+        let review = await this.model(
             account,
             d,
             "main",
             require("../generationPrompts").reviewPrompt(options),
             options,
           );
+        const contract=require('../reviewContract'),scopeIssue=contract.violation(review);
+        if(scopeIssue){
+          this.hooks.progress?.(id,'본문 보존 · 검수 단계 오류만 다시 확인합니다.','warn');
+          review=await this.model(account,d,'main',require('../generationPrompts').reviewPrompt({...options,reviewContractCorrection:scopeIssue}),options);
+          const repeatedScope=contract.violation(review);
+          if(repeatedScope)throw Error(repeatedScope+' 기존 원고를 보존했습니다.');
+        }
         if(review.relevanceEvidence)review.relevanceInputHash=require('../articleRelevance').inputHash(options.writerResult);
         const issues = [
             require("../articleRelevance").evidenceIssue(review,options.writerResult,options),

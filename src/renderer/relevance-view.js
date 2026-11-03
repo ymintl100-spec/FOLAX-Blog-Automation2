@@ -10,6 +10,6 @@ window.blogRelevanceView={render(host,report){
   const head=add('tr','',table);for(const value of ['점검 항목','점수','계산·검수 근거'])add('th',value,head);
   for(const c of report.components||[]){const row=add('tr','',table);add('td',c.label,row);add('td',c.max===0?'해당 없음':c.points==null?'미측정':c.points+'/'+c.max,row);add('td',c.detail,row);}
   add('p','측정한 배점 '+report.assessed+'/'+report.max+' · 모든 적용 항목을 측정한 뒤 100점 기준으로 환산합니다. 이미지 항목은 생성 계획·설명만 대조합니다.').className='hint';
-  if(report.concepts?.length){const details=add('details','');add('summary','관련 개념의 실제 설명 근거',details);for(const c of report.concepts)add('p',(c.matched?'확인 · ':'보완 · ')+c.term+(c.quote?' — '+c.quote:''),details);}
+  if(report.concepts?.length){const details=add('details','');add('summary','관련 개념의 실제 설명 근거',details);for(const c of report.concepts)add('p',(c.matched?'확인 · ':'보완 · ')+c.term+(c.quote?' — '+c.quote:'')+(c.matchedPhrase?' / 실제 표현: '+c.matchedPhrase:'')+(c.explanation?' / 연결 근거: '+c.explanation:''),details);}
   for(const tip of report.suggestions||[])add('p',tip);
 }};
