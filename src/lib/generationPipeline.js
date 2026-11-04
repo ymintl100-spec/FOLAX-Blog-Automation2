@@ -13,6 +13,7 @@ const imageLayout=require('./imageLayout');
 const articleTags=require('./articleTags');
 const relevance=require('./articleRelevance');
 const reviewContract=require('./reviewContract');
+const editorialRevision=require('./editorialRevision');
 const {humanize,applyReview}=require('../../packages/blog-humanizer');
 const {resolveImageStyle}=require('./accountImageStyle');
 const normalizeTitle=s=>String(s || '').trim();
@@ -44,7 +45,7 @@ async function generateAttempt(options, log, deps) {
     if(['research','writer'].includes(agent))log(message,level,agent);
   };
   const reasons=values=>[...new Set(values.filter(Boolean))].join(' / ');
-  let effective={...options,searchResults:options.searchResults || [],sourceQuality:options.sourceQuality || {status:'not_requested'}};
+  let effective={...options,searchResults:options.searchResults || [],sourceQuality:options.sourceQuality || {status:'not_requested'},...(options.articleResume?.evidenceContext||{})};
   const usage={total:0,grossTotal:0,inputTokens:0,cachedInputTokens:0,outputTokens:0,promptCharacters:0,agents:{},grossAgents:{},promptCharactersByAgent:{}};
   const snapshot=()=>({...usage,estimatedPromptTokens:Math.ceil(usage.promptCharacters/3)});
   const run=async(agent,prompt,file,resultFile)=>{
@@ -106,12 +107,23 @@ async function generateAttempt(options, log, deps) {
   const duplicate=await options.onFinalTitleCandidate?.(finalTitle,research);
   if(duplicate?.duplicate)return {...failed('title_duplicate',duplicate.reason || '동일한 제목이 있습니다.'),status:'duplicate_retry',title:finalTitle};
   progress('주제 선정 통과 · 본문 작성으로 이동','info','research');
-  let feedback='',layoutRepairUsed=false,scopeRepairUsed=false;
-  // At most one targeted correction. No outer UI loop may rerun the whole pipeline.
-  for(let attempt=1;attempt<=2;attempt++){
-    const params={...effective,topic:finalTitle,researchTitleResult:research,writerRevisionFeedback:feedback,writerAttempt:attempt,maxWriterAttempts:2};
-    progress(`본문 ${attempt}차 ${attempt===1?'작성':'보완'} 시작`,'info','writer');
-    writer=await run('writer',attempt===1?deps.writerPrompt(params):deps.writerRetry(params,writer),attempt===1?'prompt.txt':'prompt-retry-2.txt','agent-result.json');
+  const guided=effective.revisionPolicy===1,seed=guided?options.articleResume:null,maxWrites=guided?3:2;
+  let feedback=seed?.feedback||'',layoutRepairUsed=false,scopeRepairUsed=false,formatCorrections=0,qualityCorrections=0,correctionKind='';
+  if(seed?.writer){writer=JSON.parse(JSON.stringify(seed.writer));correctionKind=seed.phase==='writer'?'format':'quality';if(correctionKind==='format')formatCorrections++;else qualityCorrections++;progress('마지막 원고·완료 조사·검수 지침 재사용 · 지적된 부분만 보완합니다.','info','writer');}
+  const saveArticle=()=>options.onArticleCheckpoint?.({version:1,writer,review,feedback,evidenceContext:{searchResults:effective.searchResults,sourceQuality:effective.sourceQuality}});
+  // A nearby length miss joins the same content review. Other format errors
+  // have one separate correction, so they cannot consume the quality repair.
+  for(let attempt=1;attempt<=maxWrites;attempt++){
+    const params={...effective,topic:finalTitle,researchTitleResult:research,writerRevisionFeedback:feedback,writerAttempt:attempt,maxWriterAttempts:maxWrites};
+    const partial=guided&&writer&&correctionKind!=='format';
+    progress(`본문 ${attempt}차 ${partial?'부분 보완':attempt===1?'작성':'형식 보완'} 시작`,'info','writer');
+    if(partial){
+      const requestKey=editorialRevision.requestKey(writer,feedback,effective);
+      if(options.blockedRevisionRequest===requestKey)return failed('article_revision','동일 원고와 동일 지적의 부분 수정에서 변경이 없었습니다. 중복 모델 호출을 생략했습니다. 원고 또는 입력 근거를 보완해 주세요.','execution');
+      try{const patch=await run('writer',editorialRevision.repairPrompt(writer,feedback,params),`article-revision-${attempt}.txt`,`article-revision-result-${attempt}.json`);writer=editorialRevision.apply(writer,patch);}
+      catch(error){if(error.code==='NO_REVISION_CHANGE')await options.onBlockedRevisionRequest?.(requestKey);return {...failed('article_revision',error.message,'execution'),failureStep:`article-revision-${attempt}.txt`};}
+    }else writer=await run('writer',attempt===1&&!writer?deps.writerPrompt(params):deps.writerRetry(params,writer),attempt===1?'prompt.txt':`prompt-retry-${attempt}.txt`,'agent-result.json');
+    review=null;
     const cleanWriter=cleanPublicationUrls(writer);
     writer=imageLayout.normalize(cleanWriter);
     if(writer.article!==cleanWriter.article)progress('이미지 마커 표기·번호 정리 · 본문 문장은 유지했습니다.','info','writer');
@@ -119,7 +131,11 @@ async function generateAttempt(options, log, deps) {
     if(writer?.article)writer={...writer,article:rhythm.apply(writer.article,effective.formatGuidance,effective.writingGuidance)};
     const lengthLimits=require('./articleRequirements').limits(effective);
     progress(`본문 ${attempt}차 글자수: 공백 제외 ${articleCharacterCount(writer.article)}자 · 기준 ${lengthLimits.min}~${lengthLimits.max}자`,'info','writer');
-    const textStructural=reasons([deps.writerIssue(writer,params),blogLayout.issue(writer,effective),contentQualityIssue,options.qualityPolicyVersion===1?naverQuality.articleIssue(writer):'']);
+    const writerIssue=deps.writerIssue(writer,params),layoutIssue=blogLayout.issue(writer,effective);
+    const deferredLength=guided&&qualityCorrections===0&&!layoutIssue&&!contentQualityIssue&&editorialRevision.deferLength(writer,effective,writerIssue)?writerIssue:'';
+    const textStructural=reasons([deferredLength?'':writerIssue,layoutIssue,contentQualityIssue,options.qualityPolicyVersion===1?naverQuality.articleIssue(writer):'']);
+    await saveArticle();
+    if(deferredLength)progress('분량 보정은 내용 검수 지침과 한 번에 반영합니다. 현재 원고는 아직 통과하지 않았습니다.','info','writer');
     let imageStructural=deps.imagePromptIssue(writer,effective);
     if(!textStructural&&imageStructural){
       progress('본문 문장 보존 · 이미지 배치만 보완합니다: '+imageStructural,'warn','writer');
@@ -134,7 +150,11 @@ async function generateAttempt(options, log, deps) {
       }catch(error){return failed('image_layout','본문을 보존했습니다. 이미지 배치 보완 확인이 필요합니다: '+error.message,'execution');}
     }
     const structural=reasons([textStructural,imageStructural]);
-    if(structural){progress(`본문 ${attempt}차 형식 확인 실패: ${structural}`,'warn','writer');if(attempt===1 && writer.failureCode!=='INSUFFICIENT_EVIDENCE'){feedback=structural;continue;}return failed('writer',structural);}
+    if(structural){
+      progress(`본문 ${attempt}차 형식 확인 실패: ${structural}`,'warn','writer');
+      if(writer.failureCode!=='INSUFFICIENT_EVIDENCE'&&(guided?formatCorrections<1&&attempt<maxWrites:attempt===1)){formatCorrections++;correctionKind='format';feedback=editorialRevision.feedback([feedback,structural],effective);await saveArticle();continue;}
+      return failed('writer',structural);
+    }
     if([10,30].includes(effective.tagCount)){
       writer={...writer,tags:articleTags.normalize(writer.tags,effective.tagCount)};
       const tagIssue=articleTags.issue(writer,effective);
@@ -162,9 +182,9 @@ async function generateAttempt(options, log, deps) {
       });
       writer=imageLayout.normalize({...writer,article:require('./publicationFormat').omitReferences(humanized.article)});
       const issue=reasons([deps.writerIssue(writer,params),deps.imagePromptIssue(writer,effective)]);
-      if(issue){
+      if(issue&&!(guided&&editorialRevision.deferLength(writer,effective,issue))){
         progress(`윤문 후 본문 조건 보완 필요: ${issue}`,'warn','writer');
-        if(attempt===1){feedback=issue;continue;}
+        if(guided?formatCorrections<1&&attempt<maxWrites:attempt===1){formatCorrections++;correctionKind='format';feedback=editorialRevision.feedback([feedback,issue],effective);await saveArticle();continue;}
         return failed('writer',issue);
       }
     } catch(error) {
@@ -175,13 +195,13 @@ async function generateAttempt(options, log, deps) {
     progress(humanized.cached?'저장된 윤문 결과 재사용 · 검수 시작':humanized.changes.length?'블로그 문장 다듬기 완료 · 검수 시작':'불필요한 문장 수정 없이 원문 유지 · 검수 시작','info','writer');
     }
     options.onArticleReady?.({...writer,previewStage:'reviewing',writerAttempt:attempt});
-    review=await run('main',deps.reviewPrompt({...effective,researchTitleResult:research,writerResult:writer,finalTitle,humanizerChanges:humanized.changes}),`main-review-${attempt}.txt`,'main-review-result.json');
+    review=await run('main',deps.reviewPrompt({...effective,researchTitleResult:research,writerResult:writer,finalTitle,revisionFocus:guided?feedback:undefined,humanizerChanges:humanized.changes}),`main-review-${attempt}.txt`,'main-review-result.json');
     const scopeIssue=reviewContract.violation(review);
     if(scopeIssue){
       progress('본문 보존 · 검수 단계 오류를 한 번 바로잡습니다: '+scopeIssue,'warn','writer');
       if(scopeRepairUsed)return failed('main_review',scopeIssue+' 본문과 완료 단계를 보존했습니다.','execution');
       scopeRepairUsed=true;
-      review=await run('main',deps.reviewPrompt({...effective,researchTitleResult:research,writerResult:writer,finalTitle,humanizerChanges:humanized.changes,reviewContractCorrection:scopeIssue}),`main-review-scope-${attempt}.txt`,'main-review-result.json');
+      review=await run('main',deps.reviewPrompt({...effective,researchTitleResult:research,writerResult:writer,finalTitle,revisionFocus:guided?feedback:undefined,humanizerChanges:humanized.changes,reviewContractCorrection:scopeIssue}),`main-review-scope-${attempt}.txt`,'main-review-result.json');
       const repeatedScope=reviewContract.violation(review);
       if(repeatedScope)return failed('main_review',repeatedScope+' 본문은 재작성하지 않았습니다.','execution');
     }
@@ -193,15 +213,23 @@ async function generateAttempt(options, log, deps) {
     }catch(error){return failed('main_review',error.message,'execution');}
     if(review.relevanceEvidence)review={...review,relevanceInputHash:relevance.inputHash(writer)};
     const relevanceOptions={...effective,researchTitleResult:research};
+    await saveArticle();
     const reviewEvidenceIssue=reasons([options.qualityPolicyVersion===1?naverQuality.reviewEvidenceIssue(review,writer,effective):'',relevance.evidenceIssue(review,writer,relevanceOptions)]);
     if(reviewEvidenceIssue)return failed('main_review',reviewEvidenceIssue,'execution');
     const relevanceReport=relevance.report(writer,relevanceOptions,review);
     if(effective.relevancePolicy===1)progress(`앱 내부 연관성: ${relevanceReport.score??'미측정'}/100 · 목표 95 · NDEX 외부 점수와 별도`,'info','writer');
     const reviewIssue=reasons([relevance.qualityIssue(writer,relevanceOptions,review),deps.writerIssue(writer,params),deps.imagePromptIssue(writer,effective),deps.reviewIssue(review),blogLayout.issue(writer,effective),options.qualityPolicyVersion===1?[naverQuality.verdictIssue(review,effective),naverQuality.articleIssue(writer)].filter(Boolean).join(' / '):'']);
     if(review.status==='PASS' && !reviewIssue){progress(`본문 ${attempt}차 검수 통과`,'info','writer');break;}
-    progress(`본문 ${attempt}차 검수 ${review.status==='BLOCK'?'중단':'반려'}: ${reasons([reviewIssue,review.failureReason,...(review.revisionInstructions || [])]) || '구체적인 수정 지침 없음'}${attempt===1 && review.status!=='BLOCK'?' · 본문 보완 준비':' · 작성 중지'}`,'warn','writer');
-    if(attempt===2 || review.status==='BLOCK')return failed('main_review',reviewIssue || review.failureReason || '최종 검수에서 핵심 수정이 필요합니다.');
-    feedback=[reviewIssue,review.failureReason,...(review.revisionInstructions || [])].filter(Boolean).join('\n');
+    progress(`본문 ${attempt}차 검수 ${review.status==='BLOCK'?'중단':'반려'}: ${reasons([reviewIssue,review.failureReason,...(review.revisionInstructions || [])]) || '구체적인 수정 지침 없음'}${(guided?attempt<maxWrites&&qualityCorrections<1:attempt===1) && review.status!=='BLOCK'?' · 지적된 부분 보완 준비':' · 검수 지침 보존'}`,'warn','writer');
+    if(review.status==='BLOCK')return failed('main_review',reviewIssue || review.failureReason || '핵심 근거가 없어 중지했습니다.');
+    feedback=editorialRevision.feedback([reviewIssue,review.failureReason,review.issues||[],review.revisionInstructions||[]],effective);
+    await saveArticle();
+    if(guided){
+      const finalWriterIssue=deps.writerIssue(writer,params),needsFormat=Boolean(finalWriterIssue);
+      const needsQuality=review.status!=='PASS'||Boolean(reasons([relevance.qualityIssue(writer,relevanceOptions,review),deps.reviewIssue(review),naverQuality.verdictIssue(review,effective)]));
+      if(attempt===maxWrites||needsQuality&&qualityCorrections>=1||needsFormat&&formatCorrections>=1)return failed('main_review',reviewIssue || review.failureReason || '수정 후에도 기준을 충족하지 못했습니다. 마지막 원고와 검수 지침을 보존했습니다.');
+      if(needsQuality)qualityCorrections++;if(needsFormat)formatCorrections++;correctionKind=needsQuality?'quality':'length';
+    }else if(attempt===2)return failed('main_review',reviewIssue || review.failureReason || '최종 검수에서 핵심 수정이 필요합니다.');
     if(!feedback)return failed('main_review','구체적인 수정 지침 없이 재생성을 요청하여 중지했습니다.');
   }
   }
@@ -255,10 +283,10 @@ async function generate(options,log,deps) {
   options={tokenSaving:true,qualityPolicyVersion:1,...options};
   const restored=options.generationCheckpoint;
   if(restored && restored.version!==2)throw new Error('재개 기록 버전을 확인할 수 없습니다. 기존 작업을 취소한 뒤 다시 시작하세요.');
-  const optionKeys=['tokenSaving','qualityPolicyVersion','writingGuidance','formatGuidance','compactWriting','articleLengthPolicy','emphasisPolicy','inputBrief','relevancePolicy','tagCount','requireApproval','operationsTopicId','operationsDraft','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','blogDirection','experienceNotes','experienceNotesId','topic','keyword','category','topicMode','currentDateLabel','includeTitleImage','maxBodyImages','minimumImageCount','titleImageAspectRatio','bodyImageAspectRatio','excludedTopics','publishPurpose','preferredTone','freshnessLevel','searchChannel','trustBlogAsSource','keywordLanes','recommendedKeywordLanes','historyTitles','searchResults','sourceQuality'];
+  const optionKeys=['tokenSaving','qualityPolicyVersion','writingGuidance','formatGuidance','compactWriting','revisionPolicy','articleLengthPolicy','emphasisPolicy','inputBrief','relevancePolicy','tagCount','requireApproval','operationsTopicId','operationsDraft','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','blogDirection','experienceNotes','experienceNotesId','topic','keyword','category','topicMode','currentDateLabel','includeTitleImage','maxBodyImages','minimumImageCount','titleImageAspectRatio','bodyImageAspectRatio','excludedTopics','publishPurpose','preferredTone','freshnessLevel','searchChannel','trustBlogAsSource','keywordLanes','recommendedKeywordLanes','historyTitles','searchResults','sourceQuality'];
   const recovery=restored?JSON.parse(JSON.stringify(restored)):{version:2,steps:{},retrievals:{},generationOptions:Object.fromEntries(optionKeys.filter(k=>options[k]!==undefined).map(k=>[k,options[k]])),attemptNumber:1};
   options={...options,...recovery.generationOptions};
-  if(restored)for(const key of ['emphasisPolicy','inputBrief','relevancePolicy','tagCount','minimumImageCount','articleLengthPolicy','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','requireApproval','operationsTopicId','operationsDraft','compactWriting','experienceNotes','experienceNotesId','blogDirection','writingGuidance','formatGuidance'])if(!Object.hasOwn(recovery.generationOptions,key))options[key]=undefined;
+  if(restored)for(const key of ['revisionPolicy','emphasisPolicy','inputBrief','relevancePolicy','tagCount','minimumImageCount','articleLengthPolicy','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','requireApproval','operationsTopicId','operationsDraft','compactWriting','experienceNotes','experienceNotesId','blogDirection','writingGuidance','formatGuidance'])if(!Object.hasOwn(recovery.generationOptions,key))options[key]=undefined;
   if(typeof(options.experienceNotes??'')!=='string'||String(options.experienceNotes||'').length>2000)throw new Error('이번 글의 실제 경험 메모는 2,000자 이내로 입력하세요.');
   if(options.formatGuidance?.version>=3&&options.formatGuidance.id==='essay'&&!String(options.experienceNotes||'').trim())return {status:'failed',failureKind:'execution',failurePhase:'input',failureReason:'일상·경험형에는 이번 글의 실제 경험 메모가 필요합니다. 경험을 입력하거나 자동·건강 설명형을 선택하세요.',article:'',title:''};
   const saveRecovery=async()=>{await options.onGenerationCheckpoint?.(JSON.parse(JSON.stringify(recovery)));};
@@ -310,7 +338,9 @@ async function generate(options,log,deps) {
     };
     try {
       result=await generateAttempt({...options,jobDir,attemptNumber:number,maxAttempts:limit,priorAttempts,reviewedEvidence,
-        imageCheckpoint:recovery.imageCheckpoint,
+        imageCheckpoint:recovery.imageCheckpoint,articleResume:recovery.articleResume,blockedRevisionRequest:recovery.blockedRevisionRequest,
+        onBlockedRevisionRequest:async key=>{recovery.blockedRevisionRequest=key;await saveRecovery();},
+        onArticleCheckpoint:async value=>{recovery.articleCheckpoint=JSON.parse(JSON.stringify(value));await saveRecovery();},
         imageEvidenceContext:require('./generationRecovery').imageEvidenceContext(recovery),
         onImageCheckpoint:async checkpoint=>{recovery.imageCheckpoint=checkpoint;await saveRecovery();},
         onSearchNeeded:options.onSearchNeeded?async(research,context)=>{
@@ -347,13 +377,13 @@ async function generate(options,log,deps) {
     if(result.failureKind==='execution'){
       // A returned but invalid response is not a completed step. Re-run only
       // that agent, retaining its preceding accepted results.
-      const agent=result.failurePhase==='humanizer'?'humanizer':result.failurePhase==='main_review'?'main':result.failurePhase==='image_layout'?'image_layout':result.failurePhase==='tags'?'tags':null;
-      if(agent){const prefix=number+':';const keys=Object.keys(recovery.steps).filter(k=>k.startsWith(prefix) && (agent==='tags'?k===prefix+result.failureStep:agent==='humanizer'?k.includes('humanizer-prompt'):agent==='image_layout'?k.includes('image-layout-repair-'):k.includes('main-review')));if(keys.length)delete recovery.steps[keys.at(-1)];await saveRecovery();}
+      const agent=result.failurePhase==='humanizer'?'humanizer':result.failurePhase==='main_review'?'main':result.failurePhase==='image_layout'?'image_layout':result.failurePhase==='tags'?'tags':result.failurePhase==='article_revision'?'article_revision':null;
+      if(agent){const prefix=number+':';const keys=Object.keys(recovery.steps).filter(k=>k.startsWith(prefix) && (['tags','article_revision'].includes(agent)?k===prefix+result.failureStep:agent==='humanizer'?k.includes('humanizer-prompt'):agent==='image_layout'?k.includes('image-layout-repair-'):k.includes('main-review')));if(keys.length)delete recovery.steps[keys.at(-1)];await saveRecovery();}
       break;
     }
     if(['writer','main_review','humanizer'].includes(result.failurePhase)){
       result.contentRevisionStopped=true;
-      log(result.failurePhase==='humanizer'?'윤문 단계 중지: 원본 본문을 보존하고 주제 재탐색·전체 재생성을 중지했습니다.':'본문 보완 종료: 같은 근거로 한 번 수정한 뒤에도 통과하지 못해 주제 재탐색·전체 재생성을 중지했습니다.','warn','main');
+      log(result.failurePhase==='humanizer'?'윤문 단계 중지: 원본 본문을 보존하고 주제 재탐색·전체 재생성을 중지했습니다.':options.revisionPolicy===1?'본문 보완 종료 · 마지막 원고와 검수 지침을 보존했습니다. 추가 전체 재생성은 하지 않습니다.':'본문 보완 종료: 같은 근거로 한 번 수정한 뒤에도 통과하지 못해 주제 재탐색·전체 재생성을 중지했습니다.','warn','main');
       break;
     }
     if(result.retrievalStopped){log(`전체 시도 ${number}/${limit} · 추가 조사 중지: ${entry.reason}`,'warn','main');break;}

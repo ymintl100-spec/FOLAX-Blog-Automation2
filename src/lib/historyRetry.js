@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const terminal = new Set(['success', 'generated', 'draft_saved']);
+const terminal = new Set(['success', 'generated', 'draft_saved', 'awaiting_approval']);
 const key = value => String(value || '').normalize('NFKC').replace(/\s+/g, '').toLowerCase();
 function jobFile(root, id, name) {
   if (!/^job_\d+$/.test(String(id))) return null;
@@ -70,9 +70,11 @@ function retryPlan(root, item, history, settings, accounts) {
       checkpoint = null; mode = 'research'; reason = '주제·근거 반려 · 주제 선정부터 다시 진행';
     } else {
       if (quality && ['writer','main_review'].includes(phase) && !legacyImageResume && !legacyMarkerRepair && !contractRecovery) {
-        for (const k of Object.keys(checkpoint.steps || {})) if (!k.includes('research-title')) delete checkpoint.steps[k];
+        const guided=require('./editorialRevision').recover(checkpoint,phase,latest.reason);
+        if(guided){checkpoint=guided;mode='writer';reason='마지막 원고·완료 조사·검수 지침 재사용 · 지적된 부분만 보완';}
+        else for (const k of Object.keys(checkpoint.steps || {})) if (!k.includes('research-title')) delete checkpoint.steps[k];
         delete checkpoint.imageCheckpoint;
-        mode = 'writer'; reason = '본문 품질 반려 · 완료된 조사를 재사용해 본문부터 다시 진행';
+        if(!guided){mode = 'writer'; reason = '본문 품질 반려 · 완료된 조사를 재사용해 본문부터 다시 진행';}
       } else { mode = 'checkpoint'; reason = contractRecovery?'마지막 본문 재사용 · 이미지 생성 전 검수 다시 확인':legacyMarkerRepair?'마지막 본문 재사용 · 이미지 배치만 보완':checkpoint.imageCheckpoint ? '승인된 본문과 완료된 이미지 재사용 · 미완료 이미지부터 진행' : '완료된 단계 재사용 · 중단된 단계부터 진행'; }
     }
   } else if (['research','title_duplicate','connection'].includes(phase) || ['codex_exec_failed','codex_usage_limit','session_expired'].includes(latest.status)) {

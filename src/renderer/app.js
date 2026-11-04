@@ -118,6 +118,7 @@ function setRunState(status, detail = "") {
     success: "success",
     generated: "success",
     draft_saved: "success",
+    awaiting_approval: "success",
     failed: "danger",
     codex_usage_limit: "danger",
     codex_exec_failed: "danger",
@@ -130,6 +131,7 @@ function setRunState(status, detail = "") {
     success: "성공",
     generated: "생성",
     draft_saved: "임시저장",
+    awaiting_approval: "검수 대기",
     failed: "실패",
     codex_usage_limit: "한도초과",
     codex_exec_failed: "Codex실패",
@@ -255,6 +257,7 @@ function statusBadge(status) {
     success: "success",
     generated: "success",
     draft_saved: "success",
+    awaiting_approval: "success",
     failed: "danger",
     codex_usage_limit: "danger",
     codex_exec_failed: "danger",
@@ -267,6 +270,7 @@ function statusBadge(status) {
     success: "성공",
     generated: "생성",
     draft_saved: "임시저장",
+    awaiting_approval: "검수 대기",
     failed: "실패",
     codex_usage_limit: "한도초과",
     codex_exec_failed: "Codex실패",
@@ -470,7 +474,7 @@ function renderHistory(history) {
       ])
     ].filter(([, value]) => String(value || "").trim());
 
-    const retryLabel=['success','generated','draft_saved'].includes(item.status)?'완료':item.retry?.reason==='이후 재시도에서 완료된 작업'?'재시도 완료':item.retry?.allowed?'재시도':'재시도 불가';
+    const retryLabel=['success','generated','draft_saved','awaiting_approval'].includes(item.status)?'완료':item.retry?.reason==='이후 재시도에서 완료된 작업'?'재시도 완료':item.retry?.allowed?'재시도':'재시도 불가';
     card.innerHTML = `
       <div class="history-card-top">
         ${statusBadge(item.status)}
@@ -512,7 +516,7 @@ async function retryHistoryItem(item){
  addLog({agent:'main',message:'작업 이력 재시도 · '+item.retry.reason});
  try{
   const result=await window.blogAuto.retryHistory(item.id,collectForm({account,category}));
-  setTargetProgress(state.activeTarget,['success','draft_saved'].includes(result?.status)?'완료':'실패',result?.reason || '');
+  setTargetProgress(state.activeTarget,result?.status==='awaiting_approval'?'검수 대기':['success','draft_saved','generated'].includes(result?.status)?'완료':'실패',result?.reason || '');
  }catch(error){setRunState('failed',error.message);setTargetProgress(state.activeTarget,'실패',error.message);addLog({agent:'main',level:'error',message:error.message});}
  finally{
   state.running=false;state.retryingHistory=false;$('#startButton').disabled=false;updateRunControls();
@@ -521,8 +525,8 @@ async function retryHistoryItem(item){
 }
 function renderHistorySummary(items) {
   const total = items.length;
-  const success = items.filter((item) => item.status === "success" || item.status === "generated" || item.status === "draft_saved").length;
-  const failed = items.filter((item) => !["success", "generated", "draft_saved"].includes(String(item.status || ""))).length;
+  const success = items.filter((item) => item.status === "success" || item.status === "generated" || item.status === "draft_saved" || item.status === "awaiting_approval").length;
+  const failed = items.filter((item) => !["success", "generated", "draft_saved", "awaiting_approval"].includes(String(item.status || ""))).length;
   const latest = items[0];
   const latestTitle = latest ? (latest.title || latest.research_title || latest.topic || "제목 없음") : "기록 없음";
   const latestDate = latest ? formatHistoryDate(latest.create_at) : "-";
@@ -549,7 +553,7 @@ function renderHistorySummary(items) {
 
 function historyStatusClass(status) {
   const normalized = String(status || "");
-  if (normalized === "success" || normalized === "generated" || normalized === "draft_saved") return "success";
+  if (normalized === "success" || normalized === "generated" || normalized === "draft_saved" || normalized === "awaiting_approval") return "success";
   if (normalized === "duplicate_retry") return "warning";
   if (normalized === "publishing" || normalized === "generating") return "info";
   return "danger";

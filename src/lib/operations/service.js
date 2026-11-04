@@ -827,7 +827,7 @@ class Operations {
       const options = {
         ...this.options(account, d, dir),
         platform,
-        platformVariant: true,
+        platformVariant: true,revisionPolicy:1,
         articleLengthPolicy: 2,
         tagCount: 10,
         emphasisPolicy: 1,

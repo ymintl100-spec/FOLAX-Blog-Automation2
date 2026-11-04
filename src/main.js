@@ -1043,7 +1043,7 @@ async function startJob(form) {
         codexModel,
         tokenSaving: (form.tokenSaving ?? settings.tokenSaving) !== false,
         qualityPolicyVersion: 1,
-        compactWriting:true,
+        compactWriting:true,revisionPolicy:1,
         articleLengthPolicy:2,
         emphasisPolicy:1,
         inputBrief:form.inputBrief,
