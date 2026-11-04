@@ -33,9 +33,9 @@ function writerUnits(steps) {
   const units=[];
   for(const step of steps){
     if(step.type==='title')continue;
-    const unit={type:step.type,text:writerNormalize(step.text),style:step.style || '',name:step.name || ''};
+    const unit={type:step.type,text:writerNormalize(step.text),boldText:writerNormalize(step.boldText),style:step.style || '',name:step.name || ''};
     if(unit.type==='paragraph' && !unit.text)continue;
-    if(unit.type==='paragraph' && units.at(-1)?.type==='paragraph')units.at(-1).text+=unit.text;
+    if(unit.type==='paragraph' && units.at(-1)?.type==='paragraph'){units.at(-1).text+=unit.text;units.at(-1).boldText+=unit.boldText;}
     else units.push(unit);
   }
   return units;
@@ -50,7 +50,7 @@ function matchingWriterPrefix(snapshot,steps) {
     if(count===0 && snapshot.title)continue;
     const expected=writerUnits(steps.slice(0,count));
     if(expected.length!==actual.length)continue;
-    if(expected.every((e,i)=>{const a=actual[i];return e.type===a.type && (e.type==='image' ? Boolean(e.name) && e.name===a.name : e.text===a.text && e.style===a.style);}))return count;
+    if(expected.every((e,i)=>{const a=actual[i];return e.type===a.type && (e.type==='image' ? Boolean(e.name) && e.name===a.name : e.text===a.text && e.style===a.style && (!e.boldText||e.boldText===a.boldText));}))return count;
   }
   return -1;
 }

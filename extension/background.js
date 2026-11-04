@@ -147,7 +147,7 @@ async function saveNaverDraft(task,resumeOnly=false) {
 async function publish(task) {
   if(task.platform==='tistory')return publishTistory(task);
   const tabId=task.tabId, p={...task.payload,article:stripOperatorFooter(task.payload.article)};
-  const plan=articlePlan(p.article,{preserveParagraphs:p.preserveParagraphs===true,presentation:p.presentation||{}});
+  const plan=articlePlan(p.article,{preserveParagraphs:p.preserveParagraphs===true,presentation:p.presentation||{},boldSentences:p.boldSentences||[]});
   const steps=[{type:'title',text:p.title},...(!p.presentation?[{type:'quote',text:p.title,style:'default'}]:[])];
   const ordered=articleWithHero(plan,p.titleImageIndex!==null?{type:'hero',index:p.titleImageIndex,name:p.titleImageName||'blog_img_title.png'}:null,p.presentation?.heroPosition);
   for(const block of ordered){

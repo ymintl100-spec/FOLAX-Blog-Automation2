@@ -18,6 +18,7 @@ function reviewEvidenceIssue(review,writer,options={}){
  if(typeof review.naturalnessPass!=='boolean'||typeof review.naverReadabilityPass!=='boolean')return '최종 검수의 자연스러움·모바일 가독성 판정이 누락됐습니다. 본문은 보존했습니다.';
  if(layout.required(options)&&typeof review.benchmarkFormatPass!=='boolean')return '벤치마크 형식 검수 판정이 누락됐습니다. 본문은 보존했습니다.';
  if(review.status!=='PASS')return '';
+ if(options.inputBrief&&typeof review.inputCoveragePass!=='boolean')return '입력 항목 전체 반영 검수 판정이 누락됐습니다.';
  const body=plain(writer.article),assessment=review.readerValueAssessment||{};
  for(const [key,label] of [['openingAnswer','도입의 핵심 답'],['decisionHelp','독자에게 주는 구체적인 도움']]){
   if(typeof assessment[key]!=='string')return '검수 근거가 누락됐습니다: '+label;
@@ -40,6 +41,7 @@ function reviewEvidenceIssue(review,writer,options={}){
 }
 function verdictIssue(review,options={}){
  if(review?.status!=='PASS')return '';
+ if(options.inputBrief&&review.inputCoveragePass!==true)return '입력한 키워드·링크 전체가 하나의 글에 반영되도록 실제 누락 내용을 보완하세요.';
  if(review.naturalnessPass!==true)return '반복되는 상투 표현·기계적인 문장 전개를 실제 문제 문장에 맞춰 보완하세요.';
  if(review.naverReadabilityPass!==true)return '네이버 모바일 독자가 읽고 이해하기 쉽도록 실제 문제 문단을 보완하세요.';
  if(layout.required(options)&&review.benchmarkFormatPass!==true)return '벤치마크 전개·도입·문단·마무리를 실제 원고에 반영하도록 검수 지침에 맞춰 보완하세요.';
