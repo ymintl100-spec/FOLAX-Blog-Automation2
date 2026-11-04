@@ -165,6 +165,8 @@ function register({ ipcMain, dialog, safeStorage, window, root, ...hooks }) {
           return service.addTopic(accountId, payload);
         case "topicState":
           return service.setTopic(accountId, payload.id, payload.status);
+        case "generateInputs":
+          return service.generateInputs(accountId,payload);
         case "generate":
           return service.generate(accountId, payload.id, payload);
         case "competition":

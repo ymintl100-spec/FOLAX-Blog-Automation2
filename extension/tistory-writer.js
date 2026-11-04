@@ -11,7 +11,7 @@ function tistoryDocument(title,plan,images,presentation) {
     }
     texts.push(block.text);
     const alignment=presentation?.alignment==='center'?' style="text-align:center"':'';
-    html+=block.type==='section'?'<h2 data-ke-size="size26"'+alignment+'>'+escape(block.text)+'</h2>':'<p data-ke-size="size16"'+alignment+'>'+escape(block.text).replace(/\r?\n/g,'<br>')+'</p><p>&nbsp;</p>';
+    html+=block.type==='section'?'<h2 data-ke-size="size26"'+alignment+'>'+escape(block.text)+'</h2>':'<p data-ke-size="size16"'+alignment+'>'+(block.runs||[{text:block.text,bold:false}]).map(r=>(r.bold?'<strong>':'')+escape(r.text).replace(/\r?\n/g,'<br>')+(r.bold?'</strong>':'')).join('')+'</p><p>&nbsp;</p>';
   }
   return {html,texts,imageCount:Object.keys(images).length};
 }
@@ -63,7 +63,7 @@ async function publishTistory(task) {
   }
   await check();
   if(!checkpoint.composed){
-    const document=tistoryDocument(p.title,articlePlan(p.article,{preserveParagraphs:p.preserveParagraphs===true,presentation:p.presentation||{}}),checkpoint.images,p.presentation);
+    const document=tistoryDocument(p.title,articlePlan(p.article,{preserveParagraphs:p.preserveParagraphs===true,presentation:p.presentation||{},boldSentences:p.boldSentences||[]}),checkpoint.images,p.presentation);
     checkpoint.pending={type:'content',html:document.html};await save();
     const result=await command(tabId,'content',{blogId:task.blogId,...document,expectedHtml:checkpoint.html});
     checkpoint.html=result.html;checkpoint.composed=true;checkpoint.pending=null;await save();

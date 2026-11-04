@@ -45,7 +45,8 @@
     pendingAccountRefresh = false,
     initialization = 0,
     detailAccount = '',
-    detailTarget = '';
+    detailTarget = '',
+    composeDraft={mode:'keywords',keywords:[],urls:[],platform:'naver',images:true};
   const targetKey = a => JSON.stringify([a?.id,a?.blogId,a?.tistoryBlogId||'']);
   const accountListKey = store => JSON.stringify((store?.accounts || []).map(a=>[a.id,a.label,a.blogId,a.tistoryBlogId]));
   const account = () => $("#opsAccount").value;
@@ -182,6 +183,14 @@
     if(!dialog.open){$('#opsTopicStatus').textContent='';dialog.showModal();}
     if(generate)$('#opsExperience').focus({preventScroll:true});
   }
+  function compose(){
+    const draft=composeDraft;
+    $('#opsContent').innerHTML=`<h2>키워드·링크로 글 작성</h2><p>입력한 항목을 모두 분석해 한 글로 엮습니다. 빈 칸은 제외하고 같은 입력은 한 번만 분석합니다.</p><div class="ops-grid"><label>작성 방식<select id="opsInputMode"><option value="keywords">키워드</option><option value="links">링크</option><option value="mixed">키워드 + 링크 혼합</option></select></label><label>카테고리<select id="opsInputCategory">${options(snapshot.categories,draft.category||snapshot.categories[0],null)}</select></label><label>플랫폼<select id="opsInputPlatform"><option value="naver">네이버</option><option value="tistory">티스토리</option></select></label></div><div id="opsKeywordFields" class="ops-grid">${[1,2,3].map(n=>`<label>키워드 ${n}<input id="opsKeyword${n}" maxlength="100" value="${esc(draft.keywords[n-1]||'')}" placeholder="${n===1?'작성할 핵심 키워드':'선택 입력'}"/></label>`).join('')}</div><div id="opsLinkFields" class="ops-grid">${[1,2,3].map(n=>`<label>링크 ${n}<input id="opsInputUrl${n}" type="url" maxlength="2048" value="${esc(draft.urls[n-1]||'')}" placeholder="https://..."/></label>`).join('')}</div><label>실제 경험 메모 (선택)<textarea id="opsInputExperience" maxlength="2000">${esc(draft.experience||'')}</textarea></label><label class="compact-check"><input id="opsInputImages" type="checkbox" ${draft.images!==false?'checked':''}/>이미지 최소 4장 생성</label><p class="hint">본문 공백 제외 1,000~1,500자 · 태그 10개 · 핵심 문장 볼드. 링크 방식은 입력한 공개 원문 범위에서 작성합니다. 키워드·혼합 방식은 필요한 자료를 검색합니다. 비공개·로그인 전용 링크를 읽지 못하면 주소를 표시하고 중지합니다.</p>${button('generateInputs','입력 항목 분석 후 원고 작성 · 검수 대기','','primary')}`;
+    $('#opsInputMode').value=draft.mode;$('#opsInputPlatform').value=draft.platform;
+    const change=()=>{composeDraft={mode:$('#opsInputMode').value,keywords:[1,2,3].map(n=>$('#opsKeyword'+n).value),urls:[1,2,3].map(n=>$('#opsInputUrl'+n).value),category:$('#opsInputCategory').value,platform:$('#opsInputPlatform').value,experience:$('#opsInputExperience').value,images:$('#opsInputImages').checked};$('#opsKeywordFields').hidden=composeDraft.mode==='links';$('#opsLinkFields').hidden=composeDraft.mode==='keywords';};
+    for(const el of $('#opsContent').querySelectorAll('input,textarea,select'))el.addEventListener('input',change);
+    $('#opsInputMode').addEventListener('change',change);change();
+  }
   function dataPage() {
     const prefs = snapshot.preferences;
     $("#opsContent").innerHTML =
@@ -205,7 +214,7 @@
     const tags=(d.current.data.writer?.tags || d.data.writer?.tags || []).filter(t=>typeof t==='string');
     $("#opsDocument").innerHTML =
       `<section class="ops-detail"><h2>${esc(d.platform)} 원고 · v${d.current_version}</h2><p class="hint">수정 후 저장하면 이전 승인·AI 검수가 해제됩니다. 최초 AI 원고와 이전 버전은 보존합니다. 로컬 원고 수정·승인 취소는 이미 게시한 글을 변경하지 않습니다.</p><label>제목<input id="opsDocTitle" maxlength="200" value="${esc(d.current.title)}"/></label><label>현재 원고<textarea id="opsDocArticle" class="ops-article" maxlength="30000">${esc(d.current.article)}</textarea></label><div class="button-row">${button("saveDocument", "수정본 저장", d.id, "primary")}${button("review", "현재 버전 AI 검수 요청", d.id)}${button("repair", "선택 문단만 AI 보완", d.id)}${button("simplify", "현재 원고 쉽게 다듬기 · AI 1회", d.id)}${button("variant", d.platform === "naver" ? "티스토리 별도 원고 작성" : "네이버 별도 원고 작성", d.id)}</div><label>선택 문단 수정 요청<input id="opsRepairInstruction" maxlength="1000" placeholder="수정할 문단을 원고에서 선택하고 요청을 적어주세요."/></label><p class="hint">쉽게 다듬기는 기존 자료로 본문을 수정본에 저장합니다. 이전 원고·이미지는 보존하며 다시 검수·승인해야 합니다. AI 부분 보완은 선택 문단만 바꿉니다. 플랫폼별 별도 원고도 각각 검수·승인해야 합니다.</p>
- <details><summary>주제 관련 태그 ${tags.length}개</summary><textarea id="opsDocTags" rows="3" readonly aria-label="원고 태그">${esc(tags.map(t=>'#'+t.replace(/^#+/, '')).join(' '))}</textarea>${button("copyTags", "태그 복사")}<p class="hint">본문 글자수에 포함하지 않습니다. ${d.platform==='tistory'?'티스토리는 우선순위가 높은 앞 10개를 발행합니다.':'네이버 발행 설정에 최대 30개를 전달합니다.'} 기존 원고의 태그는 자동 변경하지 않습니다.</p></details>
+ <details><summary>주제 관련 태그 ${tags.length}개</summary><textarea id="opsDocTags" rows="3" readonly aria-label="원고 태그">${esc(tags.map(t=>'#'+t.replace(/^#+/, '')).join(' '))}</textarea>${button("copyTags", "태그 복사")}<p class="hint">본문 글자수에 포함하지 않습니다. ${d.platform==='tistory'?'티스토리는 우선순위가 높은 앞 10개를 발행합니다.':'네이버 발행 설정에 이 원고의 태그를 전달합니다.'} 기존 원고의 태그는 자동 변경하지 않습니다.</p></details>
  <div id="opsRelevance" class="ops-notice"></div><div class="button-row">${button("analyzeRelevance", "연관성 포함 AI 검수", d.id)}<button type="button" class="ghost small" data-source="https://www.ndex.kr/post">NDEX에서 게시글 분석</button></div><p class="hint">현재 저장 원고만 분석합니다. 기존 최종 검수 한 번에 연관성을 함께 확인하며 본문을 자동으로 바꾸지 않습니다. 검수 후에는 다시 최종 승인하세요.</p>
  <div class="ops-document-preview" id="opsDocPreview"></div><div class="ops-images">${(d.current.data.images || []).map((i) => `<figure><img src="${esc(i.url)}" alt="${esc(i.role)} 이미지"/><figcaption>${esc(i.role)} ${esc(i.sequence)}</figcaption></figure>`).join("")}</div>
  <details><summary>최초 AI 원고</summary><pre class="ops-notes">${esc(d.original.title + "\n\n" + d.original.article)}</pre></details><details><summary>최초 원고와 현재 수정본 차이</summary>${d.diff.paragraphs.map((p) => `<div class="ops-diff ${esc(p.type)}"><small>${{ added: "추가", removed: "삭제", same: "유지" }[p.type]}</small><p>${esc(p.text)}</p></div>`).join("")}${d.diff.truncated ? "<p>비교 화면은 앞 200문단까지만 표시합니다. 원문 버전은 보존합니다.</p>" : ""}</details>
@@ -243,6 +252,7 @@
       .getWritingPreview({
         article: d.current.article,
         presentation: d.data.writingApplication?.presentation,
+        boldSentences:d.boldSentences||[],
       })
       .then((result) => {
         if (!$("#opsDocPreview") || doc?.id !== d.id) return;
@@ -252,6 +262,7 @@
           const el = document.createElement(b.type === "section" ? "h4" : "p");
           el.textContent =
             b.type === "image" ? "[이미지 " + b.sequence + "]" : b.text;
+          if(b.runs){el.textContent='';for(const r of b.runs){const span=document.createElement(r.bold?'strong':'span');span.textContent=r.text;el.append(span);}}
           container.append(el);
         }
       })
@@ -293,7 +304,8 @@
   function render() {
     if (!snapshot) return;
     if(tab!=='overview')$('#opsContent').dataset.view=tab;
-    if (tab === "overview") overview();
+    if (tab === "compose") compose();
+    else if (tab === "overview") overview();
     else if (tab === "data") dataPage();
     else if (tab === "drafts") drafts();
     else if (tab === "style") style();
@@ -385,6 +397,11 @@
         category: val("#opsNewCategory"),
       });
       return refresh();
+    }
+    if(actionName==='generateInputs'){
+      const d=composeDraft,result=await action('generateInputs',{inputBrief:{mode:d.mode,keywords:d.mode==='links'?[]:d.keywords,urls:d.mode==='keywords'?[]:d.urls},category:d.category,platform:d.platform,images:d.images,experienceNotes:d.experience});
+      if(result?.documentId)return openDocument(result.documentId);
+      throw Error(result?.reason||'저장된 진행 기록과 오류 메시지를 확인하세요.');
     }
     if (actionName === "generate") {
       const result = await action("generate", {
@@ -634,6 +651,7 @@
     closeTopicDetail();
     sequence++;
     doc = null;
+    composeDraft={mode:'keywords',keywords:[],urls:[],platform:'naver',images:true};
     topic = null;
     filters = { excludeDuplicate: true };
     if (typeof selectAccount === "function") selectAccount(account());

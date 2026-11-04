@@ -1,6 +1,6 @@
 // This function runs only inside the editor's isolated world. No debugger or remote control.
 async function editorCommand(command, args = {}) {
-  const build='20261028.1';let step='locate';
+  const build='20261104.1';let step='locate';
   try {
   const visible = el => Boolean(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
   const find = selector => [...document.querySelectorAll(selector)].find(visible);
@@ -28,6 +28,16 @@ async function editorCommand(command, args = {}) {
   const normalize=value=>String(value || '').replace(/[\s\u200b\ufeff]/g,'');
   // Scrolling or selection can temporarily hide a component. Content integrity
   // must not depend on its current rendering/visibility.
+  const boldText=el=>{const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT),parts=[];let n;while((n=walker.nextNode()))if(!n.parentElement.closest('.se-placeholder,.se-placeholder-text')&&(Number.parseInt(getComputedStyle(n.parentElement).fontWeight,10)>=600||n.parentElement.closest('b,strong')))parts.push(n.textContent);return parts.join('');};
+  const setBold=async desired=>{
+    const receiver=resolveInput(),host=receiver.active,doc=receiver.doc;
+    const button=()=>find('button[data-name="bold"],button.se-bold-toolbar-button');
+    const state=()=>{const b=button();return doc!==document&&b?(b.getAttribute('aria-pressed')==='true'||b.classList.contains('se-is-selected')||b.classList.contains('se-is-activated')):Boolean(doc.queryCommandState('bold'));};
+    if(state()===desired)return;
+    if(doc===document){if(!doc.execCommand('bold',false))throw new Error('편집기가 볼드 처리를 허용하지 않았습니다.');}
+    else {if(!button())throw new Error('중요 문장 볼드 버튼을 찾지 못했습니다. 본문은 보존했습니다.');button().click();host.focus();inputDocument=doc;}
+    if(!await waitFor(()=>state()===desired))throw new Error('중요 문장 볼드 적용을 확인하지 못했습니다. 본문은 보존했습니다.');
+  };
   const bodyText=()=>allParagraphs().map(readText).map(normalize).join('');
   const waitFor=async predicate=>{let stable=0;for(let n=0;n<100;n++){stable=predicate()?stable+1:0;if(stable>=2)return true;await wait(50);}return false;};
   const ensureImageAi=async image=>{
@@ -169,7 +179,7 @@ async function editorCommand(command, args = {}) {
     for(const el of document.querySelectorAll('.se-component')){
       if(el.matches('.se-documentTitle'))continue;
       const id=el.id;
-      if(el.matches('.se-text')){const text=[...el.querySelectorAll('.se-text-paragraph')].map(readText).join('\n');if(normalize(text))blocks.push({id,type:'paragraph',text});}
+      if(el.matches('.se-text')){const text=[...el.querySelectorAll('.se-text-paragraph')].map(readText).join('\n');if(normalize(text))blocks.push({id,type:'paragraph',text,boldText:boldText(el)});}
       else if(el.matches('.se-quotation'))blocks.push({id,type:'quote',text:readText(el.querySelector('.se-quote .se-text-paragraph') || el.querySelector('.se-text-paragraph')),style:el.classList.contains('se-l-quotation_line')?'quotation_line':el.classList.contains('se-l-quotation_underline')?'quotation_underline':'default'});
       else if(el.matches('.se-image'))blocks.push({id,type:'image',name:el.getAttribute('data-blogauto-asset-name') || el.querySelector('img')?.getAttribute('alt') || ''});
       else if(el.matches('.se-oglink')){
@@ -295,12 +305,25 @@ async function editorCommand(command, args = {}) {
       }
       const tail=value.slice(start).trim();if(tail)lines.push(tail);
     } else lines.push(value);
+    const styled=Array.isArray(args.runs)&&args.runs.map(r=>r.text).join('')===value;
+    const boldMask=[];if(styled)for(const run of args.runs)for(const ch of run.text)if(normalize(ch))boldMask.push(run.bold===true);
+    let characterIndex=0;
     for(let i=0;i<lines.length;i++){
       if(i){await insertParagraph();if(!args.preserveParagraphs)await insertParagraph();}
-      insertText(lines[i]);
+      if(styled){
+        const segments=[];
+        for(const ch of lines[i]){
+          const bold=normalize(ch)?boldMask[characterIndex++]:segments.at(-1)?.bold||false;
+          if(bold===undefined)throw new Error('볼드 문장 범위가 본문과 다릅니다.');
+          if(segments.at(-1)?.bold===bold)segments.at(-1).text+=ch;else segments.push({text:ch,bold});
+        }
+        for(const segment of segments){await setBold(segment.bold);insertText(segment.text);}
+      }
+      else insertText(lines[i]);
       // Wait for the editor model to commit before Enter or a toolbar action.
       if(!await waitFor(()=>bodyText()===beforeText+normalize(lines.slice(0,i+1).join(''))))throw new Error('본문 입력이 원문과 일치하지 않아 다음 요소 삽입을 중지했습니다.');
     }
+    if(styled)await setBold(false);
     // Keep the caret created by insertText, before any new click can reset it.
     await insertParagraph();
     if(args.preserveParagraphs || (args.breakSentences && /[.!?。！？]$/.test(value.trim())))await insertParagraph();

@@ -339,7 +339,7 @@ function buildPendingNaverPublishDraft({
     reserveAfterHours,
     breakSentencesInBody,
     preserveParagraphs:agentResult.writingApplication?.guideVersion>=2,
-    relevanceReport:agentResult.relevanceReport,writingApplication:agentResult.writingApplication,
+    relevanceReport:agentResult.relevanceReport,writingApplication:agentResult.writingApplication,boldSentences:agentResult.boldSentences||[],
     presentation:agentResult.writingApplication?.presentation,
     publishToTistoryAfterNaver,
     tistoryBlogId,
@@ -512,6 +512,7 @@ function todayLabel() {
 }
 
 async function resolveTopicInput(form, category, log) {
+  if(form.inputBrief){log('입력한 키워드·링크를 모두 분석해 한 글로 작성합니다.');return {topic:'',keyword:form.inputBrief.keywords.join(', ')||'입력 링크 원문'};}
   const seedKeyword = String(form.keyword || "").trim() || category;
   if(form.topicMode==='manual'&&String(form.topic||'').trim()){log("사용자가 선택한 추천 주제만 조사·작성합니다.");return {topic:String(form.topic).trim(),keyword:seedKeyword};}
   log("자동 주제 모드: 카테고리와 키워드를 Research/Title Agent에 전달합니다.");
@@ -674,7 +675,7 @@ function awaitModelRetry(jobId, payload) {
 }
 
 async function startJob(form) {
-  form = {...form,topicMode:form.operationsDraft&&form.topic?"manual":"auto",topic:form.operationsDraft?String(form.topic||""):"",publishAfterGenerate:!form.requireApproval};
+  form = {...form,topicMode:form.inputBrief?'input':form.operationsDraft&&form.topic?"manual":"auto",topic:form.operationsDraft?String(form.topic||""):"",publishAfterGenerate:!form.requireApproval};
   if (activeJob) {
     throw new Error("이미 실행 중인 작업이 있습니다.");
   }
@@ -909,7 +910,8 @@ async function startJob(form) {
       article: require("./lib/publicationFormat").omitReferences(pendingDraft.article),
       titleImagePath: pendingDraft.titleImagePath || "",
       bodyImages: Array.isArray(pendingDraft.bodyImages) ? pendingDraft.bodyImages : [],
-      imageWarnings: []
+      imageWarnings: [],
+      boldSentences:pendingDraft.boldSentences||[],writingApplication:pendingDraft.writingApplication
     };
     const resumeTags = Array.isArray(pendingDraft.tags) ? pendingDraft.tags : [];
     latestAgentResultForResume = resumeAgentResult;
@@ -917,7 +919,7 @@ async function startJob(form) {
     emit("job:preview", {
       jobId,
       title: resumeAgentResult.title,
-      article: resumeAgentResult.article,
+      article: resumeAgentResult.article,boldSentences:resumeAgentResult.boldSentences||[],writingApplication:resumeAgentResult.writingApplication,
       images: getPreviewImages(resumeAgentResult),
       imageNotes: [],
       tokenUsage: jobTokenUsage,
@@ -960,7 +962,7 @@ async function startJob(form) {
         ...nonSensitiveJob,
         status: completionStatus,
         title: resumeAgentResult.title,
-        article: resumeAgentResult.article,
+        article: resumeAgentResult.article,boldSentences:resumeAgentResult.boldSentences||[],writingApplication:resumeAgentResult.writingApplication,
         images: getPreviewImages(resumeAgentResult),
         imageNotes: [],
         tokenUsage: jobTokenUsage,
@@ -981,7 +983,7 @@ async function startJob(form) {
         ...nonSensitiveJob,
         status: error.code === "SESSION_EXPIRED" ? "session_expired" : error.code === "PUBLISH_UNCERTAIN" ? "publish_uncertain" : "failed",
         title: resumeAgentResult.title,
-        article: resumeAgentResult.article,
+        article: resumeAgentResult.article,boldSentences:resumeAgentResult.boldSentences||[],writingApplication:resumeAgentResult.writingApplication,
         images: getPreviewImages(resumeAgentResult),
         tags: resumeTags,
         tokenUsage: jobTokenUsage,
@@ -1042,8 +1044,10 @@ async function startJob(form) {
         tokenSaving: (form.tokenSaving ?? settings.tokenSaving) !== false,
         qualityPolicyVersion: 1,
         compactWriting:true,
-        articleLengthPolicy:1,
-        tagCount:30,
+        articleLengthPolicy:2,
+        emphasisPolicy:1,
+        inputBrief:form.inputBrief,
+        tagCount:10,
         relevancePolicy:1,
         requireApproval,operationsTopicId,operationsDraft:form.operationsDraft===true,
         requiredWritingInstructions:operations?require('./lib/operations/editorial').profile(operations.db,account.id).instructions:'',
@@ -1062,6 +1066,8 @@ async function startJob(form) {
         keyword,
         category,
         topicMode: form.topicMode,
+        readInputLink:async url=>{const s=await require('./lib/search')._private.fetchCandidateContent({url,title:'입력 링크 원문',provider:'user'},{searchChannel:'web',searchQueries:form.inputBrief?.keywords||[]},(m,l)=>safeLog(jobId,m,l,'research'));return s;},
+        searchInputKeyword:async term=>retrieveResearch({topic:term,keyword:term,category,searchQueries:[term],searchChannel:'web',searchNeed:'light',trustBlogAsSource:false,currentDate:currentDateLabel},(m,l)=>safeLog(jobId,m,l,'research'),{context:retrievalContext}),
         searchResults: [],
         currentDateLabel,
         includeTitleImage,
@@ -1102,7 +1108,7 @@ async function startJob(form) {
           if(operationsTopicId)operations?.progressTopic(account.id,operationsTopicId,draft.previewStage==='humanizing'?'writing':'ai_review');
           // Preview only: unreviewed text is never a resumable publish draft.
           emit("job:preview", {jobId,title:draft.title,article:draft.article,
-            relevanceReport:draft.relevanceReport,previewStage:draft.previewStage,writerAttempt:draft.writerAttempt,writingApplication:draft.writingApplication,
+            relevanceReport:draft.relevanceReport,previewStage:draft.previewStage,writerAttempt:draft.writerAttempt,writingApplication:draft.writingApplication,boldSentences:draft.boldSentences||[],
             images:[],imageNotes:[],tags:draft.tags || []});
         },
         onResearchTitle: (researchResult) => {
@@ -1329,6 +1335,7 @@ async function startJob(form) {
       result: codexResult
     });
     agentResult.writingApplication=codexResult.writingApplication;
+    agentResult.boldSentences=codexResult.boldSentences||[];
     agentResult.relevanceReport=codexResult.relevanceReport;
     latestAgentResultForResume = agentResult;
     if(codexResult.publishable===false || agentResult.imageWarnings?.length){
@@ -1348,7 +1355,7 @@ async function startJob(form) {
       jobId,
       title: agentResult.title,
       article: agentResult.article,
-      relevanceReport:codexResult.relevanceReport,writingApplication:codexResult.writingApplication,
+      relevanceReport:codexResult.relevanceReport,writingApplication:codexResult.writingApplication,boldSentences:codexResult.boldSentences||[],
       images: getPreviewImages(agentResult),
       imageNotes: [...(agentResult.imageWarnings || []),...(codexResult.publishable===false ? codexResult.notes || [] : [])],
       tokenUsage: jobTokenUsage,
@@ -1572,7 +1579,7 @@ app.whenReady().then(async () => {
     if(typeof input?.article!=='string'||input.article.length>100000)throw new Error('미리보기 원고를 확인하세요.');
     const plan=require(path.join(app.isPackaged?process.resourcesPath:path.join(__dirname,'..'),'extension','article-plan.js'));
     const raw=input.presentation||{},presentation={headingStyle:raw.headingStyle==='quotation_underline'?'quotation_underline':'quotation_line',alignment:raw.alignment==='center'?'center':'left',preserveImageOrder:raw.preserveImageOrder===true,heroPosition:raw.heroPosition==='after-opening'?'after-opening':'before-opening'};
-    return {blocks:plan.articleWithHero(plan.articlePlan(input.article,{preserveParagraphs:true,presentation}),input.titleImagePlanned===true?{type:'hero'}:null,presentation.heroPosition),presentation};
+    return {blocks:plan.articleWithHero(plan.articlePlan(input.article,{preserveParagraphs:true,presentation,boldSentences:Array.isArray(input.boldSentences)&&input.boldSentences.length?require("./lib/emphasis").select({article:input.article,boldSentences:input.boldSentences},null,{emphasisPolicy:1}):[]}),input.titleImagePlanned===true?{type:'hero'}:null,presentation.heroPosition),presentation};
   });
 
   try{operations=require('./lib/operations/register').register({ipcMain,dialog,safeStorage,window:()=>mainWindow,root:getRuntimeRoot(),accounts:()=>readAccountStore(getRuntimeRoot(),readSettings(getRuntimeRoot())).accounts,settings:()=>readSettings(getRuntimeRoot()),saveSettings:next=>writeSettings(getRuntimeRoot(),next),history:id=>require('./lib/topicHistory').accountHistory(readHistory(getRuntimeRoot()),{accountId:id,blogId:readAccountStore(getRuntimeRoot(),readSettings(getRuntimeRoot())).accounts.find(a=>a.id===id)?.blogId}),isBusy:()=>Boolean(activeJob),openExternal:url=>shell.openExternal(url),installCategories:id=>{const root=getRuntimeRoot(),settings=readSettings(root),store=readAccountStore(root,settings),account=store.accounts.find(a=>a.id===id);for(const name of require('./lib/operations/data').CATEGORIES)if(!account.categories.some(c=>c.name===name))account.categories.push({name,keyword:name,checked:false});const saved=writeAccountStore(root,store,settings);emitAccountStore(root);return saved;},startJob,progress:(id,message,level)=>emit('operations:progress',{id,message,level})});}catch(error){

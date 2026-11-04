@@ -1297,7 +1297,7 @@ function renderArticleTags(values){
   $('#articleTagsPanel').hidden=!tags.length;
   $('#articleTagsCount').textContent=String(tags.length);
   $('#articleTags').value=tags.map(t=>'#'+t.replace(/^#+/,'')).join(' ');
-  $('#articleTagsStatus').textContent='본문 글자수 제외 · 네이버 최대 30개 / 티스토리 앞 10개';
+  $('#articleTagsStatus').textContent='본문 글자수 제외 · 새 원고 태그 10개 / 기존 원고 태그 보존';
 }
 function resetJobPreview(target){
   renderArticleTags([]);
@@ -1923,13 +1923,14 @@ async function refreshCodexCatalog(){
 window.addEventListener('focus',refreshCodexCatalog);
 setInterval(()=>{if(!document.hidden)refreshCodexCatalog();},300000);
 
-let previewArticleSequence=0,mobilePreviewChosen=null,previewArticleText='',previewArticlePresentation=null;
+let previewArticleSequence=0,mobilePreviewChosen=null,previewArticleText='',previewArticlePresentation=null,previewArticleBold=[];
 async function renderFormattedArticle(payload){
  const request=++previewArticleSequence,article=String(payload.article||'');
  const presentation=payload.writingApplication?.presentation||(article===previewArticleText?previewArticlePresentation:null);
- previewArticleText=article;previewArticlePresentation=presentation;
+ const boldSentences=payload.boldSentences||(article===previewArticleText?previewArticleBold:[]);
+ previewArticleText=article;previewArticlePresentation=presentation;previewArticleBold=boldSentences;
  try{
-  const result=await window.blogAuto.getWritingPreview({article,presentation,titleImagePlanned:payload.writingApplication?.titleImagePlanned===true});if(request!==previewArticleSequence)return;
+  const result=await window.blogAuto.getWritingPreview({article,presentation,boldSentences,titleImagePlanned:payload.writingApplication?.titleImagePlanned===true});if(request!==previewArticleSequence)return;
   const host=$('#articleFormattedPreview'),paper=document.createElement('article');paper.className='mobile-article-paper'+(result.presentation.alignment==='center'?' center':'');
   for(const block of result.blocks){
    if(block.type==='image'||block.type==='hero'){
@@ -1937,7 +1938,7 @@ async function renderFormattedArticle(payload){
     const el=document.createElement(source?'img':'div');
     if(source){el.src=source.url;el.alt=block.type==='hero'?'대표 이미지':'본문 이미지 '+block.sequence;}else{el.className='preview-image-slot';el.textContent=(block.type==='hero'?'대표 이미지':'이미지 '+block.sequence)+' · 생성 후 이 위치에 배치';}
     paper.appendChild(el);
-   }else{const el=document.createElement(block.type==='section'?'blockquote':'p');el.textContent=block.text;if(block.style==='quotation_underline')el.className='underline';paper.appendChild(el);}
+   }else{const el=document.createElement(block.type==='section'?'blockquote':'p');el.textContent=block.text;if(block.runs){el.textContent='';for(const r of block.runs){const span=document.createElement(r.bold?'strong':'span');span.textContent=r.text;el.appendChild(span);}}if(block.style==='quotation_underline')el.className='underline';paper.appendChild(el);}
   }
   host.replaceChildren(paper);
   const show=mobilePreviewChosen===null?Boolean(presentation):mobilePreviewChosen;host.hidden=!show;$('#articlePreview').hidden=show;

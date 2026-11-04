@@ -273,6 +273,18 @@ class Operations {
       }),
     );
   }
+  async generateInputs(account,{inputBrief,category,platform='naver',images=true,experienceNotes=''}){
+    const a=this.account(account),brief=require('../inputWorkflow').normalize(inputBrief);
+    const settings=this.hooks.settings();
+    if(settings.pendingGenerationDraft||settings.pendingNaverPublishDraft)throw Error('중단된 기존 작업이 있습니다. 작업 이력에서 재개하거나 취소한 뒤 새 입력 원고를 작성하세요. 기존 원고는 보존했습니다.');
+    if(!D.CATEGORIES.includes(category)||!['naver','tistory'].includes(platform)||platform==='tistory'&&!a.tistoryBlogId)throw Error('카테고리와 등록된 발행 플랫폼을 확인하세요.');
+    if(typeof experienceNotes!=='string'||experienceNotes.length>2000)throw Error('경험 메모는 2,000자 이내로 입력하세요.');
+    const id=S.hash(account+'|'+platform+'|'+category+'|'+JSON.stringify(brief)).slice(0,32),at=S.now(),title=(brief.keywords.join(' · ')||'입력 링크 원문 분석').slice(0,150);
+    const existing=this.db.prepare('SELECT status FROM ops_topics WHERE id=? AND account=?').get(id,account);
+    if(existing?.status==='published')throw Error('이 입력으로 이미 완료한 글이 있습니다. 원고 목록을 확인하세요.');
+    this.db.prepare('INSERT OR IGNORE INTO ops_topics VALUES (?,?,?,?,?,?,?,?,?)').run(id,account,brief.keywords.join(', ')||'입력 링크',title,category,'selected',at,at,JSON.stringify({origin:'user_input',inputBrief:brief}));
+    return this.lock(()=>this.hooks.startJob({accountId:account,blogId:a.blogId,category,keyword:brief.keywords.join(', ')||'입력 링크',inputBrief:brief,topicMode:'input',operationsDraft:true,operationsTopicId:id,platform,requireApproval:true,includeTitleImage:images===true,maxBodyImages:images===true?Math.max(3,require('../settings').normalizeMaxBodyImages(this.hooks.settings().maxBodyImages)):0,trustBlogAsSource:brief.mode==='links',searchChannel:'web',experienceNotes,publishAfterGenerate:false}));
+  }
   async refresh(account, { provider = "cache", hints = [] } = {}) {
     this.account(account);
     if (provider === "cache") {
@@ -507,6 +519,7 @@ class Operations {
     const opts = checkpoint.generationOptions || {},
       sources = [
         ...(opts.searchResults || []),
+        ...Object.values(checkpoint.inputSources||{}).flat(),
         ...Object.values(checkpoint.retrievals || {}).flatMap(
           (p) => p.searchResults || [],
         ),
@@ -815,8 +828,9 @@ class Operations {
         ...this.options(account, d, dir),
         platform,
         platformVariant: true,
-        articleLengthPolicy: 1,
-        tagCount: 30,
+        articleLengthPolicy: 2,
+        tagCount: 10,
+        emphasisPolicy: 1,
         relevancePolicy: 1,
         includeTitleImage: false,
         maxBodyImages: 0,
@@ -844,7 +858,7 @@ class Operations {
           options,
         );
       if (issue) throw Error(issue);
-      result.tags=require('../articleTags').normalize(result.tags);
+      result.tags=require('../articleTags').normalize(result.tags,options.tagCount);
       if (
         E.normalArticle(result.article) === E.normalArticle(d.current.article)
       )
@@ -860,8 +874,9 @@ class Operations {
           images: [],
           options: {
             ...d.data.options,
-            articleLengthPolicy: 1,
-            tagCount: 30,
+            articleLengthPolicy: 2,
+            tagCount: 10,
+            emphasisPolicy: 1,
             relevancePolicy: 1,
             includeTitleImage: false,
             maxBodyImages: 0,
@@ -1013,6 +1028,7 @@ class Operations {
         reserveAfterHours: prepared.data.reserveAfterHours,
         preserveParagraphs: true,
         presentation: d.data.writingApplication?.presentation,
+        boldSentences: d.boldSentences||[],
         interactive: true,
       };
       try {
