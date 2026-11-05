@@ -316,7 +316,7 @@
             <p class="hint">예시는 이 PC에 저장됩니다. 문체를 적용할 때 짧은 발췌만 Codex에 전달하며, 학습을 위한 추가 AI 호출은 없습니다.</p>
             <label>블로그 운영 방향 (계정별, 최대 400자)<textarea id="writingDirection" rows="2" maxlength="400" placeholder="주 독자와 이 블로그에서 계속 전하고 싶은 관점"></textarea></label>
             <label>벤치마크 형식<select id="writingFormatProfile"><option value="balanced">자동 · 건강 정보와 일상</option><option value="explanation">건강 설명 · 오해에서 선택 기준으로</option><option value="practical">실행·루틴 · 이해에서 따라 하는 순서로</option><option value="comparison">선택·비교 · 같은 기준으로 살펴보기</option><option value="essay">일상·경험 · 장면에서 여운으로</option><option value="off">벤치마크 형식 끄기</option></select></label>
-            <p class="hint">공개 글 100편의 전개·소제목·이미지 배치를 분석했습니다. 새 글은 공백 제외 1,000~1,200자로 생성하며 참고자료 목록은 표시하지 않습니다. 문체와 표현은 내가 수정·승인한 글을 우선합니다.</p>
+            <p class="hint">공개 글 100편의 전개·소제목·이미지 배치를 분석했습니다. <span data-writing-length>새 글의 분량 기준을 확인 중입니다.</span> 참고자료 목록은 표시하지 않습니다. 문체와 표현은 내가 수정·승인한 글을 우선합니다.</p>
             <label class="compact-check"><input id="writingStyleEnabled" type="checkbox" checked /> 학습한 문체 적용</label>
             <label>피하고 싶은 표현 (쉼표 구분, 최대 12개)<input id="writingAvoidPhrases" maxlength="650" placeholder="예: 살펴보겠습니다, 여러분도 꼭" /></label>
             <button id="saveWritingPreferences" class="ghost small" type="button">문체 설정 저장</button>
@@ -366,7 +366,7 @@
                 </select>
               </label>
             </div>
-            <p class="hint">이미지 사용 시 대표 포함 총 최소 4장입니다. 대표를 끄면 본문 최소 4장을 생성합니다. 글 분량은 1,000~1,200자를 유지합니다.</p>
+            <p class="hint">이미지 사용 시 대표 포함 총 최소 4장입니다. 대표를 끄면 본문 최소 4장을 생성합니다. <span data-writing-length>새 글의 분량 기준을 확인 중입니다.</span></p>
           </div>
           <div id="imageGrid" class="image-grid">
             <div class="empty">생성된 이미지가 없습니다.</div>

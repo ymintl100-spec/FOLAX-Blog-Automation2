@@ -112,6 +112,11 @@ function accountDisplayName(account) {
   return String(account?.label || account?.blogId || account?.naverId || "Naver 계정");
 }
 
+function renderWritingRequirements(value){
+  if(!value||!Number.isFinite(value.min)||!Number.isFinite(value.max)||!Number.isFinite(value.target))return;
+  const n=v=>Number(v).toLocaleString('ko-KR');
+  for(const el of document.querySelectorAll('[data-writing-length]'))el.textContent=`새 글은 공백 제외 ${n(value.target)}자 목표(${n(value.min)}~${n(value.max)}자 허용)입니다.`;
+}
 function renderRetryProgress(value){
   const used=Math.max(0,Math.min(5,Number(value?.used)||0)),max=Number(value?.max)||5;
   const label=$('#autoRetryStatus'),bar=$('#autoRetryProgress');
@@ -1452,6 +1457,7 @@ async function boot() {
   if (account) selectAccount(account.id);
   renderHistory(initial.history || []);
   renderRetryProgress(initial.autoRetryProgress);
+  renderWritingRequirements(initial.writingRequirements);
   if(initial.pendingPreview){
     const draft=initial.pendingPreview;
     renderRelevance(draft.relevanceReport);
