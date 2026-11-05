@@ -50,9 +50,9 @@ async function generateAttempt(options, log, deps) {
   const usage={total:0,grossTotal:0,inputTokens:0,cachedInputTokens:0,outputTokens:0,promptCharacters:0,agents:{},grossAgents:{},promptCharactersByAgent:{}};
   const snapshot=()=>({...usage,estimatedPromptTokens:Math.ceil(usage.promptCharacters/3)});
   const automatic=automaticRetries.enabled(options);
-  const run=async(agent,prompt,file,resultFile,retryRequest)=>{
+  const run=async(agent,prompt,file,resultFile,retryRequest,revisionBinding)=>{
     let result;
-    try{result=await deps.runTask({options:effective,prompt,promptFileName:file,resultFileName:resultFile,log,agent,retryRequest,
+    try{result=await deps.runTask({options:effective,prompt,promptFileName:file,resultFileName:resultFile,log,agent,retryRequest,revisionBinding,
       tokenOffset:usage.total,grossTokenOffset:usage.grossTotal,inputTokenOffset:usage.inputTokens,cachedInputTokenOffset:usage.cachedInputTokens,outputTokenOffset:usage.outputTokens,promptCharacterOffset:usage.promptCharacters,agentTokenOffset:usage.agents[agent] || 0});}
     catch(error){
       const u=error.tokenUsage||{};
@@ -66,12 +66,18 @@ async function generateAttempt(options, log, deps) {
     usage.promptCharactersByAgent[agent]=(usage.promptCharactersByAgent[agent] || 0)+Number(u.promptCharacters || 0);if(u.rateLimits)usage.rateLimits=u.rateLimits;
     return result;
   };
-  const repairTask=async(agent,prompt,file,resultFile,kind,apply)=>{
+  const repairTask=async(agent,prompt,file,resultFile,kind,apply,revisionBinding)=>{
+    let previousProtocolError='';
     for(let n=0;;n++){
       const retryFile=n?file.replace(/\.txt$/,`-retry-${n}.txt`):file;
-      try{return apply(await run(agent,prompt,retryFile,resultFile,{kind,reason:kind}));}
+      try{return apply(await run(agent,prompt,retryFile,resultFile,{kind,reason:kind},revisionBinding));}
       catch(error){
-        if(automatic)await options.onInvalidTextResult?.(retryFile);
+        if(automatic)await options.onInvalidTextResult?.(retryFile,error);
+        if(['REVISION_SOURCE_CHANGED','REVISION_REJECTED'].includes(error.code))throw error;
+        if(automatic&&revisionBinding?.version===2&&/^REVISION_(?:RESPONSE_|PARAGRAPH_|BEFORE_|FINGERPRINT_)/.test(error.code||'')){
+          if(previousProtocolError===error.code)throw Object.assign(Error(error.message+' 같은 응답 형식 오류가 연속 두 번 발생해 추가 호출을 중지했습니다.'),{code:'REPEATED_RESPONSE_PROTOCOL'});
+          previousProtocolError=error.code;
+        }
         if(!automatic||error.code==='AUTO_RETRY_LIMIT'||error.code==='MODEL_RETRY_CANCELLED'||error.code==='CODEX_USAGE_LIMIT'||error.code==='CODEX_EXEC_FAILED')throw error;
         if(n>=automaticRetries.MAX)throw error;
         progress('마지막 원고 보존 · 응답 보완: '+error.message,'warn','writer');
@@ -142,7 +148,8 @@ async function generateAttempt(options, log, deps) {
     if(partial){
       const requestKey=editorialRevision.requestKey(writer,feedback,effective);
       if(!automatic&&options.blockedRevisionRequest===requestKey)return failed('article_revision','동일 원고와 동일 지적의 부분 수정에서 변경이 없었습니다. 중복 모델 호출을 생략했습니다. 원고 또는 입력 근거를 보완해 주세요.','execution');
-      try{writer=await repairTask('writer',editorialRevision.repairPrompt(writer,feedback,params),`article-revision-${attempt}.txt`,`article-revision-result-${attempt}.json`,'본문 부분 보완',patch=>editorialRevision.apply(writer,patch));}
+      const binding=effective.revisionProtocol===2?editorialRevision.context(writer):null;
+      try{writer=await repairTask('writer',editorialRevision.repairPrompt(writer,feedback,params,binding),`article-revision-${attempt}.txt`,`article-revision-result-${attempt}.json`,'본문 부분 보완',patch=>editorialRevision.apply(writer,patch,binding),binding?{version:2,sourceFingerprint:binding.sourceFingerprint}:undefined);}
       catch(error){if(!automatic&&error.code==='NO_REVISION_CHANGE')await options.onBlockedRevisionRequest?.(requestKey);return {...failed('article_revision',error.message,'execution'),failureStep:`article-revision-${attempt}.txt`};}
     }else try{writer=await run('writer',attempt===1&&!writer?deps.writerPrompt(params):deps.writerRetry(params,writer),attempt===1?'prompt.txt':`prompt-retry-${attempt}.txt`,'agent-result.json',attempt>1||seed?{kind:'본문 형식 보완',reason:feedback}:undefined);}catch(error){if(error.code==='AUTO_RETRY_LIMIT')return failed('writer',error.message,'execution');throw error;}
     review=null;
@@ -307,12 +314,13 @@ async function generate(options,log,deps) {
   options={tokenSaving:true,qualityPolicyVersion:1,...options};
   const restored=options.generationCheckpoint;
   if(restored && restored.version!==2)throw new Error('재개 기록 버전을 확인할 수 없습니다. 기존 작업을 취소한 뒤 다시 시작하세요.');
-  const optionKeys=['tokenSaving','qualityPolicyVersion','writingGuidance','formatGuidance','compactWriting','maxAutoRetries','revisionPolicy','articleLengthPolicy','emphasisPolicy','inputBrief','relevancePolicy','tagCount','requireApproval','operationsTopicId','operationsDraft','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','blogDirection','experienceNotes','experienceNotesId','topic','keyword','category','topicMode','currentDateLabel','includeTitleImage','maxBodyImages','minimumImageCount','titleImageAspectRatio','bodyImageAspectRatio','excludedTopics','publishPurpose','preferredTone','freshnessLevel','searchChannel','trustBlogAsSource','keywordLanes','recommendedKeywordLanes','historyTitles','searchResults','sourceQuality'];
+  const optionKeys=['tokenSaving','qualityPolicyVersion','writingGuidance','formatGuidance','compactWriting','maxAutoRetries','revisionProtocol','revisionPolicy','articleLengthPolicy','emphasisPolicy','inputBrief','relevancePolicy','tagCount','requireApproval','operationsTopicId','operationsDraft','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','blogDirection','experienceNotes','experienceNotesId','topic','keyword','category','topicMode','currentDateLabel','includeTitleImage','maxBodyImages','minimumImageCount','titleImageAspectRatio','bodyImageAspectRatio','excludedTopics','publishPurpose','preferredTone','freshnessLevel','searchChannel','trustBlogAsSource','keywordLanes','recommendedKeywordLanes','historyTitles','searchResults','sourceQuality'];
   const requestedAutomatic=automaticRetries.enabled(options);
   const recovery=restored?JSON.parse(JSON.stringify(restored)):{version:2,steps:{},retrievals:{},generationOptions:Object.fromEntries(optionKeys.filter(k=>options[k]!==undefined).map(k=>[k,options[k]])),attemptNumber:1};
   if(restored&&requestedAutomatic&&!Object.hasOwn(recovery.generationOptions,'maxAutoRetries')){recovery.generationOptions.maxAutoRetries=5;recovery.generationOptions.revisionPolicy=1;}
+  if(restored&&options.revisionProtocol===2)recovery.generationOptions.revisionProtocol=2;
   options={...options,...recovery.generationOptions};
-  if(restored)for(const key of ['maxAutoRetries','revisionPolicy','emphasisPolicy','inputBrief','relevancePolicy','tagCount','minimumImageCount','articleLengthPolicy','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','requireApproval','operationsTopicId','operationsDraft','compactWriting','experienceNotes','experienceNotesId','blogDirection','writingGuidance','formatGuidance'])if(!Object.hasOwn(recovery.generationOptions,key))options[key]=undefined;
+  if(restored)for(const key of ['maxAutoRetries','revisionProtocol','revisionPolicy','emphasisPolicy','inputBrief','relevancePolicy','tagCount','minimumImageCount','articleLengthPolicy','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','requireApproval','operationsTopicId','operationsDraft','compactWriting','experienceNotes','experienceNotesId','blogDirection','writingGuidance','formatGuidance'])if(!Object.hasOwn(recovery.generationOptions,key))options[key]=undefined;
   if(typeof(options.experienceNotes??'')!=='string'||String(options.experienceNotes||'').length>2000)throw new Error('이번 글의 실제 경험 메모는 2,000자 이내로 입력하세요.');
   if(options.formatGuidance?.version>=3&&options.formatGuidance.id==='essay'&&!String(options.experienceNotes||'').trim())return {status:'failed',failureKind:'execution',failurePhase:'input',failureReason:'일상·경험형에는 이번 글의 실제 경험 메모가 필요합니다. 경험을 입력하거나 자동·건강 설명형을 선택하세요.',article:'',title:''};
   const saveRecovery=async()=>{await options.onGenerationCheckpoint?.(JSON.parse(JSON.stringify(recovery)));};
@@ -347,6 +355,11 @@ async function generate(options,log,deps) {
     const priorAttempts=attempts.slice(0,-1).map(a=>({title:a.title,reason:a.reason,phase:a.phase,queries:a.queries}));
     const runTask=async args=>{
       const key=number+':'+args.promptFileName;
+      const binding=args.revisionBinding?{...args.revisionBinding,promptHash:crypto.createHash('sha256').update(args.prompt).digest('hex')}:null;
+      if(recovery.steps[key]&&binding){
+        const saved=recovery.stepBindings?.[key];
+        if(!(saved?.version===binding.version&&saved.sourceFingerprint===binding.sourceFingerprint&&saved.promptHash===binding.promptHash)){delete recovery.steps[key];if(recovery.stepBindings)delete recovery.stepBindings[key];await saveRecovery();}
+      }
       if(recovery.steps[key]){
         log(`${args.agent} 완료 결과 재사용`,'info','main');
         return {...JSON.parse(JSON.stringify(recovery.steps[key])),tokenUsage:{}};
@@ -361,7 +374,7 @@ async function generate(options,log,deps) {
         // Image outputs are checkpointed after merging, style is keyed by the
         // live sample identity. Neither may be replayed by task filename alone.
         if(!['image','imageStyle'].includes(args.agent)){
-          recovery.steps[key]=JSON.parse(JSON.stringify(value));await saveRecovery();
+          recovery.steps[key]=JSON.parse(JSON.stringify(value));if(binding){recovery.stepBindings||={};recovery.stepBindings[key]=binding;}await saveRecovery();
         }
         Object.assign(step,{status:value.status,reason:value.failureReason || '',title:value.finalTitle || value.title || '',tokenUsage:value.tokenUsage,finishedAt:new Date().toISOString()});
         if(jobDir){const base=String(step.step).padStart(2,'0')+'-'+args.agent;fs.writeFileSync(path.join(jobDir,base+'-result.json'),JSON.stringify(value,null,2));fs.writeFileSync(path.join(jobDir,base+'-prompt.txt'),args.prompt);}
@@ -371,7 +384,7 @@ async function generate(options,log,deps) {
     try {
       result=await generateAttempt({...options,jobDir,attemptNumber:number,maxAttempts:limit,priorAttempts,reviewedEvidence,
         imageCheckpoint:recovery.imageCheckpoint,articleResume:recovery.articleResume,blockedRevisionRequest:recovery.blockedRevisionRequest,
-        onInvalidTextResult:async file=>{delete recovery.steps[number+':'+file];await saveRecovery();},
+        onInvalidTextResult:async(file,error)=>{delete recovery.steps[number+':'+file];if(recovery.stepBindings)delete recovery.stepBindings[number+':'+file];if(jobDir)fs.appendFileSync(path.join(jobDir,'revision-response-diagnostics.jsonl'),JSON.stringify({file,code:error?.code||'INVALID_RESPONSE',message:error?.message||'',detail:error?.diagnostic||{},at:new Date().toISOString()})+'\n');await saveRecovery();},
         onBlockedRevisionRequest:async key=>{recovery.blockedRevisionRequest=key;await saveRecovery();},
         onArticleCheckpoint:async value=>{recovery.articleCheckpoint=JSON.parse(JSON.stringify(value));await saveRecovery();},
         imageEvidenceContext:require('./generationRecovery').imageEvidenceContext(recovery),
