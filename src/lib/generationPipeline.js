@@ -15,6 +15,7 @@ const relevance=require('./articleRelevance');
 const reviewContract=require('./reviewContract');
 const editorialRevision=require('./editorialRevision');
 const automaticRetries=require('./automaticRetries');
+const researchEvidence=require('./researchEvidence');
 const {humanize,applyReview}=require('../../packages/blog-humanizer');
 const {resolveImageStyle}=require('./accountImageStyle');
 const normalizeTitle=s=>String(s || '').trim();
@@ -110,12 +111,12 @@ async function generateAttempt(options, log, deps) {
   let issue=evidenceIssue(research,effective.searchResults,effective);
   for(let round=1;round<=2 && (research.status==='REVISION' || (research.status==='PASS' && issue));round++){
     if(effective.inputBrief?.mode==='links'||typeof options.onSearchNeeded!=='function' || research.searchNeed==='skip')break;
-    const before=fingerprint(sourcesFor(effective));
+    const before=fingerprint(sourcesFor({...effective,researchTitleResult:research}));
     progress(`주제 조사 ${round}차 · 자료 보강 필요: ${reasons([research.failureReason,issue]) || '추가 원문 확인 요청'} · 검색 보강 ${round}/2 시작`,'info','research');
     const payload=await options.onSearchNeeded(research,{round,previousSearchResults:effective.searchResults,sourceQuality:effective.sourceQuality});
-    const sources=payload?.searchResults || [];
-    if(before===fingerprint(sourcesFor({...effective,searchResults:sources}))){retrievalStopped=true;issue=sources.length?'새로운 원문 근거가 없어 추가 검토·전체 재시도를 중지했습니다.':'선택한 검색 범위에서 읽을 수 있는 원문을 확보하지 못해 추가 검토·전체 재시도를 중지했습니다.';log(issue,'warn','research');break;}
-    const deliveredKey=normalizeTitle(research.finalTitle)+'|'+fingerprint(sourcesFor({...effective,searchResults:sources}));
+    const sources=researchEvidence.merge(effective.searchResults,payload?.searchResults,(research.factChecks||[]).flatMap(f=>f.sourceIds||[]));
+    if(before===fingerprint(sourcesFor({...effective,searchResults:sources,researchTitleResult:research}))){retrievalStopped=true;issue=sources.length?'새로운 원문 근거가 없어 추가 검토·전체 재시도를 중지했습니다.':'선택한 검색 범위에서 읽을 수 있는 원문을 확보하지 못해 추가 검토·전체 재시도를 중지했습니다.';log(issue,'warn','research');break;}
+    const deliveredKey=normalizeTitle(research.finalTitle)+'|'+fingerprint(sourcesFor({...effective,searchResults:sources,researchTitleResult:research}));
     if(options.reviewedEvidence?.has(deliveredKey)){retrievalStopped=true;issue='이 주제의 동일 근거는 앞선 시도에서 검토하여 추가 호출·전체 재시도를 중지했습니다.';log(issue,'warn','research');break;}
     options.reviewedEvidence?.add(deliveredKey);
     effective={...effective,searchResults:sources,sourceQuality:payload.sourceQuality,researchRevisionContext:issue};
@@ -319,6 +320,7 @@ async function generate(options,log,deps) {
   const recovery=restored?JSON.parse(JSON.stringify(restored)):{version:2,steps:{},retrievals:{},generationOptions:Object.fromEntries(optionKeys.filter(k=>options[k]!==undefined).map(k=>[k,options[k]])),attemptNumber:1};
   if(restored&&requestedAutomatic&&!Object.hasOwn(recovery.generationOptions,'maxAutoRetries')){recovery.generationOptions.maxAutoRetries=5;recovery.generationOptions.revisionPolicy=1;}
   if(restored&&options.revisionProtocol===2)recovery.generationOptions.revisionProtocol=2;
+  if(restored){const repaired=researchEvidence.recover(recovery);if(repaired){Object.assign(recovery,repaired);log('저장된 입력 원문·출처 ID 복원 · 보강 조사 검토만 다시 진행합니다.','info','research');}}
   options={...options,...recovery.generationOptions};
   if(restored)for(const key of ['maxAutoRetries','revisionProtocol','revisionPolicy','emphasisPolicy','inputBrief','relevancePolicy','tagCount','minimumImageCount','articleLengthPolicy','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','requireApproval','operationsTopicId','operationsDraft','compactWriting','experienceNotes','experienceNotesId','blogDirection','writingGuidance','formatGuidance'])if(!Object.hasOwn(recovery.generationOptions,key))options[key]=undefined;
   if(typeof(options.experienceNotes??'')!=='string'||String(options.experienceNotes||'').length>2000)throw new Error('이번 글의 실제 경험 메모는 2,000자 이내로 입력하세요.');
@@ -335,7 +337,7 @@ async function generate(options,log,deps) {
       options.inputBrief=require('./inputWorkflow').normalize(options.inputBrief);
       recovery.inputSources ||= {};
       const sources=await require('./inputWorkflow').collect(options.inputBrief,recovery.inputSources,{readLink:options.readInputLink,searchKeyword:options.searchInputKeyword,save:saveRecovery,log:message=>log(message,'info','research')});
-      options.searchResults=[...sources,...(options.searchResults||[]).filter(s=>!sources.some(v=>v.url===s.url))];
+      options.searchResults=researchEvidence.merge(sources,options.searchResults);
       recovery.generationOptions.searchResults=options.searchResults;await saveRecovery();
     }catch(error){return {status:'failed',failureKind:'execution',failurePhase:'input_links',failureReason:error.message,article:'',title:''};}
   }
@@ -401,10 +403,11 @@ async function generate(options,log,deps) {
           const fresh=freshQueries((research.searchQueries || []).slice(0,supplement?Math.max(0,2-verification.length):2),'discovery');
           if(!fresh.length && !verification.length){log('이미 실행한 검색어뿐이어서 동일 검색을 생략합니다.','warn','research');return {searchResults:context.previousSearchResults};}
           entry.queries=[...(entry.queries || []),...fresh,...verification];persist();
-          const payload=await options.onSearchNeeded({...research,searchQueries:fresh,verificationQueries:verification},{...context,attempt:number});
+          const fetched=await options.onSearchNeeded({...research,searchQueries:fresh,verificationQueries:verification},{...context,attempt:number});
+          const payload={...fetched,searchResults:researchEvidence.merge(context.previousSearchResults,fetched?.searchResults,(research.factChecks||[]).flatMap(f=>f.sourceIds||[]))};
           recovery.retrievals[retrievalKey]=payload;
           recovery.retrievalQueries ||= {};recovery.retrievalQueries[retrievalKey]=[...attemptedQueries];await saveRecovery();
-          const visible=sourcesFor({searchResults:payload?.searchResults || []});
+          const visible=sourcesFor({searchResults:payload?.searchResults || [],researchTitleResult:research});
           const searchRecord={round:context.round,queries:fresh,verificationQueries:verification,deliveredSources:visible};
           if(jobDir)fs.writeFileSync(path.join(jobDir,`search-${context.round}.json`),JSON.stringify(searchRecord,null,2));
           return payload;

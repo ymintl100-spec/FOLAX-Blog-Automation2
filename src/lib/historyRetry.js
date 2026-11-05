@@ -66,7 +66,9 @@ function retryPlan(root, item, history, settings, accounts) {
         checkpoint.steps[prefix+'prompt.txt']=value;legacyMarkerRepair=true;
       }
     }
-    if (quality && ['research','title_duplicate'].includes(phase)) {
+    const restoredInputs=quality&&phase==='research'?require('./researchEvidence').recover(checkpoint):null;
+    if(restoredInputs){checkpoint=restoredInputs;mode='checkpoint';reason='입력 원문·출처 연결 복원 · 수집 자료 재사용 후 보강 검토부터 진행';}
+    else if (quality && ['research','title_duplicate'].includes(phase)) {
       checkpoint = null; mode = 'research'; reason = '주제·근거 반려 · 주제 선정부터 다시 진행';
     } else {
       if (quality && ['writer','main_review'].includes(phase) && !legacyImageResume && !legacyMarkerRepair && !contractRecovery) {
