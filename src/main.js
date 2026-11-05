@@ -465,21 +465,8 @@ function keywordLaneResultPayload(laneResult = {}) {
   };
 }
 
-function mergeSearchResults(...groups) {
-  const merged = [];
-  const seen = new Set();
-  for (const group of groups) {
-    for (const item of Array.isArray(group) ? group : []) {
-      const key = require('./lib/evidenceText').canonicalUrl(item?.url || item?.fetchedUrl);
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      merged.push(item);
-    }
-  }
-  return merged.slice(0, 20).map((item, index) => ({
-    ...item,
-    sourceId: 'src-' + crypto.createHash('sha256').update(item.url || item.fetchedUrl).digest('hex').slice(0, 16)
-  }));
+function mergeSearchResults(incoming,previous) {
+  return require('./lib/researchEvidence').merge(previous,incoming);
 }
 
 function selectSearchTopicForResearch(researchResult, context = {}) {
