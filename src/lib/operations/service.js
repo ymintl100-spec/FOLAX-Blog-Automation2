@@ -538,7 +538,7 @@ class Operations {
       writer: { ...result },
       images: require("../imageAssets").getPreviewImages(result),
       writingApplication: result.writingApplication,
-      tokenUsage: result.tokenUsage,
+      tokenUsage: result.tokenUsage,autoRetry:result.autoRetry,
     };
     const document = E.create(this.db, account, {
       topicId,
@@ -827,9 +827,9 @@ class Operations {
       const options = {
         ...this.options(account, d, dir),
         platform,
-        platformVariant: true,revisionPolicy:1,
-        articleLengthPolicy: 2,
-        tagCount: 10,
+        platformVariant: true,revisionPolicy:1,maxAutoRetries:5,
+        articleLengthPolicy: 3,
+        tagCount: 15,
         emphasisPolicy: 1,
         relevancePolicy: 1,
         includeTitleImage: false,
@@ -874,8 +874,8 @@ class Operations {
           images: [],
           options: {
             ...d.data.options,
-            articleLengthPolicy: 2,
-            tagCount: 10,
+            articleLengthPolicy: 3,revisionPolicy:1,maxAutoRetries:5,
+            tagCount: 15,
             emphasisPolicy: 1,
             relevancePolicy: 1,
             includeTitleImage: false,

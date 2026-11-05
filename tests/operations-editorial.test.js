@@ -197,7 +197,7 @@ test("partial repair changes only selected literal paragraph, charges one Writer
 test("platform variants must have different body, separate review and separate human approval", async (t) => {
   const { ops } = setup(t),
     original = document(ops),
-    sourceArticle=article+'\n\n'+'문'.repeat(1100-require('../src/lib/articleRequirements').articleCharacterCount(article)),
+    sourceArticle=article+'\n\n'+'문'.repeat(1500-require('../src/lib/articleRequirements').articleCharacterCount(article)),
     d=ops.save('a',original.id,{expectedVersion:1,title:original.current.title,article:sourceArticle});
   ops.hooks.runTask = async () => ({
     ...d.data.writer,
@@ -209,11 +209,11 @@ test("platform variants must have different body, separate review and separate h
   });
   await assert.rejects(() => ops.variant("a", d.id), /본문이 동일/);
   ops.hooks.runTask=async args=>{
-    assert.equal(args.options.tagCount,10);assert.equal(args.options.articleLengthPolicy,2);assert(args.prompt.includes('1000~1500자'));
+    assert.equal(args.options.tagCount,15);assert.equal(args.options.articleLengthPolicy,3);assert(args.prompt.includes('1400~1600자'));
     return {...d.data.writer,status:'success',tags:Array.from({length:30},(_,i)=>'주제태그'+i),article:sourceArticle.replace('좋습니다','좋아요'),title:'플랫폼별 별도 제목'};
   };
   const variant=await ops.variant('a',d.id);
-  assert.equal(variant.data.options.articleLengthPolicy,2);assert.equal(variant.current.data.writer.tags.length,10);assert.equal(variant.approved_version,null);
+  assert.equal(variant.data.options.articleLengthPolicy,3);assert.equal(variant.current.data.writer.tags.length,15);assert.equal(variant.approved_version,null);
   const other = E.create(ops.db, "a", {
     platform: "tistory",
     title: "다른 제목",

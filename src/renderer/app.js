@@ -112,6 +112,12 @@ function accountDisplayName(account) {
   return String(account?.label || account?.blogId || account?.naverId || "Naver 계정");
 }
 
+function renderRetryProgress(value){
+  const used=Math.max(0,Math.min(5,Number(value?.used)||0)),max=Number(value?.max)||5;
+  const label=$('#autoRetryStatus'),bar=$('#autoRetryProgress');
+  label.textContent=`자동 재시도 ${used}/${max}`;label.dataset.used=String(used);label.dataset.max=String(max);
+  label.title=value?.history?.at(-1)?.kind||'최초 작성은 재시도 횟수에 포함하지 않습니다.';bar.max=max;bar.value=used;
+}
 function setRunState(status, detail = "") {
   const badge = $("#runState");
   const classMap = {
@@ -485,6 +491,7 @@ function renderHistory(history) {
       <h3>${escapeHtml(title)}</h3>
       <p class="history-meta">${escapeHtml(meta || "작업 대상 정보 없음")}</p>
       <p class="history-reason">${escapeHtml(item.reason || item.source_summary || "기록된 사유가 없습니다.")}</p>
+      ${item.autoRetry?`<p class="hint">자동 재시도 ${Number(item.autoRetry.used)||0}/${Number(item.autoRetry.max)||5}회</p>`:""}
       <p class="history-retry-note">${escapeHtml(item.retry?.reason || "")}</p>
       <details class="history-details">
         <summary>상세 보기</summary>
@@ -1301,7 +1308,7 @@ function renderArticleTags(values){
   $('#articleTagsPanel').hidden=!tags.length;
   $('#articleTagsCount').textContent=String(tags.length);
   $('#articleTags').value=tags.map(t=>'#'+t.replace(/^#+/,'')).join(' ');
-  $('#articleTagsStatus').textContent='본문 글자수 제외 · 새 원고 태그 10개 / 기존 원고 태그 보존';
+  $('#articleTagsStatus').textContent='본문 글자수 제외 · 새 원고 태그 15개 / 기존 원고 태그 보존';
 }
 function resetJobPreview(target){
   renderArticleTags([]);
@@ -1444,6 +1451,7 @@ async function boot() {
   const account = selectedAccount();
   if (account) selectAccount(account.id);
   renderHistory(initial.history || []);
+  renderRetryProgress(initial.autoRetryProgress);
   if(initial.pendingPreview){
     const draft=initial.pendingPreview;
     renderRelevance(draft.relevanceReport);
@@ -1474,6 +1482,7 @@ async function boot() {
 
   });
   window.blogAuto.onLog(addLog);
+  window.blogAuto.onRetryProgress(renderRetryProgress);
   window.blogAuto.onStatus((payload) => {
     if(state.activeTarget)setTargetProgress(state.activeTarget,'진행 중',payload.detail || payload.status);
     state.currentJobId = payload.jobId;
