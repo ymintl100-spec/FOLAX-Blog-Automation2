@@ -774,6 +774,7 @@ async function startJob(form) {
   let browserProfileDir = getAccountProfileDir(runtimeRoot, account);
   let latestAgentResultForResume = null;
   let latestTagsForResume = [];
+  let automaticRetryProgress=null;
   try {
     if (shouldPublish) {
       preparedNaverSession = resumeDraft?.publications?.naver?.status==='done' ? {} : await verifyPublishSessionBeforeGeneration({
@@ -1043,11 +1044,12 @@ async function startJob(form) {
         codexModel,
         tokenSaving: (form.tokenSaving ?? settings.tokenSaving) !== false,
         qualityPolicyVersion: 1,
-        compactWriting:true,revisionPolicy:1,
-        articleLengthPolicy:2,
+        compactWriting:true,revisionPolicy:1,maxAutoRetries:5,
+        onRetryProgress:progress=>{automaticRetryProgress=progress;emit('job:retryProgress',{jobId,...progress});},
+        articleLengthPolicy:3,
         emphasisPolicy:1,
         inputBrief:form.inputBrief,
-        tagCount:10,
+        tagCount:15,
         relevancePolicy:1,
         requireApproval,operationsTopicId,operationsDraft:form.operationsDraft===true,
         requiredWritingInstructions:operations?require('./lib/operations/editorial').profile(operations.db,account.id).instructions:'',
@@ -1415,7 +1417,7 @@ async function startJob(form) {
       token_output: jobTokenUsage.outputTokens,
       prompt_characters: jobTokenUsage.promptCharacters,
       token_agents: jobTokenUsage.agents,
-      attempts:generationAttempts,
+      autoRetry:automaticRetryProgress,attempts:generationAttempts,
       reason: publishReason
     };
     appendHistory(runtimeRoot, entry);
@@ -1494,7 +1496,7 @@ async function startJob(form) {
       token_output: jobTokenUsage.outputTokens,
       prompt_characters: jobTokenUsage.promptCharacters,
       token_agents: jobTokenUsage.agents,
-      attempts:error.attempts || generationAttempts,
+      autoRetry:automaticRetryProgress,attempts:error.attempts || generationAttempts,
       failure_phase: error.failurePhase || "",
       failure_kind: error.failureKind || "execution",
       research_title: latestResearchTitleResult?.finalTitle || latestResearchTitleResult?.selectedTitle || "",
@@ -1555,6 +1557,7 @@ app.whenReady().then(async () => {
       settings,
       accountStore: connectionStore(),
       bridgeError,
+      autoRetryProgress:settings.pendingGenerationDraft?.checkpoint?.autoRetry||readHistory(runtimeRoot)[0]?.autoRetry||null,
       pendingPreview:settings.pendingNaverPublishDraft ? {...settings.pendingNaverPublishDraft,article:require("./lib/publicationFormat").omitReferences(settings.pendingNaverPublishDraft.article),images:getPreviewImages(settings.pendingNaverPublishDraft)} : null,
       history: historyForUi(runtimeRoot)
     };
@@ -1815,7 +1818,7 @@ app.whenReady().then(async () => {
     const target={accountId:plan.accountId,blogId:plan.blogId,category:plan.category,jobId:plan.sourceId,retryRootId:plan.rootId};
     writeSettings(root,plan.mode==='publish'
       ? {pendingNaverPublishDraft:{...plan.draft,...target},pendingGenerationDraft:null}
-      : {pendingNaverPublishDraft:null,pendingGenerationDraft:{...target,status:'generation_pending',checkpoint:plan.checkpoint || null}});
+      : {pendingNaverPublishDraft:null,pendingGenerationDraft:{...target,status:'generation_pending',checkpoint:require('./lib/automaticRetries').manualRound(plan.checkpoint)||null}});
     return startJob({...form,accountId:plan.accountId,blogId:plan.blogId,category:plan.category});
   });
   ipcMain.handle('job:pendingState',()=>pendingPublishState(getRuntimeRoot(),pendingPublishBusy()));

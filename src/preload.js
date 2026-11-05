@@ -42,6 +42,7 @@ contextBridge.exposeInMainWorld("blogAuto", {
   showFileInFolder: (filePath) => ipcRenderer.invoke("file:showInFolder", filePath),
   respondModelError: choice=>ipcRenderer.invoke('job:modelRetry',choice),
   onModelError: handler=>ipcRenderer.on('job:modelError',(_event,payload)=>handler(payload)),
+  onRetryProgress:handler=>ipcRenderer.on('job:retryProgress',(_event,payload)=>handler(payload)),
   onLog: (handler) => {
     ipcRenderer.on("job:log", (_event, payload) => handler(payload));
   },

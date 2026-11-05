@@ -1260,6 +1260,10 @@ async function runCodexTask({
     rateLimits: null
   };
 
+  const failedUsage=error=>{
+    error.tokenUsage=Object.fromEntries(['total','grossTotal','inputTokens','cachedInputTokens','outputTokens'].map(k=>[k,Number(fallbackUsage[k]||0)+Number(tokenState[k]||0)]));
+    error.tokenUsage.promptCharacters=promptCharacters;return error;
+  };
   const recoverTokenUsageFromSession = () => {
     if (tokenState.total > 0 && tokenState.rateLimits) return;
     const recovered = readLatestCodexTokenUsageFromSessions({
@@ -1491,10 +1495,10 @@ async function runCodexTask({
     await executeCodex();
   } catch (error) {
     if (isCodexUsageLimitError(error)) {
-      throw error;
+      throw failedUsage(error);
     }
     if (taskEffort !== "xhigh" || !/unsupported.{0,80}(effort|reasoning)|invalid.{0,80}reasoning_effort/i.test(error.message)) {
-      throw error;
+      throw failedUsage(error);
     }
     recoverTokenUsageFromSession();
     fallbackUsage.total += Number(tokenState.total || 0);
@@ -1503,6 +1507,7 @@ async function runCodexTask({
     fallbackUsage.cachedInputTokens += Number(tokenState.cachedInputTokens || 0);
     fallbackUsage.outputTokens += Number(tokenState.outputTokens || 0);
     fallbackUsage.rateLimits = tokenState.rateLimits || fallbackUsage.rateLimits;
+    if(options.onAutoRetry)await options.onAutoRetry('모델 호환 재시도','xhigh 호출을 high로 낮춰 재시도');
     log("xhigh 호출이 실패하여 high로 낮춰 다시 실행합니다.", "warn", agent);
     taskEffort = "high";
     tokenState.awaitingValue = false;
@@ -1520,7 +1525,7 @@ async function runCodexTask({
     if (imageStage) removeAgentResultFile(options.jobDir, outputFileName);
     lastAssistantText = '';
     taskStartedAt = Date.now();
-    await executeCodex();
+    try{await executeCodex();}catch(error){throw failedUsage(error);}
   }
   recoverTokenUsageFromSession();
   reportTokenUsage({ final: true });
@@ -1532,8 +1537,10 @@ async function runCodexTask({
       if (detail) log('이미지 작업 응답: ' + detail, 'warn', agent);
     }
   }
+  let agentResult;
+  try{agentResult=readAgentResult(options.jobDir,resultFileName);}catch(error){if(directText)error.code='CODEX_EXEC_FAILED';throw failedUsage(error);}
   return {
-    ...readAgentResult(options.jobDir, resultFileName),
+    ...agentResult,
     tokenUsage: {
       total: fallbackUsage.total + Number(tokenState.total || 0),
       grossTotal: fallbackUsage.grossTotal + Number(tokenState.grossTotal || tokenState.total || 0),

@@ -121,7 +121,7 @@ function writerPrompt(options,previous) {
 }
 function reviewPrompt(options) {
   return [
-    [10,30].includes(options.tagCount)?'같은 최종 검수에서 tags의 주제 관련성도 확인한다. 본문에서 실제 다룬 내용에 맞는지 확인하고 무관한 인기어·허위 치료효과·홍보·허구의 경험을 태그로 추가하지 않는다. 태그는 본문 글자수에 포함하지 않는다.':'',
+    [10,15,30].includes(options.tagCount)?'같은 최종 검수에서 tags의 주제 관련성도 확인한다. 본문에서 실제 다룬 내용에 맞는지 확인하고 무관한 인기어·허위 치료효과·홍보·허구의 경험을 태그로 추가하지 않는다. 태그는 본문 글자수에 포함하지 않는다.':'',
     'You perform one final factual and usefulness review. '+policyFor(options),
     require('./plainLanguage').reviewInstruction,
     require('./reviewContract').instruction,

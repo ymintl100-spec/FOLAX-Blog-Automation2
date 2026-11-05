@@ -10,8 +10,9 @@ function requirements(options={}){
 function instruction(options={},stage='writer'){
   if(options.revisionPolicy!==1)return '';
   const {min,max,target}=limits(options),safe=target||Math.round((min+max)/2);
-  const current='현재 규격이 과거 조사 계약/검수 지침의 전체 분량보다 우선한다: '+JSON.stringify(requirements(options))+`. 작성 목표는 공백 제외 ${safe}자 안팎, 허용 범위는 ${min}~${max}자다. `;
+  let current='현재 규격이 과거 조사 계약/검수 지침의 전체 분량보다 우선한다: '+JSON.stringify(requirements(options))+`. 작성 목표는 공백 제외 ${safe}자 안팎, 허용 범위는 ${min}~${max}자다. `;
   if(stage==='research')return current+'근거 안에서 서로 다른 답·이유·조건을 2~3개 기획한다. 같은 동작·주의사항의 해석을 여러 문단으로 늘리지 말고 실제 독자 질문에 필요한 내용만 설계한다.';
+  if(options.maxAutoRetries===5)current+='자동 재시도 횟수는 앱이 합계 최대 5회로 관리한다. 과거 한 차례 보완 한도를 현재 작업에 다시 적용하지 않는다. ';
   if(stage==='main')return current+'과거 전체 분량을 다시 요구하지 않는다. 수정 후에는 revisionFocus의 지적이 해결됐는지 먼저 확인하고 취향·새 형식 요구로 기준을 바꾸지 않는다. 사실·조건·의미·독자 유용성은 그대로 검수한다. revisionInstructions는 최대 4개, 각각 실제 문제 구절과 고칠 방향을 180자 안팎으로 적는다. 충족한 부분을 다시 쓰도록 요구하지 않는다.';
   return current+'첫 작성은 상·하한에 붙이지 않고 여유 있게 구성한다. 도입의 답, 이유·방법, 실제 선택 조건, 마무리에 서로 다른 역할을 준다. 핵심 사실·동작·주의 조건은 알맞은 위치에서 한 번 설명하고 뒤에서 다시 해석하거나 반대 부정문으로 늘리지 않는다. 소제목과 짧은 문단은 유지하되 이미지 장수를 위해 목차를 늘리지 않는다. 분량을 채우려고 같은 설명·추상적 해석·허구의 경험을 추가하지 않는다. 기존 근거로 분량을 충족할 수 없으면 부족한 근거를 밝힌다. 한 응답 안에서 반환 전 실제 본문을 다시 읽고 분량, 첫머리의 핵심 답, 관련 개념의 쉬운 설명, 중복 문단, 태그·이미지 계획의 누락을 함께 점검해 최종본만 반환한다.';
 }
@@ -19,7 +20,7 @@ function feedback(messages,options={}){
   const values=messages.flat(Infinity).filter(s=>typeof s==='string').flatMap(s=>s.split(/\r?\n/)).map(s=>s.trim()).filter(Boolean);
   // Only obsolete whole-article instructions are adjusted; sources and saved
   // review objects remain byte-for-byte intact.
-  return [...new Set(values)].join('\n').replace(/(?:(?:1,?000)\s*[~～〜–-]\s*(?:1,?200))\s*자/g,match=>options.articleLengthPolicy===2?'1000~1500자':match).slice(0,6000);
+  return [...new Set(values)].join('\n').replace(/(?:(?:1,?000)\s*[~～〜–-]\s*(?:1,?[25]00))\s*자/g,match=>[2,3].includes(options.articleLengthPolicy)?`${limits(options).min}~${limits(options).max}자`:match).slice(0,6000);
 }
 function deferLength(writer,options,writerIssue){
   if(options.revisionPolicy!==1)return false;
