@@ -27,7 +27,7 @@ async function retrieveResearch(options,log=()=>{},dependencies={}) {
     }
     if(missing.length)checked.push(...await fetchSources({...options,searchChannel:'web',searchNeed:'strict',retrievalStage:'verification',maxStageDocuments:16,maxCandidates:10,searchQueries:missing},log,{...dependencies,context}));
   }
-  if(discovery.length)base=await fetchSources({...options,retrievalStage:'discovery',maxStageDocuments:8,maxCandidates:6,searchQueries:discovery},log,{...dependencies,context});
+  if(discovery.length)base=await fetchSources({...options,retrievalStage:options.writerSupplement===true?'writer-supplement':'discovery',maxStageDocuments:8,maxCandidates:6,searchQueries:discovery},log,{...dependencies,context});
   // A failed guessed site restriction is a retrieval problem, not grounds for
   // another paid planning call. One bounded host-free retry per job is allowed.
   if(verification.length && !checked.length && !context.verificationRescueUsed){
