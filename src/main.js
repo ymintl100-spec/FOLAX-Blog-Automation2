@@ -1155,6 +1155,7 @@ async function startJob(form) {
         },
         onSearchNeeded: async (researchResult, context) => {
           const searchContext = context || {};
+          const sourceCentered=Boolean(searchContext.inputScope&&searchContext.inputBrief?.mode==='mixed');
           const searchTopic = selectSearchTopicForResearch(researchResult, {
             topic,
             category,
@@ -1162,7 +1163,7 @@ async function startJob(form) {
             topicMode: "auto"
           });
           const laneResult = normalizeResearchLaneResult(researchResult, keywordLanePlan);
-          const searchKeyword = laneResult.selectedKeywordPhrases.join(", ") || laneResult.topicLane || category;
+          const searchKeyword = sourceCentered?searchContext.inputBrief.keywords.join(', '):laneResult.selectedKeywordPhrases.join(", ") || laneResult.topicLane || category;
           const authorityQueries = [];
           const intentQueries = [];
           const searchQueries = uniqueSearchQueries([...authorityQueries, ...laneResult.searchQueries, ...intentQueries], 4);
@@ -1175,7 +1176,7 @@ async function startJob(form) {
             safeLog(jobId, `Writer Agent 근거 부족 사유로 보강 검색합니다: ${searchContext.writerIssueReason}`, "warn", "research");
           }
           safeLog(jobId, `Research/Title Agent 요청으로 검색 후보 수집 시작: ${researchResult.searchNeed || "normal"}`, "info", "research");
-          const researchIntentGuidance = String(researchResult.topicThesis || '');
+          const researchIntentGuidance = String(searchContext.inputScope?.articleScope||researchResult.topicThesis || '');
           const researchGuidance = [
             researchIntentGuidance,
             researchResult.searchFlowSummary,
@@ -1186,7 +1187,7 @@ async function startJob(form) {
             ...(Array.isArray(researchResult.uncertainItems) ? researchResult.uncertainItems : [])
           ].filter(Boolean).join(" ");
           const searchResults = await retrieveResearch({
-            topic: searchTopic,
+            topic: sourceCentered?searchContext.inputScope.articleScope:searchTopic,
             keyword: searchKeyword,
             category,
             publishPurpose: form.publishPurpose || "",
@@ -1200,7 +1201,7 @@ async function startJob(form) {
             fallbackProvider: form.fallbackSearchProvider || "google",
             naverSearchUrl: form.naverSearchUrl,
             googleSearchUrl: form.googleSearchUrl,
-            searchChannel: form.searchChannel || "blog",
+            searchChannel: sourceCentered?"web":form.searchChannel || "blog",
             trustBlogAsSource: form.trustBlogAsSource === true,
             freshnessLevel: form.freshnessLevel || "auto",
             currentDate: currentDateLabel
@@ -1209,7 +1210,7 @@ async function startJob(form) {
           const mergedSearchResults = mergeSearchResults(searchResults, searchContext.previousSearchResults);
           safeLog(jobId, `검색 후보 수집 완료: ${searchResults.length}개, 누적 ${mergedSearchResults.length}개`, "info", "research");
           const sourceQuality = summarizeSourceQuality(mergedSearchResults, "auto", {
-            topic: searchTopic,
+            topic: sourceCentered?searchContext.inputScope.articleScope:searchTopic,
             keyword: searchKeyword,
             category,
             publishPurpose: form.publishPurpose || "",

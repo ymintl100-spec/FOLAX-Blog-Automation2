@@ -15,9 +15,9 @@ function normalize(value){
   if(value.mode==='mixed'&&(!keywords.length||!urls.length))throw Error('혼합 방식에는 키워드와 링크를 각각 1개 이상 입력하세요.');
   return {mode:value.mode,keywords,urls};
 }
-async function collect(brief,cache,{readLink,searchKeyword,save=async()=>{},log=()=>{}}){
+async function collect(brief,cache,{readLink,searchKeyword,save=async()=>{},log=()=>{},deferKeywordSearch=false}){
   const sources=[];
-  for(const [kind,values] of [['link',brief.urls],['keyword',brief.keywords]])for(let i=0;i<values.length;i++){
+  for(const [kind,values] of [['link',brief.urls],['keyword',deferKeywordSearch?[]:brief.keywords]])for(let i=0;i<values.length;i++){
     const value=values[i],key=kind+':'+value;
     if(!cache[key]){
       log(`${kind==='link'?'입력 링크':'입력 키워드'} ${i+1}/${values.length} 분석: ${value}`);
