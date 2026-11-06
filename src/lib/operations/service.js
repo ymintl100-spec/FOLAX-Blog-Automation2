@@ -104,6 +104,7 @@ class Operations {
       writingRequirements:require('../generationDefaults').summary(),
       topics,
       documents: E.list(this.db, account),
+      failedDrafts: require('./failedDrafts').list(this.root, a, this.hooks.history(account), E.list(this.db, account)),
       profile: E.profile(this.db, account),
       analytics: A.report(this.db, account, this.hooks.history(account)),
       savedTopics: this.db
@@ -511,7 +512,7 @@ class Operations {
     account,
     topicId,
     result,
-    { jobId, jobDir, category, keyword, blogId },
+    { jobId, jobDir, category, keyword, blogId, generationFailure },
   ) {
     const checkpointFile = path.join(jobDir, "generation-checkpoint.json"),
       checkpoint = fs.existsSync(checkpointFile)
@@ -520,6 +521,10 @@ class Operations {
     const opts = checkpoint.generationOptions || {},
       sources = [
         ...(opts.searchResults || []),
+        ...(checkpoint.revisionEvidenceContext?.searchResults || []),
+        ...(checkpoint.articleCheckpoint?.evidenceContext?.searchResults || []),
+        ...(checkpoint.articleResume?.evidenceContext?.searchResults || []),
+        ...(checkpoint.imageCheckpoint?.evidenceContext?.searchResults || []),
         ...Object.values(checkpoint.inputSources||{}).flat(),
         ...Object.values(checkpoint.retrievals || {}).flatMap(
           (p) => p.searchResults || [],
@@ -528,6 +533,7 @@ class Operations {
       byId = new Map(sources.map((s) => [s.sourceId, s]));
     const data = {
       jobId,
+      generationFailure,
       category,
       keyword,
       blogId,
@@ -550,6 +556,21 @@ class Operations {
       review: result.mainReviewResult,
     });
     S.event(this.db, account, document.id, "generation_linked", { jobId });
+    return document;
+  }
+  recoverFailed(account, jobId) {
+    const a = this.account(account);
+    if (this.busy || this.hooks.isBusy?.()) throw Error("진행 중인 작업이 끝난 뒤 원고를 불러오세요.");
+    const historyRows = this.hooks.history(account), requested = historyRows.find(h=>h.id===jobId);
+    const lineage = requested && (requested.retry_root_id || requested.id);
+    const relatedJobs = new Set(historyRows.filter(h=>(h.retry_root_id || h.id)===lineage).map(h=>h.id));
+    const existing = E.list(this.db, account).find(d => d.data.jobId === jobId || relatedJobs.has(d.data.jobId));
+    if (existing) return E.read(this.db, account, existing.id);
+    const {result, failure, history} = require('./failedDrafts').load(this.root, a, this.hooks.history(account), jobId);
+    const document = this.saveGenerated(account, null, result, {jobId,
+      jobDir:path.join(this.root,'jobs',jobId), category:history.category,
+      keyword:history.keyword, blogId:history.blog_id, generationFailure:failure});
+    S.event(this.db, account, document.id, 'failed_draft_recovered', failure);
     return document;
   }
   document(account, id) {
