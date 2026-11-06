@@ -252,7 +252,7 @@ function assetHashes(document) {
     };
   });
 }
-function approve(db, account, id, { version, confirmed, imagesConfirmed }) {
+function approve(db, account, id, { version, confirmed, imagesConfirmed, allowFailedReview = false, failureAcknowledged = false }) {
   const d = read(db, account, id);
   if (confirmed !== true) throw Error("사용자 최종 승인 확인이 필요합니다.");
   if (version !== d.current_version)
@@ -260,12 +260,19 @@ function approve(db, account, id, { version, confirmed, imagesConfirmed }) {
   const review = d.reviews.find(
     (r) => r.version === version && r.digest === d.current.digest,
   );
-  if (!review || review.status !== "PASS")
-    throw Error("현재 수정본의 AI 검수를 먼저 통과해야 합니다.");
+  const manual = !review || review.status !== "PASS" || review.data.publishable !== true;
+  if (manual && (allowFailedReview !== true || failureAcknowledged !== true))
+    throw Error("AI 검수 미통과 원고입니다. 실패 사유를 확인하고 ‘실패·AI 미통과 원고 직접 승인’을 선택하세요.");
   const assets = assetHashes(d);
   if (assets.length && imagesConfirmed !== true)
     throw Error("현재 버전의 이미지와 설명을 직접 확인하세요.");
   d.data.approvedAssets = assets;
+  const approval = { mode: manual ? "manual_override" : "ai_pass", version,
+    digest: d.current.digest, reviewStatus: review?.status || "NOT_REVIEWED",
+    reviewId: review?.id || null, failureAcknowledged: manual,
+    reason: review?.data.failureReason || review?.data.reason || d.data.generationFailure?.reason || "",
+    at: S.now() };
+  d.data.approval = approval;
   db.prepare(
     "UPDATE ops_documents SET approved_version=?,status=?,updated_at=?,data=? WHERE id=?",
   ).run(version, "approved", S.now(), JSON.stringify(d.data), id);
@@ -274,6 +281,7 @@ function approve(db, account, id, { version, confirmed, imagesConfirmed }) {
     digest: d.current.digest,
     assets,
     imagesConfirmed: imagesConfirmed === true,
+    ...approval,
   });
   return read(db, account, id);
 }

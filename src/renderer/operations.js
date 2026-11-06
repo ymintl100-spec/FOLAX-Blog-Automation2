@@ -203,7 +203,7 @@
   }
   function drafts() {
     $("#opsContent").innerHTML =
-      `<div class="ops-heading"><h2>원고 · 최종 승인 · 플랫폼별 발행</h2><span class="hint">AI 통과와 사용자 승인은 별도 상태입니다.</span></div><div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>원고</th><th>플랫폼</th><th>현재 버전</th><th>상태</th><th>작업</th></tr></thead><tbody>${snapshot.documents.map((d) => `<tr><td>${esc(d.title)}</td><td>${esc(d.platform)}</td><td>v${d.current_version}${d.approved_version === d.current_version ? " · 최종 승인" : ""}</td><td>${esc(status(d.status))}</td><td>${button("openDocument", "수정·검수·발행", d.id)}</td></tr>`).join("")}</tbody></table></div><div id="opsDocument"></div>`;
+      `<div class="ops-heading"><h2>원고 · 최종 승인 · 플랫폼별 발행</h2><span class="hint">실패·AI 미통과 원고도 직접 확인·승인 후 발행할 수 있습니다.</span></div><div class="ops-table-wrap"><table class="ops-table"><thead><tr><th>원고</th><th>플랫폼</th><th>현재 버전</th><th>상태</th><th>작업</th></tr></thead><tbody>${snapshot.documents.map((d) => `<tr><td>${esc(d.title)}</td><td>${esc(d.platform)}</td><td>v${d.current_version}${d.approved_version === d.current_version ? " · 최종 승인" : ""}</td><td>${esc(status(d.status))}</td><td>${button("openDocument", "수정·검수·발행", d.id)}</td></tr>`).join("")}</tbody></table></div>${(snapshot.failedDrafts || []).length ? `<h3>실패 작업의 저장 원고</h3><p class="hint">기존 원고·작업 기록은 보존하고 발행용 원고로 불러옵니다. 생성된 이미지 파일만 사용하며, 없는 이미지의 표식은 불러온 원고에서 제외합니다.</p>${snapshot.failedDrafts.map(f=>`<div class="ops-notice"><b>${esc(f.title)}</b><p>${esc(f.reason)}</p>${button("recoverFailed","저장 원고 불러오기 · 사용 가능한 이미지만",f.jobId)}</div>`).join('')}` : ''}<div id="opsDocument"></div>`;
     if (doc && snapshot.documents.some((d) => d.id === doc.id))
       renderDocument();
   }
@@ -212,23 +212,26 @@
     if (!d) return;
     editingSeconds = 0;
     lastTyping = 0;
+    const currentReview=d.reviews.find(r=>r.version===d.current_version&&r.digest===d.current.digest);
+    const needsManual=!currentReview || currentReview.status!=='PASS' || currentReview.data.publishable!==true;
+    const manualApproved=d.approved_version===d.current_version&&d.data.approval?.mode==='manual_override'&&d.data.approval.digest===d.current.digest;
     const tags=(d.current.data.writer?.tags || d.data.writer?.tags || []).filter(t=>typeof t==='string');
     $("#opsDocument").innerHTML =
-      `<section class="ops-detail"><h2>${esc(d.platform)} 원고 · v${d.current_version}</h2>${d.data.autoRetry?`<p class="hint">자동 재시도 ${Number(d.data.autoRetry.used)||0}/${Number(d.data.autoRetry.max)||5}회 사용</p>`:""}<p class="hint">수정 후 저장하면 이전 승인·AI 검수가 해제됩니다. 최초 AI 원고와 이전 버전은 보존합니다. 로컬 원고 수정·승인 취소는 이미 게시한 글을 변경하지 않습니다.</p><label>제목<input id="opsDocTitle" maxlength="200" value="${esc(d.current.title)}"/></label><label>현재 원고<textarea id="opsDocArticle" class="ops-article" maxlength="30000">${esc(d.current.article)}</textarea></label><div class="button-row">${button("saveDocument", "수정본 저장", d.id, "primary")}${button("review", "현재 버전 AI 검수 요청", d.id)}${button("repair", "선택 문단만 AI 보완", d.id)}${button("simplify", "현재 원고 쉽게 다듬기 · AI 1회", d.id)}${button("variant", d.platform === "naver" ? "티스토리 별도 원고 작성" : "네이버 별도 원고 작성", d.id)}</div><label>선택 문단 수정 요청<input id="opsRepairInstruction" maxlength="1000" placeholder="수정할 문단을 원고에서 선택하고 요청을 적어주세요."/></label><p class="hint">쉽게 다듬기는 기존 자료로 본문을 수정본에 저장합니다. 이전 원고·이미지는 보존하며 다시 검수·승인해야 합니다. AI 부분 보완은 선택 문단만 바꿉니다. 플랫폼별 별도 원고도 각각 검수·승인해야 합니다.</p>
+      `<section class="ops-detail"><h2>${esc(d.platform)} 원고 · v${d.current_version}</h2>${d.data.autoRetry?`<p class="hint">자동 재시도 ${Number(d.data.autoRetry.used)||0}/${Number(d.data.autoRetry.max)||5}회 사용</p>`:""}<p class="hint">수정 후 저장하면 이전 승인·AI 검수가 해제됩니다. 최초 AI 원고와 이전 버전은 보존합니다. 로컬 원고 수정·승인 취소는 이미 게시한 글을 변경하지 않습니다.</p>${d.data.generationFailure?`<div class="ops-notice"><b>실패 작업에서 불러온 원고</b><p>${esc(d.data.generationFailure.reason)}</p>${d.data.generationFailure.originalReview?`<details><summary>불러오기 전 AI 검수: ${esc(d.data.generationFailure.originalReview.status)}</summary>${notes({reason:d.data.generationFailure.originalReview.failureReason || d.data.generationFailure.originalReview.reason,issues:d.data.generationFailure.originalReview.issues,revisionInstructions:d.data.generationFailure.originalReview.revisionInstructions})}</details>`:''}<p>사용 가능한 이미지 ${Number(d.data.generationFailure.availableImages)||0}장 · 파일 없는 이미지 표식 ${Number(d.data.generationFailure.removedImageMarkers)||0}개 제외. 원본 작업 기록은 보존했습니다.</p></div>`:''}<label>제목<input id="opsDocTitle" maxlength="200" value="${esc(d.current.title)}"/></label><label>현재 원고<textarea id="opsDocArticle" class="ops-article" maxlength="30000">${esc(d.current.article)}</textarea></label><div class="button-row">${button("saveDocument", "수정본 저장", d.id, "primary")}${button("review", "현재 버전 AI 검수 요청", d.id)}${button("repair", "선택 문단만 AI 보완", d.id)}${button("simplify", "현재 원고 쉽게 다듬기 · AI 1회", d.id)}${button("variant", d.platform === "naver" ? "티스토리 별도 원고 작성" : "네이버 별도 원고 작성", d.id)}</div><label>선택 문단 수정 요청<input id="opsRepairInstruction" maxlength="1000" placeholder="수정할 문단을 원고에서 선택하고 요청을 적어주세요."/></label><p class="hint">쉽게 다듬기는 기존 자료로 본문을 수정본에 저장합니다. 이전 원고·이미지는 보존하며 다시 검수·승인해야 합니다. AI 부분 보완은 선택 문단만 바꿉니다. 플랫폼별 별도 원고도 각각 검수·승인해야 합니다.</p>
  <details><summary>주제 관련 태그 ${tags.length}개</summary><textarea id="opsDocTags" rows="3" readonly aria-label="원고 태그">${esc(tags.map(t=>'#'+t.replace(/^#+/, '')).join(' '))}</textarea>${button("copyTags", "태그 복사")}<p class="hint">본문 글자수에 포함하지 않습니다. ${d.platform==='tistory'?'티스토리는 우선순위가 높은 앞 10개를 발행합니다.':'네이버 발행 설정에 이 원고의 태그를 전달합니다.'} 기존 원고의 태그는 자동 변경하지 않습니다.</p></details>
  <div id="opsRelevance" class="ops-notice"></div><div class="button-row">${button("analyzeRelevance", "연관성 포함 AI 검수", d.id)}<button type="button" class="ghost small" data-source="https://www.ndex.kr/post">NDEX에서 게시글 분석</button></div><p class="hint">현재 저장 원고만 분석합니다. 기존 최종 검수 한 번에 연관성을 함께 확인하며 본문을 자동으로 바꾸지 않습니다. 검수 후에는 다시 최종 승인하세요.</p>
  <div class="ops-document-preview" id="opsDocPreview"></div><div class="ops-images">${(d.current.data.images || []).map((i) => `<figure><img src="${esc(i.url)}" alt="${esc(i.role)} 이미지"/><figcaption>${esc(i.role)} ${esc(i.sequence)}</figcaption></figure>`).join("")}</div>
  <details><summary>최초 AI 원고</summary><pre class="ops-notes">${esc(d.original.title + "\n\n" + d.original.article)}</pre></details><details><summary>최초 원고와 현재 수정본 차이</summary>${d.diff.paragraphs.map((p) => `<div class="ops-diff ${esc(p.type)}"><small>${{ added: "추가", removed: "삭제", same: "유지" }[p.type]}</small><p>${esc(p.text)}</p></div>`).join("")}${d.diff.truncated ? "<p>비교 화면은 앞 200문단까지만 표시합니다. 원문 버전은 보존합니다.</p>" : ""}</details>
- <details><summary>이전 버전 ${d.versions.length}개</summary>${d.versions.map((v) => `<p>v${v.version} · ${esc(v.created_at)} · ${esc(v.data.source)} ${button("restoreVersion", "이 버전을 새 수정본으로 복원", v.version)}</p>`).join("")}</details><details><summary>사용자 승인·취소 이력</summary>${d.approvalHistory.map((e) => `<p>${esc(e.type === "approved" ? "최종 승인" : "승인 취소")} · v${e.data.version ?? "?"} · ${esc(e.created_at)}</p>`).join("") || "<p>기록 없음</p>"}</details><h3>AI 검수 기록</h3>${
+ <details><summary>이전 버전 ${d.versions.length}개</summary>${d.versions.map((v) => `<p>v${v.version} · ${esc(v.created_at)} · ${esc(v.data.source)} ${button("restoreVersion", "이 버전을 새 수정본으로 복원", v.version)}</p>`).join("")}</details><details><summary>사용자 승인·취소 이력</summary>${d.approvalHistory.map((e) => `<p>${esc(e.type === "approved" ? (e.data.mode === "manual_override" ? "실패·AI 미통과 원고 직접 승인" : "최종 승인") : "승인 취소")} · v${e.data.version ?? "?"} · ${esc(e.created_at)}</p>`).join("") || "<p>기록 없음</p>"}</details><h3>AI 검수 기록</h3>${
    d.reviews
      .slice(0, 5)
      .map(
        (r) =>
-         `<details><summary>v${r.version} · ${esc(r.status)} · ${esc(r.created_at)}</summary>${notes({ reason: r.data.failureReason, issues: r.data.issues, revisionInstructions: r.data.revisionInstructions, readerEvidence: r.data.readerValueAssessment })}</details>`,
+         `<details><summary>v${r.version} · ${esc(r.status)} · ${esc(r.created_at)}</summary>${notes({ reason: r.data.failureReason || r.data.reason, issues: r.data.issues, revisionInstructions: r.data.revisionInstructions, readerEvidence: r.data.readerValueAssessment })}</details>`,
      )
      .join("") || "<p>현재 원고의 검수를 요청하세요.</p>"
  }
- <div class="ops-notice"><label class="compact-check"><input id="opsFinalApproval" type="checkbox"/>현재 버전의 사실·중복·허위 경험·무단 복제·과장된 효능·제품 홍보 제한을 직접 확인했고 최종 승인합니다.</label><label class="compact-check"><input id="opsImagesConfirmed" type="checkbox"/>이미지와 설명을 직접 확인했습니다(이미지 있는 원고).</label>${button("approve", "현재 버전 최종 승인", d.id, "primary")}${button("revoke", "승인 취소", d.id)}<p>현재 상태: ${esc(status(d.status))} · 승인 버전 ${d.approved_version == null ? "없음" : "v" + d.approved_version}</p></div>
+ <div class="ops-notice"><p><b>현재 버전 AI 검수: ${esc(currentReview?.status || '미검수')}</b></p>${needsManual?`<p>${esc(currentReview?.data.failureReason || currentReview?.data.reason || d.data.generationFailure?.reason || '현재 버전의 AI 검수 통과 기록이 없습니다.')}</p><p>직접 승인하면 AI 재시도 없이 발행할 수 있습니다. AI 검수 결과는 그대로 보존됩니다.</p>`:''}<label class="compact-check"><input id="opsFinalApproval" type="checkbox"/>현재 버전의 사실·중복·허위 경험·무단 복제·과장된 효능·제품 홍보 제한을 직접 확인했고 최종 승인합니다.</label><label class="compact-check"><input id="opsImagesConfirmed" type="checkbox"/>이미지와 설명을 직접 확인했습니다(이미지 있는 원고).</label>${needsManual?`<label class="compact-check"><input id="opsFailureAcknowledged" type="checkbox"/>실패·미검수·반려 사유를 확인했으며 현재 원고를 직접 승인해 발행합니다.</label>${button("approveFailed", "실패·AI 미통과 원고 직접 승인", d.id, "primary")}`:button("approve", "현재 버전 최종 승인", d.id, "primary")}${button("revoke", "승인 취소", d.id)}<p>현재 상태: ${esc(status(d.status))} ${manualApproved?"· 사용자 직접 승인 (AI 검수 결과 유지)":""} · 승인 버전 ${d.approved_version == null ? "없음" : "v" + d.approved_version}</p></div>
  <h3>발행 준비</h3><div class="ops-grid"><label>공개 범위<select id="opsVisibility"><option value="private">비공개</option><option value="public">공개</option>${d.platform === "naver" ? '<option value="draft">네이버 임시저장</option>' : ""}</select></label><label>발행 시점<select id="opsPublishWhen"><option value="now">지금 바로 발행</option><option value="reserve">예약 발행</option></select></label><label id="opsReserveLabel" hidden>몇 시간 뒤<input id="opsReserve" type="number" min="1" value="3"/></label>${button("prepare", "승인 원고 발행 준비", d.id)}</div>${button("publish", "지금 바로 발행", d.id, "primary")}<p id="opsPublishSummary" class="hint"></p><p id="opsPublishProgress" role="status" aria-live="polite"></p><p class="hint">현재 선택한 공개 범위와 발행 시점으로 연결된 Chrome에 발행을 요청합니다. 네이버와 티스토리는 각각 실행합니다. 결과 불확실 시 자동 재시도하지 않습니다.</p>
  <h3>플랫폼별 발행 기록</h3>${d.publications.map((p) => `<div><b>${esc(p.platform)} v${p.version} · ${esc(p.state)}</b><p>${esc(p.updated_at)} · ${esc(p.data.visibility || "")} · ${esc(p.data.scheduleMode || "")}</p>${sourceLink(p.data.url || p.data.result?.url || "")}${p.state === "uncertain" ? `<label>Chrome에서 확인한 결과<select id="opsResolveDecision"><option value="published">이미 발행·예약됨</option><option value="not_published">미발행임을 직접 확인</option></select></label><label>실제 게시글 주소<input id="opsResolveUrl" type="url"/></label><label class="compact-check"><input id="opsResolveConfirmed" type="checkbox"/>공개·예약·임시저장 목록에서 직접 확인했습니다.</label>${button("resolvePublication", "확인 결과 기록", p.id)}` : ""}</div>`).join("") || "<p>아직 발행 요청이 없습니다.</p>"}</section>`;
     window.blogRelevanceView.render($('#opsRelevance'),d.relevanceReport);
@@ -517,6 +520,7 @@
       return;
     }
     if (actionName === "openDocument") return openDocument(id);
+    if (actionName === "recoverFailed") return updatedDocument(await action("recoverFailed",{jobId:id}));
     if (actionName === "saveDocument")
       return updatedDocument(
         await action("saveDocument", {
@@ -528,7 +532,7 @@
         }),
       );
     if (
-      ["review", "analyzeRelevance", "repair", "simplify", "variant", "approve", "prepare", "publish"].includes(
+      ["review", "analyzeRelevance", "repair", "simplify", "variant", "approve", "approveFailed", "prepare", "publish"].includes(
         actionName,
       ) &&
       doc &&
@@ -560,13 +564,15 @@
       return updatedDocument(
         await action("restoreVersion", { id: doc.id, version: Number(id) }),
       );
-    if (actionName === "approve")
+    if (actionName === "approve" || actionName === "approveFailed")
       return updatedDocument(
         await action("approve", {
           id,
           version: doc.current_version,
           confirmed: $("#opsFinalApproval").checked,
           imagesConfirmed: $("#opsImagesConfirmed").checked,
+          allowFailedReview: actionName === "approveFailed",
+          failureAcknowledged: $("#opsFailureAcknowledged")?.checked === true,
         }),
       );
     if (actionName === "prepare")

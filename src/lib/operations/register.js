@@ -175,6 +175,8 @@ function register({ ipcMain, dialog, safeStorage, window, root, ...hooks }) {
           return service.annotate(accountId, payload.id, payload);
         case "document":
           return service.document(accountId, payload.id);
+        case "recoverFailed":
+          return service.recoverFailed(accountId, payload.jobId);
         case "saveDocument":
           return service.save(accountId, payload.id, payload);
         case "restoreVersion": {
