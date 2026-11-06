@@ -147,6 +147,9 @@ async function saveNaverDraft(task,resumeOnly=false) {
 async function publish(task) {
   if(task.platform==='tistory')return publishTistory(task);
   const tabId=task.tabId, p={...task.payload,article:stripOperatorFooter(task.payload.article)};
+  const authoringWarnings=new Set();
+  const reportWarnings=async result=>{for(const message of result?.warnings||[]){if(authoringWarnings.has(message))continue;authoringWarnings.add(message);await api('/progress',{id:task.id,message:'서식 안내 · '+message});}return result;};
+  const completed=result=>({...result,authoringWarnings:[...authoringWarnings]});
   const plan=articlePlan(p.article,{preserveParagraphs:p.preserveParagraphs===true,presentation:p.presentation||{},boldSentences:p.boldSentences||[]});
   const steps=[{type:'title',text:p.title},...(!p.presentation?[{type:'quote',text:p.title,style:'default'}]:[])];
   const ordered=articleWithHero(plan,p.titleImageIndex!==null?{type:'hero',index:p.titleImageIndex,name:p.titleImageName||'blog_img_title.png'}:null,p.presentation?.heroPosition);
@@ -162,7 +165,7 @@ async function publish(task) {
         const {connection}=await stored();const response=await fetch(API+'/asset?task='+task.id+'&index='+block.index,{headers:{Authorization:'Bearer '+connection.token},signal:AbortSignal.timeout(15000)});
         if(!response.ok)throw new Error('이미지를 가져오지 못했습니다.');return command(tabId,'image',{...await response.json(),...anchor});
       }
-      return command(tabId,block.type,{...block,...anchor,breakSentences:p.breakSentencesInBody,preserveParagraphs:p.preserveParagraphs===true,alignment:p.presentation?.alignment});
+      return reportWarnings(await command(tabId,block.type,{...block,...anchor,breakSentences:p.breakSentencesInBody,preserveParagraphs:p.preserveParagraphs===true,alignment:p.presentation?.alignment}));
     },
     save:checkpoint=>chrome.storage.local.set({authoringCheckpoint:{...checkpoint,blogId:task.blogId,title:p.title,taskId:task.id}}),
     onBeforeStep:(next,total,type)=>api('/progress',{id:task.id,message:`네이버 ${next}/${total} · ${type==='image'?'이미지':type==='quote'?'제목·섹션':'본문'} 입력 시작`}),
@@ -170,20 +173,20 @@ async function publish(task) {
     checkCancelled:async()=>{if((await api('/task/status',{id:task.id})).state!=='running')throw new Error('작업이 취소되었습니다. 입력한 내용은 보존됩니다.');}
   });
   await command(tabId,'imageAi');
-  await command(tabId,'verify',{title:p.title,article:p.article,plan,titleQuote:!p.presentation,bodyAlignment:p.presentation?.alignment,requireAi:true,sectionStyle:p.presentation?.headingStyle||'quotation_line',imageCount:p.bodyImages.filter(i=>i.index>=0).length+(p.titleImageIndex!==null?1:0)});
-  if(p.publishVisibility==='draft')return saveNaverDraft(task);
+  await reportWarnings(await command(tabId,'verify',{title:p.title,article:p.article,plan,titleQuote:!p.presentation,bodyAlignment:p.presentation?.alignment,requireAi:true,sectionStyle:p.presentation?.headingStyle||'quotation_line',imageCount:p.bodyImages.filter(i=>i.index>=0).length+(p.titleImageIndex!==null?1:0)}));
+  if(p.publishVisibility==='draft')return completed(await saveNaverDraft(task));
   await command(tabId,'click',{selector:'button[data-click-area="tpb.publish"], button[class*="publish_btn__"]',skipIfSelector:'button[data-testid="seOnePublishBtn"]'}); await sleep(400);
   await command(tabId,'settings',p);
   if((await inspect(tabId)).status!=='valid')throw new Error('로그인 상태가 변경되었습니다. 작성된 글을 확인하세요.');
   await api('/stage',{id:task.id,stage:'final_publish'});
   await chrome.storage.local.set({activeTask:{...task,stage:'final_publish'}});
   await command(tabId,'click',{selector:'button[data-testid="seOnePublishBtn"], button[data-click-area="tpb*i.publish"]'});
-  if(p.publishScheduleMode==='reserve')return verifyReservation(task);
+  if(p.publishScheduleMode==='reserve')return completed(await verifyReservation(task));
   let refreshed=false;
   for(let n=0;n<45;n++){
     await sleep(1000);
     const results=await frameResults(tabId,'published',{blogId:task.blogId,title:p.title}).catch(()=>[]);
-    const done=results.find(r=>r.complete);if(done)return {published:true,url:done.url};
+    const done=results.find(r=>r.complete);if(done)return completed({published:true,url:done.url});
     const stale=results.find(r=>r.refreshUrl);
     if(stale && !refreshed){refreshed=true;await chrome.tabs.update(tabId,{url:stale.refreshUrl});}
   }
