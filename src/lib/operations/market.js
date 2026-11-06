@@ -144,7 +144,7 @@ function recommend(db, account, { known = [], filters = {} } = {}) {
     .all(account)
     .map((r) => ({ ...r, ...JSON.parse(r.data) }));
   const candidates = topics
-    .filter((t) => !["excluded", "archived", "published"].includes(t.status))
+    .filter((t) => !["excluded", "archived"].includes(t.status))
     .map((t) => {
       const demand = keywords.find(
           (k) => normal(k.keyword) === normal(t.keyword),

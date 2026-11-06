@@ -35,7 +35,7 @@
     snapshot = null,
     doc = null,
     topic = null,
-    filters = { excludeDuplicate: true },
+    filters = { excludeDuplicate: false },
     pendingImport = null,
     busy = 0,
     lastTyping = 0,
@@ -654,7 +654,7 @@
     doc = null;
     composeDraft={mode:'keywords',keywords:[],urls:[],platform:'naver',images:true};
     topic = null;
-    filters = { excludeDuplicate: true };
+    filters = { excludeDuplicate: false };
     if (typeof selectAccount === "function") selectAccount(account());
     run(refresh);
   });
@@ -697,7 +697,7 @@
       $('#opsAccount').append(option);
     }
     if(detailAccount&&(detailAccount!==account()||detailTarget!==targetKey(accounts.find(a=>a.id===account()))))closeTopicDetail();
-    if(previous&&previous!==account()){doc=null;topic=null;filters={excludeDuplicate:true};}
+    if(previous&&previous!==account()){doc=null;topic=null;filters={excludeDuplicate:false};}
     showTab(tab);
     if(accounts.length){await refresh();message('준비됨');}else{snapshot=null;renderEmpty();}
   }
