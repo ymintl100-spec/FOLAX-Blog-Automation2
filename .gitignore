@@ -126,3 +126,7 @@ docs/*
 !docs/manual-failed-drafts-update-2026-11-06.md
 
 !docs/naver-alignment-update-2026-11-06.md
+
+!docs/windows-extension-bundle-2026-11-06.md
+
+!scripts/package-windows.py
