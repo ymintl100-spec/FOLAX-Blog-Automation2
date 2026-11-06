@@ -62,8 +62,9 @@ function repairPrompt(writer,messages,options={},binding){
     'document의 p1, p2 같은 문단 id를 사용한다. edits는 최대 6개이며 각 {paragraphId,after}는 해당 문단 전체를 수정한 문자열이다. 여러 문단을 합치려면 앞 문단에 합친 설명을 쓰고 뒤의 불필요한 문단은 after:""로 삭제한다. 수정하지 않는 문단은 반환하지 않는다. protected 소제목·이미지 마커는 수정·이동·삭제하지 않는다. 원래 말투·줄바꿈·미수정 문단·입력 주제·필수 조건을 보존한다. fingerprint나 해시 계산·복사·반환은 필요 없다. 원고와 요청의 연결은 앱이 확인한다. after에는 Markdown 별표나 HTML을 넣지 않고 강조는 앱의 기존 서식 처리를 유지한다.',
     '현재 분량과 lengthBudget을 함께 본다. 중복 삭제로 최소 분량을 벗어날 때는 기존 자료에 이미 있는 차이·이유·선택 조건을 같은 수정 문단 안에서 구체화한다. 반복·새 효과·횟수·시간·경험으로 채우지 않는다. 원문 대상·동작 범위·병행 조건·가능성·부정·의학적 불확실성을 보존한다. 새 근거 없이는 충족할 수 없으면 status:"failed"와 구체적인 failureReason을 반환한다.',
     '태그/이미지 설명 자체가 지적됐을 때만 tags, titleImagePrompt, titleImageText, bodyImagePrompts:[{sequence,prompt}]를 반환한다. 제목·이미지 수·sequence·sectionHeading·파일 경로·내부 citations는 앱이 그대로 보존한다. 이미지 생성은 하지 않는다.',
-    'JSON: {status:"success"|"failed",edits:[{paragraphId:string,after:string}],tags?:string[],titleImagePrompt?:string,titleImageText?:string[],bodyImagePrompts?:[{sequence:number,prompt:string}],failureReason?:string}. success는 실제 수정이 있을 때만 사용한다. 전체 원고를 반환하지 않는다.',
-    JSON.stringify({revisionProtocol:2,articleCharacters:count,lengthBudget:{...budget,minimumChange:budget.min-count,maximumChange:budget.max-count},currentRequirements:requirements(options),inputBrief:options.inputBrief,relevancePlan:options.researchTitleResult?.writerContract?.relevancePlan,writer:meta,document:binding.document.map(({id,type,text})=>({id,type,text})),revisionInstructions:feedback([messages],options),sources:require('./generationPrompts').writingSources({...options,writerResult:writer})})
+    options.revisionEvidencePolicy===1?'반복 제거로 분량을 맞추기 어려우면 failureCode:INSUFFICIENT_EVIDENCE와 evidenceGaps:[{keyword,question}]에 입력 키워드와 부족한 설명을 적는다. 앱이 남은 자동 보완 한도 안에서 검색한다. 이미 검토된 보강 자료가 있으면 그 사실의 필요한 조건·차이·선택 기준을 새 설명으로 넣고, 실제 사용한 새 출처만 addedCitations:[{sourceId,url}]로 반환한다. 기존 citations는 삭제·교체하지 않는다. acceptedSupplementFacts는 Research가 검토해 이번 보완에 사용하도록 넘긴 사실이다. allowedAddedCitations의 실제 ID·URL로 출처를 추가한다. 이전 지침의 기존 근거 범위에는 이제 이 검토된 같은 주제의 보강 자료도 포함한다. 원문의 조건·의미를 지키면서 충분한 근거가 전달됐는데 옛 자료만 사용할 수 있다고 판단하지 않는다.':'',
+    'JSON: {status:"success"|"failed",edits:[{paragraphId:string,after:string}],tags?:string[],titleImagePrompt?:string,titleImageText?:string[],bodyImagePrompts?:[{sequence:number,prompt:string}],failureReason?:string,failureCode?:string,evidenceGaps?:[{keyword:string,question:string}],addedCitations?:[{sourceId:string,url:string}]}. success는 실제 수정이 있을 때만 사용한다. 전체 원고를 반환하지 않는다.',
+    JSON.stringify({revisionProtocol:2,acceptedSupplementFacts:options.researchTitleResult?.revisionEvidenceSourceIds?.length?(options.researchTitleResult.factChecks||[]).filter(f=>(f.sourceIds||[]).some(id=>options.researchTitleResult.revisionEvidenceSourceIds.includes(id))):undefined,allowedAddedCitations:options.researchTitleResult?.revisionEvidenceSourceIds?.length?(options.searchResults||[]).filter(s=>options.researchTitleResult.revisionEvidenceSourceIds.includes(s.sourceId)).map(s=>({sourceId:s.sourceId,url:s.url})):undefined,articleCharacters:count,lengthBudget:{...budget,minimumChange:budget.min-count,maximumChange:budget.max-count},currentRequirements:requirements(options),inputBrief:options.inputBrief,relevancePlan:options.researchTitleResult?.writerContract?.relevancePlan,writer:meta,document:binding.document.map(({id,type,text})=>({id,type,text})),revisionInstructions:feedback([messages],options),sources:require('./generationPrompts').writingSources({...options,writerResult:writer})})
   ].join('\n');
 }
 function normalizeResponse(result){
@@ -72,11 +73,11 @@ function normalizeResponse(result){
   const nested=['result','output','data'].map(k=>result[k]).filter(v=>v&&typeof v==='object'&&!Array.isArray(v)&&Array.isArray(v.edits));
   return nested.length===1?{...nested[0],status:nested[0].status??result.status}:result;
 }
-function apply(writer,result,binding){
+function apply(writer,result,binding,options={}){
   result=normalizeResponse(result);
   const local=binding?.version===2;
   if(local&&binding.sourceFingerprint!==sourceFingerprint(writer))throw responseError('REVISION_SOURCE_CHANGED','부분 수정 요청 후 원고가 바뀌었습니다. 다른 원고에 응답을 적용하지 않았습니다.');
-  if(result?.status==='failed')throw responseError('REVISION_REJECTED','부분 수정 불가: '+String(result.failureReason||'모델이 수정할 수 없다고 응답했으나 구체적인 이유가 없습니다.').slice(0,600),{status:'failed'});
+  if(result?.status==='failed')throw responseError('REVISION_REJECTED','부분 수정 불가: '+String(result.failureReason||'모델이 수정할 수 없다고 응답했으나 구체적인 이유가 없습니다.').slice(0,600),{status:'failed',failureCode:result.failureCode,evidenceGaps:result.evidenceGaps});
   if(result?.status!=='success')throw responseError('REVISION_RESPONSE_STATUS','부분 수정 응답의 status가 success/failed 형식이 아닙니다. 원고 식별 오류와는 별개입니다.',{status:typeof result?.status==='string'?result.status.slice(0,40):typeof result?.status,fields:Object.keys(result||{}).slice(0,20)});
   if(!local&&result.fingerprint!==fingerprint(writer))throw responseError('REVISION_FINGERPRINT_MISMATCH','이전 형식 부분 수정 응답의 원고 식별값이 누락됐거나 일치하지 않습니다. 원고를 보존했습니다.',{fingerprintPresent:typeof result.fingerprint==='string'});
   if(!Array.isArray(result.edits)||result.edits.length>6)throw responseError('REVISION_RESPONSE_SHAPE','부분 수정 응답에 edits 배열이 필요하며 최대 6개까지 가능합니다.',{fields:Object.keys(result).slice(0,20)});
@@ -105,11 +106,12 @@ function apply(writer,result,binding){
     if(!Array.isArray(result.bodyImagePrompts))throw Error('본문 이미지 설명을 확인하세요.');const seen=new Set();out.bodyImages=(writer.bodyImages||[]).map(i=>({...i}));
     for(const change of result.bodyImagePrompts){const i=out.bodyImages.find(i=>i.sequence===change?.sequence);if(!i||seen.has(i.sequence)||typeof change.prompt!=='string'||!change.prompt.trim()||change.prompt.length>6000)throw Error('본문 이미지 설명이 현재 계획과 일치하지 않습니다.');seen.add(i.sequence);i.prompt=change.prompt;}
   }
+  Object.assign(out,require('./revisionEvidence').appendCitations(out,result.addedCitations,options));
   if(fingerprint(out)===fingerprint(writer))throw Object.assign(Error('부분 수정 결과가 기존 원고·태그·이미지 설명과 같습니다. 같은 요청을 반복하지 않습니다.'),{code:'NO_REVISION_CHANGE'});
   return out;
 }
 function recover(checkpoint,phase,reason){
-  if(!['writer','main_review'].includes(phase)||checkpoint.imageCheckpoint)return null;
+  if(!['writer','main_review','article_revision'].includes(phase)||checkpoint.imageCheckpoint)return null;
   const prefix=checkpoint.attemptNumber+':',saved=checkpoint.articleCheckpoint;
   const candidates=Object.entries(checkpoint.steps||{}).filter(([k,v])=>k.startsWith(prefix)&&/:(?:prompt|prompt-retry-\d+)\.txt$/.test(k)&&v?.status==='success'&&v.article).sort(([a],[b])=>Number(a.match(/retry-(\d+)/)?.[1]||1)-Number(b.match(/retry-(\d+)/)?.[1]||1));
   const latest=candidates.at(-1),attempt=Number(latest?.[0].match(/retry-(\d+)/)?.[1]||1);
@@ -127,7 +129,7 @@ function recover(checkpoint,phase,reason){
     const tag=checkpoint.steps[prefix+`tags-repair-${attempt}.txt`];
     if(tag)try{writer=require('./articleTags').applyRepair(writer,tag,options);}catch{return null;}
   }
-  return {...checkpoint,generationOptions:options,steps:Object.fromEntries(Object.entries(checkpoint.steps).filter(([k])=>k.includes('research-title'))),articleResume:{version:1,writer,review,feedback:messages,phase,evidenceContext:saved?.evidenceContext||require('./generationRecovery').imageEvidenceContext(checkpoint)},articleCheckpoint:undefined};
+  return {...checkpoint,generationOptions:options,steps:Object.fromEntries(Object.entries(checkpoint.steps).filter(([k])=>k.includes('research-title'))),articleResume:{version:1,writer,review,research:saved?.research,feedback:messages,phase,evidenceContext:saved?.evidenceContext||require('./generationRecovery').imageEvidenceContext(checkpoint)},articleCheckpoint:undefined};
 }
 const requestKey=(writer,messages,options)=>digest([fingerprint(writer),feedback([messages],options)]);
 module.exports={context,requestKey,requirements,instruction,feedback,deferLength,repairPrompt,apply,recover,fingerprint};

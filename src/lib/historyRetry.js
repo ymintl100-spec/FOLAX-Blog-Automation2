@@ -73,7 +73,7 @@ function retryPlan(root, item, history, settings, accounts) {
     else if (quality && ['research','title_duplicate'].includes(phase)) {
       checkpoint = null; mode = 'research'; reason = '주제·근거 반려 · 주제 선정부터 다시 진행';
     } else {
-      if (quality && ['writer','main_review'].includes(phase) && !legacyImageResume && !legacyMarkerRepair && !contractRecovery) {
+      if ((quality&&['writer','main_review'].includes(phase)||phase==='article_revision'&&checkpoint.articleCheckpoint?.writer?.article) && !legacyImageResume && !legacyMarkerRepair && !contractRecovery) {
         const guided=require('./editorialRevision').recover(checkpoint,phase,latest.reason);
         if(guided){checkpoint=guided;mode='writer';reason='마지막 원고·완료 조사·검수 지침 재사용 · 지적된 부분만 보완';}
         else for (const k of Object.keys(checkpoint.steps || {})) if (!k.includes('research-title')) delete checkpoint.steps[k];

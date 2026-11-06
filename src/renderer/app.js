@@ -480,7 +480,7 @@ function renderHistory(history) {
       ["직접 전달 프롬프트", Number(item.prompt_characters || 0) > 0 ? `${Number(item.prompt_characters).toLocaleString()}자` : ""],
       ["사유", item.reason]
       ,...[...(item.attempts || [])].map(attempt=>[
-        `전체 시도 ${attempt.attempt}/${item.attempts.length}`,
+        item.autoRetry?`작업 흐름 ${attempt.attempt} · 자동 재시도 ${item.autoRetry.used}/${item.autoRetry.max}`:`전체 시도 ${attempt.attempt}/${item.attempts.length}`,
         `${attempt.title || '주제 조사'} · ${attempt.status} · ${formatTokens(attempt.tokenUsage?.total || 0)}\n${attempt.reason || '완료'}\n검색어: ${(attempt.queries || []).join(' / ')}`
       ])
     ].filter(([, value]) => String(value || "").trim());

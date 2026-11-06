@@ -1016,6 +1016,7 @@ async function startJob(form) {
       updateStatus(jobId, "generating", `${generationPhase} (${minutes}분 경과)`);
     }, 60000);
     const retrievalContext=createRetrievalContext();
+    let writerRetrievalContext=null;
     let codexResult;
     try {
       codexResult = await runCodexGeneration({
@@ -1176,6 +1177,7 @@ async function startJob(form) {
             safeLog(jobId, `Writer Agent 근거 부족 사유로 보강 검색합니다: ${searchContext.writerIssueReason}`, "warn", "research");
           }
           safeLog(jobId, `Research/Title Agent 요청으로 검색 후보 수집 시작: ${researchResult.searchNeed || "normal"}`, "info", "research");
+          const activeRetrievalContext=searchContext.writerSupplement?(writerRetrievalContext||=(require('./lib/revisionEvidence').supplementContext(retrievalContext))):retrievalContext;
           const researchIntentGuidance = String(searchContext.inputScope?.articleScope||researchResult.topicThesis || '');
           const researchGuidance = [
             researchIntentGuidance,
@@ -1192,6 +1194,7 @@ async function startJob(form) {
             category,
             publishPurpose: form.publishPurpose || "",
             researchGuidance,
+            writerSupplement:searchContext.writerSupplement===true,
             verificationQueries: researchResult.verificationQueries || [],
             evidenceRequests: researchResult.evidenceRequests || [],
             searchQueries: laneResult.searchQueries,
@@ -1205,8 +1208,8 @@ async function startJob(form) {
             trustBlogAsSource: form.trustBlogAsSource === true,
             freshnessLevel: form.freshnessLevel || "auto",
             currentDate: currentDateLabel
-          }, (message, level) => safeLog(jobId, message, level, "research"),{context:retrievalContext});
-          fs.writeFileSync(path.join(jobDir,"retrieval-audit.json"),JSON.stringify({searchRequests:retrievalContext.searchRequests,documentRequests:retrievalContext.documentRequests,events:retrievalContext.events},null,2));
+          }, (message, level) => safeLog(jobId, message, level, "research"),{context:activeRetrievalContext});
+          fs.writeFileSync(path.join(jobDir,"retrieval-audit.json"),JSON.stringify({searchRequests:retrievalContext.searchRequests+(writerRetrievalContext?.searchRequests||0),documentRequests:retrievalContext.documentRequests+(writerRetrievalContext?.documentRequests||0),events:[...retrievalContext.events,...(writerRetrievalContext?.events||[])],writerSupplement:writerRetrievalContext?{searchRequests:writerRetrievalContext.searchRequests,documentRequests:writerRetrievalContext.documentRequests}:null},null,2));
           const mergedSearchResults = mergeSearchResults(searchResults, searchContext.previousSearchResults);
           safeLog(jobId, `검색 후보 수집 완료: ${searchResults.length}개, 누적 ${mergedSearchResults.length}개`, "info", "research");
           const sourceQuality = summarizeSourceQuality(mergedSearchResults, "auto", {
@@ -1226,7 +1229,7 @@ async function startJob(form) {
           return { searchResults: mergedSearchResults, sourceQuality };
         }
       }, (message, level, agent = "main") => {
-        const phaseMatch = String(message || "").match(/^(?:Codex 단계:\s*|(?=전체 시도 \d+\/\d+))(.+)$/);
+        const phaseMatch = String(message || "").match(/^(?:Codex 단계:\s*|(?=전체 시도 \d+\/\d+|작업 단계))(.+)$/);
         if (phaseMatch) {
           generationPhase = phaseMatch[1];
           updateStatus(jobId, "generating", `Codex ${generationPhase}`);

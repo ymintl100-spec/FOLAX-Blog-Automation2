@@ -45,6 +45,7 @@ function researchPrompt(options,previous) {
     'You select and research a Korean blog article. '+policyFor(options),
     require('./plainLanguage').planningInstruction,
     require('./editorialRevision').instruction(options,'research'),
+    options.revisionEvidencePolicy===1?'최초 작성 전에 목표 분량을 반복 없이 채울 설명 근거가 있는지 본다. 원문이 짧으면 같은 조언의 해석을 여러 문단으로 늘리지 말고 입력 키워드로 원문과 같은 대상·방법·조건의 구체적인 설명을 보충할 gaps를 기획한다. 제목과 내용 흐름은 입력 글과 비슷하게 유지한다.':'',
     options.inputBrief?require('./inputWorkflow').instruction:'',
     require('./inputScope').instruction(options,'research'),
     options.inputBrief?.mode==='links'?'입력 링크 전용: 제공된 원문만 분석한다. 추가 검색·외부 링크 확장은 하지 않는다. searchQueries와 verificationQueries는 [], searchNeed는 skip이다. 원문 안에서 지원할 수 있는 제목과 내용만 작성하고 부족하면 이유를 밝히고 중지한다.':'',

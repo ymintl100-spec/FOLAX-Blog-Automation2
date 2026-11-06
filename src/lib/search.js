@@ -489,6 +489,16 @@ function mobileNaverBlogUrl(url) {
   return `https://m.blog.naver.com/${match[1]}/${match[2]}`;
 }
 
+function extractSourceTitle(html){
+  for(const tag of String(html||'').match(/<meta\b[^>]*>/gi)||[]){
+    if(/(?:property|name)\s*=\s*["']og:title["']/i.test(tag)){
+      const value=tag.match(/content\s*=\s*(["'])([\s\S]*?)\1/i);
+      if(value)return stripTags(stripTags(value[2])).slice(0,300);
+    }
+  }
+  const value=String(html||'').match(/<title\b[^>]*>([\s\S]*?)<\/title>/i);
+  return value?stripTags(stripTags(value[1])).replace(/\s*[:|–-]\s*네이버\s*블로그\s*$/i,'').slice(0,300):'';
+}
 function extractMetaDescription(html) {
   const match = String(html || "").match(/<meta[^>]+(?:name|property)=["'](?:description|og:description)["'][^>]+content=["']([^"']+)["']/i)
     || String(html || "").match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:name|property)=["'](?:description|og:description)["']/i);
@@ -655,6 +665,7 @@ async function fetchCandidateContent(candidate, options={}, log=()=>{}) {
       if(typeof html.text==='string')return {...candidate,fetchedUrl:html.url,contentLength:html.text.length,fullText:html.text,excerpt:evidenceExcerpt(html.text,(options.searchQueries || []).join(' '),MAX_EXCERPT_CHARS),outboundLinks:[],extractionNote:html.extractionNote || ''};
       const resolvedUrl=html.url;
       html=html.html;
+      let originalTitle=extractSourceTitle(html);
       outboundLinks.push(...extractAttachmentLinks(html,attemptUrl),...((isOfficialDomain(attemptUrl)||isInstitutionalDomain(attemptUrl))?[]:extractAuthorityLinks(html, attemptUrl)));
       const frameUrl = findNaverBlogFrame(html, attemptUrl);
       if (frameUrl) {
@@ -663,6 +674,7 @@ async function fetchCandidateContent(candidate, options={}, log=()=>{}) {
           CANDIDATE_FETCH_TIMEOUT_MS,
           "네이버 블로그 본문 프레임 요청 시간이 초과되었습니다."
         );
+        originalTitle=extractSourceTitle(html)||originalTitle;
         outboundLinks.push(...extractAttachmentLinks(html,frameUrl),...extractAuthorityLinks(html, frameUrl));
       }
       const description = extractMetaDescription(html);
@@ -671,6 +683,7 @@ async function fetchCandidateContent(candidate, options={}, log=()=>{}) {
       if (text && text.length >= 80) {
         return {
           ...candidate,
+          title:candidate.provider==='user'?originalTitle||candidate.title:candidate.title||originalTitle,
           fetchedUrl: resolvedUrl,
           contentLength: text.length,
           fullText:text,
@@ -1215,7 +1228,7 @@ module.exports = {
   collectSearchResults,createRetrievalContext,
   summarizeSourceQuality,
   _private: {
-    fetchCandidateContent,extractAttachmentLinks,stripTags,parseLinks,providerSearch,channelAllows,
+    fetchCandidateContent,extractSourceTitle,extractAttachmentLinks,stripTags,parseLinks,providerSearch,channelAllows,
     naverSearchTemplateFor,
     buildQueryText,
     buildSearchProfile,
