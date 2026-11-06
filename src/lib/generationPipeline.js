@@ -17,6 +17,7 @@ const editorialRevision=require('./editorialRevision');
 const automaticRetries=require('./automaticRetries');
 const researchEvidence=require('./researchEvidence');
 const inputScope=require('./inputScope');
+const topicReuse=require('./topicReuse');
 const {humanize,applyReview}=require('../../packages/blog-humanizer');
 const {resolveImageStyle}=require('./accountImageStyle');
 const normalizeTitle=s=>String(s || '').trim();
@@ -87,7 +88,14 @@ async function generateAttempt(options, log, deps) {
       }
     }
   };
-  let research=null,writer=null,review=null,retrievalStopped=false;
+  let research=null,writer=null,review=null,retrievalStopped=false,reuseReviewed=false,reuseLogged=false;
+  const inspectReuse=async value=>{
+    if(!topicReuse.enabled(effective)||value?.novelty?.duplicate!==true)return value;
+    if(!reuseLogged){progress('기존 소재와 중복되지만 작성 계속 · 근거와 품질은 그대로 검수합니다.','info','research');reuseLogged=true;}
+    if(value.status==='PASS'||reuseReviewed)return value;
+    reuseReviewed=true;
+    return run('research',deps.researchRetry({...effective,researchRevisionContext:topicReuse.instruction(effective)+' 이전 중복 사유로 생략한 자료 판단과 작성 기획을 완료하세요. 실제 근거가 부족하면 구체적으로 밝히세요.'},value),'research-topic-reuse.txt','research-title-result.json',{kind:'중복 소재 허용 검토',reason:value.novelty.reason||'기존 소재 재사용'});
+  };
   const resume=options.imageCheckpoint;
   let finalTitle='';
   const failed=(phase,reason,failureKind=phase==='humanizer'?'execution':'quality')=>({status:'failed',failureKind,retrievalStopped,failurePhase:phase,failureReason:reason,relevanceReport:writer?relevance.report(writer,{...effective,researchTitleResult:research},review):null,title:writer?.title || '',article:writer?.article || '',tags:writer?.tags || [],bodyImages:[],titleImagePath:'',notes:[reason],researchTitleResult:research,mainReviewResult:review,tokenUsage:snapshot()});
@@ -107,14 +115,16 @@ async function generateAttempt(options, log, deps) {
   // One initial planning/research call; at most two evidence rounds. Never re-run on identical retrieval.
   progress('주제 조사 1차 시작','info','research');
   research=await run('research',deps.researchPrompt(effective),'research-title-prompt.txt','research-title-result.json');
+  research=await inspectReuse(research);
   options.onResearchTitle?.(research);
-  if(research.novelty?.duplicate===true)return {...failed('title_duplicate',research.novelty.reason || '최근 발행 글과 소재가 중복됩니다.'),status:'duplicate_retry',title:research.finalTitle || ''};
+  if(!topicReuse.enabled(effective)&&research.novelty?.duplicate===true)return {...failed('title_duplicate',research.novelty.reason || '최근 발행 글과 소재가 중복됩니다.'),status:'duplicate_retry',title:research.finalTitle || ''};
   const scoped=inputScope.enabled(effective);
   if(scoped&&research.status==='BLOCK')return failed('research',research.failureReason||'입력 링크의 핵심 내용을 지원할 수 없습니다.');
   let planProblem=inputScope.planIssue(research,effective);
   if(planProblem&&research.status!=='BLOCK'){
     progress('입력 링크 주제 기획 응답 보완 · 원문과 키워드 연결을 확인합니다.','info','research');
     research=await run('research',deps.researchRetry({...effective,researchRevisionContext:planProblem},research),'research-input-scope.txt','research-title-result.json',{kind:'링크 주제 기획 보완',reason:planProblem});
+    research=await inspectReuse(research);
     options.onResearchTitle?.(research);planProblem=inputScope.planIssue(research,effective);
   }
   if(planProblem){await options.onInvalidTextResult?.('research-input-scope.txt',Object.assign(Error(planProblem),{code:'INPUT_SCOPE_RESPONSE'}));return failed('research',planProblem,'execution');}
@@ -135,24 +145,26 @@ async function generateAttempt(options, log, deps) {
     effective={...effective,searchResults:sources,sourceQuality:payload.sourceQuality,researchRevisionContext:issue};
     progress(`주제 조사 ${round+1}차 · 보강 자료 검토 시작`,'info','research');
     research=await run('research',deps.researchRetry(effective,research),`research-title-search-${round}.txt`,'research-title-result.json');
+    research=await inspectReuse(research);
     options.onResearchTitle?.(research);issue=reasons([evidenceIssue(research,sources,effective),inputScope.planIssue(research,effective)]);
-    if(research.novelty?.duplicate===true)return {...failed('title_duplicate',research.novelty.reason || '최근 발행 글과 소재가 중복됩니다.'),status:'duplicate_retry',title:research.finalTitle || ''};
+    if(!topicReuse.enabled(effective)&&research.novelty?.duplicate===true)return {...failed('title_duplicate',research.novelty.reason || '최근 발행 글과 소재가 중복됩니다.'),status:'duplicate_retry',title:research.finalTitle || ''};
   }
   if(scoped&&research.status!=='BLOCK'&&(research.status!=='PASS'||issue)){
     progress('보강 자료 검토 후 원문 범위로 최종 기획 조정 · 추가 검색 없이 확인합니다.','info','research');
     research=await run('research',deps.researchRetry({...effective,researchRevisionContext:reasons([issue,research.failureReason])+' 추가 검색은 끝났습니다. 입력 링크의 실제 대상·사용 목적 범위로 제목과 필수 주장을 다시 정리하세요. 지원되지 않는 확장 주장은 제외하며 링크의 핵심 자체가 지원되지 않으면 BLOCK하세요.'},research),'research-input-final.txt','research-title-result.json',{kind:'입력 링크 범위 조정',reason:issue||research.failureReason});
+    research=await inspectReuse(research);
     options.onResearchTitle?.(research);issue=reasons([evidenceIssue(research,effective.searchResults,effective),inputScope.planIssue(research,effective)]);
   }
-  if(research.novelty?.duplicate===true)return {...failed('title_duplicate',research.novelty.reason||'최근 발행 글과 소재가 중복됩니다.'),status:'duplicate_retry',title:research.finalTitle||''};
+  if(!topicReuse.enabled(effective)&&research.novelty?.duplicate===true)return {...failed('title_duplicate',research.novelty.reason||'최근 발행 글과 소재가 중복됩니다.'),status:'duplicate_retry',title:research.finalTitle||''};
   issue=reasons([issue,require('./inputWorkflow').analysisIssue(research,effective.inputBrief)]);
   if(research.status!=='PASS' || issue)return failed('research',[research.failureReason,issue].filter(Boolean).filter((s,i,a)=>a.indexOf(s)===i).join('\n') || '핵심 주장의 근거를 확보하지 못했습니다.');
   finalTitle=normalizeTitle(research.finalTitle);if(!finalTitle)return failed('research','최종 제목이 없습니다.');
   effective.formatGuidance=formats.resolve(effective.formatGuidance,research,effective.experienceNotes);
-  if((options.publishedTopics || []).length){
-    if(research.novelty?.duplicate===true)return {...failed('title_duplicate',research.novelty.reason || '최근 발행 글과 소재가 중복됩니다.'),status:'duplicate_retry',title:finalTitle};
+  if(!topicReuse.enabled(effective)&&(options.publishedTopics || []).length){
+    if(!topicReuse.enabled(effective)&&research.novelty?.duplicate===true)return {...failed('title_duplicate',research.novelty.reason || '최근 발행 글과 소재가 중복됩니다.'),status:'duplicate_retry',title:finalTitle};
     if(research.novelty?.duplicate!==false || !String(research.novelty.reason || '').trim())return failed('research','최근 발행 글과의 소재 중복 판단이 누락됐습니다. 본문 생성을 중지했습니다.');
   }
-  const duplicate=await options.onFinalTitleCandidate?.(finalTitle,research);
+  const duplicate=topicReuse.enabled(effective)?null:await options.onFinalTitleCandidate?.(finalTitle,research);
   if(duplicate?.duplicate)return {...failed('title_duplicate',duplicate.reason || '동일한 제목이 있습니다.'),status:'duplicate_retry',title:finalTitle};
   progress('주제 선정 통과 · 본문 작성으로 이동','info','research');
   const guided=effective.revisionPolicy===1,seed=guided?options.articleResume:null,maxWrites=automatic?(seed?5:6):guided?3:2;
@@ -334,15 +346,16 @@ async function generate(options,log,deps) {
   options={tokenSaving:true,qualityPolicyVersion:1,...options};
   const restored=options.generationCheckpoint;
   if(restored && restored.version!==2)throw new Error('재개 기록 버전을 확인할 수 없습니다. 기존 작업을 취소한 뒤 다시 시작하세요.');
-  const optionKeys=['tokenSaving','qualityPolicyVersion','writingGuidance','formatGuidance','compactWriting','maxAutoRetries','revisionProtocol','inputScopePolicy','revisionPolicy','articleLengthPolicy','emphasisPolicy','inputBrief','relevancePolicy','tagCount','requireApproval','operationsTopicId','operationsDraft','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','blogDirection','experienceNotes','experienceNotesId','topic','keyword','category','topicMode','currentDateLabel','includeTitleImage','maxBodyImages','minimumImageCount','titleImageAspectRatio','bodyImageAspectRatio','excludedTopics','publishPurpose','preferredTone','freshnessLevel','searchChannel','trustBlogAsSource','keywordLanes','recommendedKeywordLanes','historyTitles','searchResults','sourceQuality'];
+  const optionKeys=['tokenSaving','qualityPolicyVersion','writingGuidance','formatGuidance','compactWriting','maxAutoRetries','revisionProtocol','allowDuplicateTopics','inputScopePolicy','revisionPolicy','articleLengthPolicy','emphasisPolicy','inputBrief','relevancePolicy','tagCount','requireApproval','operationsTopicId','operationsDraft','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','blogDirection','experienceNotes','experienceNotesId','topic','keyword','category','topicMode','currentDateLabel','includeTitleImage','maxBodyImages','minimumImageCount','titleImageAspectRatio','bodyImageAspectRatio','excludedTopics','publishPurpose','preferredTone','freshnessLevel','searchChannel','trustBlogAsSource','keywordLanes','recommendedKeywordLanes','historyTitles','searchResults','sourceQuality'];
   const requestedAutomatic=automaticRetries.enabled(options);
   const recovery=restored?JSON.parse(JSON.stringify(restored)):{version:2,steps:{},retrievals:{},generationOptions:Object.fromEntries(optionKeys.filter(k=>options[k]!==undefined).map(k=>[k,options[k]])),attemptNumber:1};
   if(restored&&requestedAutomatic&&!Object.hasOwn(recovery.generationOptions,'maxAutoRetries')){recovery.generationOptions.maxAutoRetries=5;recovery.generationOptions.revisionPolicy=1;}
+  if(restored&&topicReuse.enabled(options))recovery.generationOptions.allowDuplicateTopics=true;
   if(restored&&options.revisionProtocol===2)recovery.generationOptions.revisionProtocol=2;
   if(restored&&options.inputScopePolicy===1){const centered=inputScope.recover(recovery);if(centered){Object.assign(recovery,centered);log('입력 링크의 주제·사용 목적을 중심으로 기획 재검토 · 저장된 수집 자료는 유지합니다.','info','research');}}
   if(restored){const repaired=researchEvidence.recover(recovery);if(repaired){Object.assign(recovery,repaired);log('저장된 입력 원문·출처 ID 복원 · 보강 조사 검토만 다시 진행합니다.','info','research');}}
   options={...options,...recovery.generationOptions};
-  if(restored)for(const key of ['maxAutoRetries','revisionProtocol','inputScopePolicy','revisionPolicy','emphasisPolicy','inputBrief','relevancePolicy','tagCount','minimumImageCount','articleLengthPolicy','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','requireApproval','operationsTopicId','operationsDraft','compactWriting','experienceNotes','experienceNotesId','blogDirection','writingGuidance','formatGuidance'])if(!Object.hasOwn(recovery.generationOptions,key))options[key]=undefined;
+  if(restored)for(const key of ['maxAutoRetries','revisionProtocol','allowDuplicateTopics','inputScopePolicy','revisionPolicy','emphasisPolicy','inputBrief','relevancePolicy','tagCount','minimumImageCount','articleLengthPolicy','approvedEditorial','requiredWritingInstructions','contentPolicy','platform','requireApproval','operationsTopicId','operationsDraft','compactWriting','experienceNotes','experienceNotesId','blogDirection','writingGuidance','formatGuidance'])if(!Object.hasOwn(recovery.generationOptions,key))options[key]=undefined;
   if(typeof(options.experienceNotes??'')!=='string'||String(options.experienceNotes||'').length>2000)throw new Error('이번 글의 실제 경험 메모는 2,000자 이내로 입력하세요.');
   if(options.formatGuidance?.version>=3&&options.formatGuidance.id==='essay'&&!String(options.experienceNotes||'').trim())return {status:'failed',failureKind:'execution',failurePhase:'input',failureReason:'일상·경험형에는 이번 글의 실제 경험 메모가 필요합니다. 경험을 입력하거나 자동·건강 설명형을 선택하세요.',article:'',title:''};
   const saveRecovery=async()=>{await options.onGenerationCheckpoint?.(JSON.parse(JSON.stringify(recovery)));};

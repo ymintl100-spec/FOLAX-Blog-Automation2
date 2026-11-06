@@ -12,8 +12,7 @@ function readJob(root, id, name) {
 function sameAccount(a, b) { return a.account_id && b.account_id ? a.account_id === b.account_id : a.blog_id === b.blog_id; }
 function lineage(item) { return item.retry_root_id || item.id; }
 function related(a, b) {
-  return sameAccount(a, b) && (lineage(a) === lineage(b)
-    || Boolean(key(a.title || a.research_title) && key(a.title || a.research_title) === key(b.title || b.research_title)));
+  return sameAccount(a, b) && lineage(a) === lineage(b);
 }
 function retryPlan(root, item, history, settings, accounts) {
   const deny = reason => ({ allowed: false, reason });
@@ -66,9 +65,11 @@ function retryPlan(root, item, history, settings, accounts) {
         checkpoint.steps[prefix+'prompt.txt']=value;legacyMarkerRepair=true;
       }
     }
+    const reusable=latest.status==='duplicate_retry'||phase==='title_duplicate'?require('./topicReuse').recover(checkpoint):null;
     const centered=quality&&phase==='research'?require('./inputScope').recover(checkpoint,true):null;
     const restoredInputs=centered||quality&&phase==='research'&&require('./researchEvidence').recover(checkpoint);
-    if(restoredInputs){checkpoint=restoredInputs;mode='checkpoint';reason=centered?'입력 링크 주제 중심으로 기획 재검토 · 저장 자료 재사용':'입력 원문·출처 연결 복원 · 수집 자료 재사용 후 보강 검토부터 진행';}
+    if(reusable){checkpoint=reusable;mode='checkpoint';reason='중복 소재 허용 · 저장된 조사·자료 재사용 후 작성 계속';}
+    else if(restoredInputs){checkpoint=restoredInputs;mode='checkpoint';reason=centered?'입력 링크 주제 중심으로 기획 재검토 · 저장 자료 재사용':'입력 원문·출처 연결 복원 · 수집 자료 재사용 후 보강 검토부터 진행';}
     else if (quality && ['research','title_duplicate'].includes(phase)) {
       checkpoint = null; mode = 'research'; reason = '주제·근거 반려 · 주제 선정부터 다시 진행';
     } else {
