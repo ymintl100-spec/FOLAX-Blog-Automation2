@@ -1,6 +1,6 @@
 // This function runs only inside the editor's isolated world. No debugger or remote control.
 async function editorCommand(command, args = {}) {
-  const build='20261104.1';let step='locate';
+  const build='20261106.1';let step='locate';
   try {
   const visible = el => Boolean(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
   const find = selector => [...document.querySelectorAll(selector)].find(visible);
@@ -40,6 +40,37 @@ async function editorCommand(command, args = {}) {
   };
   const bodyText=()=>allParagraphs().map(readText).map(normalize).join('');
   const waitFor=async predicate=>{let stable=0;for(let n=0;n<100;n++){stable=predicate()?stable+1:0;if(stable>=2)return true;await wait(50);}return false;};
+  const alignParagraph=async(target,alignment)=>{
+    const current=()=>target.id?document.getElementById(target.id):target;
+    const aligned=()=>{const el=current(),actual=el&&getComputedStyle(el).textAlign;return actual===alignment||(alignment==='left'&&actual==='start');};
+    if(aligned())return true;
+    const label=alignment==='center'?/가운데\s*정렬|중앙\s*정렬|align\s*center|center\s*align/i:/왼쪽\s*정렬|좌측\s*정렬|align\s*left|left\s*align/i;
+    const controls=()=>[...document.querySelectorAll('button,[role="button"],[role="menuitem"],[role="menuitemradio"]')].filter(visible);
+    const data=el=>['data-name','data-value','data-type','data-command','class'].map(k=>el.getAttribute(k)||'').join(' ');
+    const isMenu=el=>el.getAttribute('aria-haspopup')&&el.getAttribute('aria-haspopup')!=='false'||(/(?:^|\s)align(?:\s|$)/.test(el.getAttribute('data-name')||'')&&!el.getAttribute('data-value')&&/select|dropdown/.test(el.className));
+    const option=()=>controls().find(el=>!isMenu(el)&&(
+      new RegExp('(?:align[\\s_-]*'+alignment+'|'+alignment+'[\\s_-]*align|^align '+alignment+'(?: |$))','i').test(data(el))||
+      label.test([el.getAttribute('aria-label'),el.getAttribute('title'),el.textContent].filter(Boolean).join(' '))));
+    const check=async()=>{for(let n=0;n<12;n++){if(aligned())return true;await wait(50);}return false;};
+    let menu;
+    try{
+      if(!option()){
+        menu=controls().find(el=>el.getAttribute('data-name')==='align'||/se-align-toolbar-button|se-property-toolbar.*align/.test(el.className)||/^(?:정렬|문단\s*정렬|맞춤)(?:\s|$)/.test(el.getAttribute('aria-label')||el.getAttribute('title')||''));
+        if(menu){menu.click();for(let n=0;n<10&&!option();n++)await wait(50);}
+      }
+      const button=option();
+      if(button){button.click();if(await check()){await activateParagraph(current());return true;}}
+      if(menu?.getAttribute('aria-expanded')==='true')menu.click();
+      // Use the actual active editor input, including SmartEditor's iframe.
+      // Never paint text-align on display DOM: that would not update its model.
+      await activateParagraph(current());
+      const receiver=resolveInput();
+      receiver.doc.execCommand(alignment==='center'?'justifyCenter':'justifyLeft',false,null);
+      if(await check()){await activateParagraph(current());return true;}
+    }catch{/* Formatting must not discard or prevent insertion of saved text. */}
+    await activateParagraph(current());
+    return false;
+  };
   const ensureImageAi=async image=>{
     const id=image.id;
     const current=()=>id ? document.getElementById(id) : image;
@@ -282,16 +313,10 @@ async function editorCommand(command, args = {}) {
   if (command === 'paragraph') {
     const beforeText=bodyText();
     const target=await lastBody();
-    if(['left','center'].includes(args.alignment)){
-      const aligned=()=>{const el=target.id?document.getElementById(target.id):target;const actual=el&&getComputedStyle(el).textAlign;return actual===args.alignment||(args.alignment==='left'&&actual==='start');};
-      if(!aligned()){
-        const option=()=>find(`button[data-name="align"][data-value="${args.alignment}"], button[data-name="align"][data-value="align-${args.alignment}"], button[data-name="align-${args.alignment}"], button[aria-label="${args.alignment==='center'?'가운데 정렬':'왼쪽 정렬'}"]`);
-        if(!option()){const menu=find('button[data-name="align"][aria-haspopup="true"]');if(menu){menu.click();await wait(120);}}
-        const button=option();if(!button)throw new Error('본문 정렬 버튼을 찾지 못했습니다. 원고를 보존했습니다: '+args.alignment);
-        button.click();if(!await waitFor(aligned))throw new Error('본문 정렬 적용을 확인하지 못했습니다: '+args.alignment);
-        await activateParagraph(target.id?document.getElementById(target.id):target);
-      }
-    }
+    const warnings=[];
+    step='align-paragraph';
+    if(['left','center'].includes(args.alignment)&&!await alignParagraph(target,args.alignment))warnings.push('본문 '+(args.alignment==='center'?'가운데':'왼쪽')+' 정렬을 확인하지 못했습니다. 현재 정렬을 유지하고 본문 입력을 계속합니다.');
+    step='insert-paragraph';
     const value=String(args.text),lines=[];
     if(args.preserveParagraphs)lines.push(...value.split(/\r?\n/));
     else if(args.breakSentences){
@@ -339,7 +364,7 @@ async function editorCommand(command, args = {}) {
       await insertParagraph();
       if(!await waitFor(emptyTail))throw new Error('참고 링크 뒤 빈 줄 생성이 완료되지 않았습니다.');
     }
-    return { ok: true };
+    return { ok: true, warnings };
   }
   if (command === 'quote') {
     const beforeText=bodyText();
@@ -412,7 +437,8 @@ async function editorCommand(command, args = {}) {
     if(args.titleQuote && (!quotes()[0]?.classList.contains('se-l-default') || normalize(readText(quotes()[0]))!==normalize(args.title)))issues.push('본문 최상단 제목 인용구 불일치');
     if(sectionQuotes.length!==quoteCount)issues.push(`섹션 ${sectionQuotes.length}/${quoteCount}개`);
     if(args.sectionStyle && sectionQuotes.some(q=>!q.classList.contains('se-l-'+args.sectionStyle)))issues.push('섹션 버티컬 스타일 불일치');
-    if(['left','center'].includes(args.bodyAlignment)&&allParagraphs().filter(p=>normalize(readText(p))).some(p=>{const actual=getComputedStyle(p).textAlign;return actual!==args.bodyAlignment&&!(args.bodyAlignment==='left'&&actual==='start');}))issues.push('본문 정렬이 선택한 형식과 다릅니다.');
+    const warnings=[];
+    if(['left','center'].includes(args.bodyAlignment)&&allParagraphs().filter(p=>normalize(readText(p))).some(p=>{const actual=getComputedStyle(p).textAlign;return actual!==args.bodyAlignment&&!(args.bodyAlignment==='left'&&actual==='start');}))warnings.push('일부 본문의 정렬이 선택한 형식과 다릅니다. 본문과 이미지 입력은 검증했습니다. Chrome에서 정렬을 확인하세요.');
     if(args.plan){
       const components=[...document.querySelectorAll('.se-component')].filter(e=>!e.matches('.se-text') || normalize(readText(e)));let section=-1;
       for(let i=0;i<args.plan.length;i++)if(args.plan[i].type==='section'){
@@ -421,7 +447,7 @@ async function editorCommand(command, args = {}) {
         if(start<0 || Array.from({length:imageCount},(_,n)=>components[start+n+1]).some(e=>!e?.matches('.se-image,[data-comp-type="image"]')))issues.push(`섹션 ${section+1} 제목 다음 이미지 배치 불일치`);
       }
     }
-    return {ok:issues.length===0,...(issues.length?{error:'발행 전 확인 실패: '+issues.join(' · ')}:{})};
+    return {ok:issues.length===0,warnings,...(issues.length?{error:'발행 전 확인 실패: '+issues.join(' · ')}:{})};
   }
   if (command === 'click') {
     if(args.skipIfSelector && find(args.skipIfSelector))return {ok:true,alreadyApplied:true};

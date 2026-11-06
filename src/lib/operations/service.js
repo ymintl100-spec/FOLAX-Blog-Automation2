@@ -574,7 +574,8 @@ class Operations {
     return document;
   }
   document(account, id) {
-    this.account(account);
+    const a=this.account(account), document=E.read(this.db,account,id);
+    require('./authoringRecovery').recover(this.db,this.root,a,document);
     return E.read(this.db, account, id);
   }
   save(account, id, input) {
@@ -1094,19 +1095,21 @@ class Operations {
         return E.read(this.db, account, id);
       } catch (e) {
         this.hooks.progress?.(id,e.message,'error');
+        const authoringFailed=e.code==='AUTHORING_FAILED'&&e.publicationStage==='writing';
         this.db
           .prepare(
             "UPDATE ops_publications SET state=?,updated_at=?,data=? WHERE id=?",
           )
           .run(
-            "uncertain",
+            authoringFailed ? "failed" : "uncertain",
             S.now(),
-            JSON.stringify({ ...prepared.data, error: e.message }),
+            JSON.stringify({ ...prepared.data, error: e.message, code:e.code || '', publicationStage:e.publicationStage || '', bridgeTaskId:e.bridgeTaskId || '' }),
             prepared.id,
           );
-        S.event(this.db, account, id, "publication_uncertain", {
+        S.event(this.db, account, id, authoringFailed ? "authoring_failed" : "publication_uncertain", {
           message: e.message,
         });
+        if(authoringFailed)throw Error("본문 입력 중단 · 최종 발행 버튼은 실행되지 않았습니다. 원고·이미지·승인은 보존했습니다. 확장 업데이트 후 발행 버튼을 다시 눌러 저장 원고를 입력할 수 있습니다. "+e.message);
         throw Error(
           "발행 결과가 불확실합니다. 자동 재발행하지 않습니다. Chrome의 공개·예약·임시저장 목록을 확인하세요. " +
             e.message,

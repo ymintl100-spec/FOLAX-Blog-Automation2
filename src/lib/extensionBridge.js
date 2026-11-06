@@ -127,7 +127,7 @@ class ExtensionBridge extends EventEmitter {
     this.lastSeen.set(token,Date.now());
     if (url.pathname === '/heartbeat' && req.method === 'POST') return this.reply(res,200,{ok:true});
     if (url.pathname === '/task/status' && req.method === 'POST') {const task=this.tasks.get(body.id);if(!task || task.clientToken!==token)return this.reply(res,404,{error:'Unknown task'});return this.reply(res,200,{state:task.state});}
-    if (url.pathname === '/stage' && req.method === 'POST') {const task=this.tasks.get(body.id);if(!task || task.clientToken!==token || task.state!=='running')throw new Error('작업이 취소되었거나 종료되었습니다.');if(!['writing','final_publish'].includes(body.stage))throw new Error('Invalid stage');task.stage=body.stage;task.waiting=false;this.saveTasks();return this.reply(res,200,{ok:true});}
+    if (url.pathname === '/stage' && req.method === 'POST') {const task=this.tasks.get(body.id);if(!task || task.clientToken!==token || task.state!=='running')throw new Error('작업이 취소되었거나 종료되었습니다.');if(!['writing','final_publish'].includes(body.stage))throw new Error('Invalid stage');if(task.stage==='final_publish'&&body.stage==='writing')throw new Error('최종 발행 단계 이후에는 입력 단계로 되돌릴 수 없습니다.');task.stage=body.stage;task.waiting=false;this.saveTasks();return this.reply(res,200,{ok:true});}
     if (url.pathname === '/progress' && req.method === 'POST') {
       const task=this.tasks.get(body.id);if(!task || task.clientToken!==token || task.state!=='running')throw new Error('종료된 작업입니다.');
       const message=String(body.message || '').slice(0,200);
@@ -163,7 +163,7 @@ class ExtensionBridge extends EventEmitter {
       t.state = body.error ? 'failed' : 'done'; t.result = body.result || null; t.error = String(body.error || ''); t.code=String(body.code || ''); this.saveTasks();
       if(t.type==='session' && STATES.has(body.result?.status))this.updateSession(c,{...body.result,checkedAt:new Date().toISOString()});
       this.emit('status',c.accountId,this.snapshot(c.accountId));
-      const waiter=this.waiters.get(t.id); if (waiter) { clearTimeout(waiter.timer); this.waiters.delete(t.id); body.error ? waiter.reject(failure(body.error,body.code || 'EXTENSION_ERROR')) : waiter.resolve(body.result); }
+      const waiter=this.waiters.get(t.id); if (waiter) { clearTimeout(waiter.timer); this.waiters.delete(t.id); body.error ? waiter.reject(Object.assign(failure(body.error,body.code || 'EXTENSION_ERROR'),{publicationStage:t.stage || '',bridgeTaskId:t.id})) : waiter.resolve(body.result); }
       return this.reply(res,200,{ok:true});
     }
     if (url.pathname === '/asset' && req.method === 'GET') {

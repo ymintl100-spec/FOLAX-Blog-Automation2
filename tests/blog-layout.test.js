@@ -40,6 +40,7 @@ test('publish payload transports paragraph preservation and blocks old extension
   assert.throws(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261023.3'},'test-blog'),/구버전/);
   assert.throws(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261027.1'},'test-blog'),/구버전/);
   assert.throws(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261028.1'},'test-blog'),/구버전/);
-  assert.doesNotThrow(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261104.1'},'test-blog'));
+  assert.throws(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261104.1'},'test-blog'),/구버전/);
+  assert.doesNotThrow(()=>naver.requireCompatibleEditor({status:'valid',editorBuild:'20261106.1'},'test-blog'));
  }finally{bridge.stop();fs.rmSync(root,{recursive:true,force:true});}
 });
