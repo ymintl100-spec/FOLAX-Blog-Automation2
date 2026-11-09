@@ -2,7 +2,7 @@ param([string]$SourcePath, [string]$OutputDirectory, [string]$ManifestPath, [swi
 $ErrorActionPreference='Stop'
 $ProgressPreference='SilentlyContinue'
 $manifest=Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
-if ($manifest.format -ne 'FOLAX-COPY-LITERAL-v1' -or $manifest.source.name -ne 'Naver-Blog-Automator-0.3.0-rc.24.exe' -or $manifest.target.name -ne 'Naver-Blog-Automator-0.3.0-rc.24.1.exe' -or $manifest.payload.file -ne 'literal.bin') { throw 'Invalid patch manifest' }
+if ($manifest.format -ne 'FOLAX-COPY-LITERAL-v1' -or $manifest.source.name -ne 'Naver-Blog-Automator-0.3.0-rc.24.exe' -or $manifest.target.name -notin @('Naver-Blog-Automator-0.3.0-rc.24.1.exe','Naver-Blog-Automator-0.3.0-rc.24.2.exe') -or $manifest.payload.file -ne 'literal.bin') { throw 'Invalid patch manifest' }
 foreach ($item in @($manifest.source,$manifest.target,$manifest.payload)) { if ($item.sha256 -notmatch '^[a-f0-9]{64}$' -or $item.size -lt 0) { throw 'Invalid patch checksum or size' } }
 if ($manifest.source.size -le 0 -or $manifest.target.size -le 0) { throw 'Invalid executable size' }
 $payload=Join-Path ([IO.Path]::GetDirectoryName($ManifestPath)) 'literal.bin'
@@ -22,7 +22,7 @@ if (!(Test-Path -LiteralPath $SourcePath -PathType Leaf) -or (Get-Item -LiteralP
 if (!$OutputDirectory -and !$NoDialogs) {
     Add-Type -AssemblyName System.Windows.Forms
     $save=New-Object System.Windows.Forms.SaveFileDialog
-    $save.Title='수정된 rc.24.1 파일을 저장할 위치를 선택하세요'
+    $save.Title='수정된 실행파일을 저장할 위치를 선택하세요'
     $save.FileName=$manifest.target.name
     $save.InitialDirectory=[IO.Path]::GetDirectoryName($SourcePath)
     $save.Filter='실행파일|*.exe'
