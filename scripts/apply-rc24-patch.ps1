@@ -1,4 +1,4 @@
-param([string]$SourcePath, [string]$OutputDirectory, [string]$ManifestPath, [switch]$NoDialogs, [switch]$NoOpen)
+﻿param([string]$SourcePath, [string]$OutputDirectory, [string]$ManifestPath, [switch]$NoDialogs, [switch]$NoOpen)
 $ErrorActionPreference='Stop'
 $ProgressPreference='SilentlyContinue'
 $manifest=Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
