@@ -1,5 +1,5 @@
 Unicode true
-Name "FOLAX rc.24 Revision Fix"
+Name "FOLAX rc.24 Update"
 OutFile "${OUTPUT_FILE}"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
@@ -24,6 +24,6 @@ cancelled:
   DetailPrint "Cancelled. Original file unchanged."
   Goto end
 done:
-  DetailPrint "Ready. Close the old app and run the new rc.24.1 EXE."
+  DetailPrint "Ready. Close the old app and run the new EXE shown in the folder."
 end:
 SectionEnd

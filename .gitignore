@@ -133,3 +133,4 @@ docs/*
 !docs/rc24-revision-limit-2026-11-09.md
 
 !scripts/apply-rc24-patch.cmd
+!docs/plain-prose-rc24-2026-11-09.md
