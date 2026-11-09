@@ -132,3 +132,9 @@ docs/*
 !scripts/package-windows.py
 
 !docs/codex-setup-update-2026-11-09.md
+
+!scripts/download-windows.ps1
+!scripts/download-windows.cmd
+!scripts/windows-downloader.nsi
+!scripts/windows-download.json
+!docs/download-504-fix-2026-11-09.md

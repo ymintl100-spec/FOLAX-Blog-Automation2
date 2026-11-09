@@ -1,0 +1,219 @@
+{
+  "file": "Naver-Blog-Automator-Windows-x64.zip",
+  "sha256": "8adc90c01878b90fdce477c92ccb363a6700705ac4026e290616ae6b8c6ccee9",
+  "size": 248521570,
+  "parts": [
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part001",
+      "size": 8388608,
+      "sha256": "4ef178a58dadfd2cada1261c48e75fd93d42479084327a39a70eb5ba40f7bc3c",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part001",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361566"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part002",
+      "size": 8388608,
+      "sha256": "4850fbeeb22baad4b9eb93a941f1cc1d6c879afb7d91076bef9edc6622b73abe",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part002",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361564"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part003",
+      "size": 8388608,
+      "sha256": "5fbeb7071ed807c626a4883e5206c1a23965cb5e1c6c735e8ea54f8601c77fc5",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part003",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361567"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part004",
+      "size": 8388608,
+      "sha256": "2c55dfdeb15afb8183997a1e9ae88d6abe6d6f94e77829c90c1973c9a1287789",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part004",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361695"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part005",
+      "size": 8388608,
+      "sha256": "0aebce7fdf03a2149a99d3350ee1c588089e1bc8e65d972e10502dcd02389cc0",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part005",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361672"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part006",
+      "size": 8388608,
+      "sha256": "96121ece27c1de8ff7e7f287c6bddded1f08d478578b99a855f77785d6b7cde7",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part006",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361697"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part007",
+      "size": 8388608,
+      "sha256": "399aca2aade053b4ed13011b8b7c5876f658dc90ec4b329264fcbd096bc29ba4",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part007",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361761"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part008",
+      "size": 8388608,
+      "sha256": "05cfc2c38a4bd14f0d47b01b00b3d6a843d8fafb685956582721cb46f81e4ff3",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part008",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361783"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part009",
+      "size": 8388608,
+      "sha256": "7e96f19b2a70612c78afafd478db61e57eb07577e07bff59d7ac3f44de2462a0",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part009",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361782"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part010",
+      "size": 8388608,
+      "sha256": "c5f299e39f70e4160ab53f8bd09b722733c2a813556b818daf0b3a1b0e6eda8a",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part010",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361856"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part011",
+      "size": 8388608,
+      "sha256": "06164cc6f87840487445f29a59f944f2e28359d67a76f4f7b507f522ec05949f",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part011",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361865"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part012",
+      "size": 8388608,
+      "sha256": "c160231c72bbca9575fba6db6152cfceb1ad0597b6e5f2558c5c8cbcaa53f55b",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part012",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361877"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part013",
+      "size": 8388608,
+      "sha256": "b2ea42a4e2c3e19d818fac09a05e0a650e7db73e38dd5d3328a4bd66ad8bf9eb",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part013",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361937"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part014",
+      "size": 8388608,
+      "sha256": "055deeae7cf05d5e783d1b8bbeb420f39a6060d75350255c86eee634d69224af",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part014",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361942"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part015",
+      "size": 8388608,
+      "sha256": "38a4e06f728b413375045e68d923c83b5f17a638d1373237e074ff7e8dd5c89b",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part015",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726361968"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part016",
+      "size": 8388608,
+      "sha256": "b2e8ec5616546f64527a3dfad518791e4aaf01b21c9e87d1e06a123894856eee",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part016",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362002"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part017",
+      "size": 8388608,
+      "sha256": "2e7a5d62ae81a21de549db56a7ed94c0ceaa9f601348988550c5f7eb3c4e3a4b",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part017",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362012"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part018",
+      "size": 8388608,
+      "sha256": "d4dc58091d6582d807df21d8e25b706c51707c3c9485c3484d91e604a8de6193",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part018",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362035"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part019",
+      "size": 8388608,
+      "sha256": "2904fb9731103b05088580160c3c10d5ee54bcf1e48c5c6ed3709c2bfa5ee474",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part019",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362077"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part020",
+      "size": 8388608,
+      "sha256": "e6029f86b2af332e2644dcb44b6ffa21d8e20a8a26f72549537707ce487c5bc8",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part020",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362085"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part021",
+      "size": 8388608,
+      "sha256": "2a9c4c515ee12e00679af57ec1ed55a95e2cbade1357e30ad84bdb3442bad4ac",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part021",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362104"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part022",
+      "size": 8388608,
+      "sha256": "b9ae488137705c84f7878bf5ca01f0f84ae254f303e76569a001772aadecbb39",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part022",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362140"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part023",
+      "size": 8388608,
+      "sha256": "96057da15ba76abb9ac990a78212fa3a6794d67ce94f6a7e205805ba03a0556b",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part023",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362144"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part024",
+      "size": 8388608,
+      "sha256": "efb2f620104ed68565e2ffe046c7c3214a3e6daee5c36e6402d9ca1054016416",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part024",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362162"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part025",
+      "size": 8388608,
+      "sha256": "ea995a2cb2d4cf27b4f9b56a43b54162fbffa95bde379d571d75c96c66d83576",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part025",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362182"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part026",
+      "size": 8388608,
+      "sha256": "db08c1186d51b9b89662e4a7f84a133b10a815e8f4b4cdb9c21cefdd6df7512a",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part026",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362186"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part027",
+      "size": 8388608,
+      "sha256": "81ee8480df0f698eb5e24bf4ba2aff96f7bff69ff3f663e3fcd28cebba6388e0",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part027",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362209"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part028",
+      "size": 8388608,
+      "sha256": "ac77ae9f07227cf615695a5ec95e209159e6278297ccd5ed5b683cdc6f7fdfdb",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part028",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362225"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part029",
+      "size": 8388608,
+      "sha256": "fcc7c0bfd188177a02138b3f2a8e014a909532767cec67faceee5296c291cfbe",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part029",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362236"
+    },
+    {
+      "name": "Naver-Blog-Automator-Windows-x64.zip.part030",
+      "size": 5251938,
+      "sha256": "ed6135cab3214496b9957760c6e7a088b0888c810b7041a5a608bc32784f4b55",
+      "url": "https://github.com/ymintl100-spec/FOLAX-Blog-Automation2/releases/download/v0.3.0-rc.25/Naver-Blog-Automator-Windows-x64.zip.part030",
+      "apiUrl": "https://api.github.com/repos/ymintl100-spec/FOLAX-Blog-Automation2/releases/assets/726362265"
+    }
+  ],
+  "appVersion": "0.3.0-rc.25",
+  "extensionVersion": "0.3.23"
+}
