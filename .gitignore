@@ -126,3 +126,10 @@ docs/*
 !docs/manual-failed-drafts-update-2026-11-06.md
 
 !docs/naver-alignment-update-2026-11-06.md
+
+!scripts/make-exe-patch.py
+!scripts/apply-rc24-patch.ps1
+!scripts/rc24-patch.nsi
+!docs/rc24-revision-limit-2026-11-09.md
+
+!scripts/apply-rc24-patch.cmd

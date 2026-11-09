@@ -5,7 +5,7 @@ const compact=s=>String(s||'').replace(/\s+/g,' ').trim();
 const normalized=s=>compact(s).replace(/\s/g,'');
 const enabled=o=>o.revisionEvidencePolicy===1&&o.inputBrief?.mode!=='links';
 function keywords(o){return [...new Set((o.inputBrief?.keywords||[o.keyword]).filter(s=>typeof s==='string'&&s.trim()).map(s=>s.trim().slice(0,100)))].slice(0,3);}
-function eligible(error,o){return enabled(o)&&keywords(o).length>0&&(error?.diagnostic?.failureCode==='INSUFFICIENT_EVIDENCE'||/분량|글자|근거|자료|반복/.test(error?.message||''));}
+function eligible(error,o){if(error?.code==='REVISION_EDIT_LIMIT'||error?.diagnostic?.failureCode==='REVISION_EDIT_LIMIT')return false;return enabled(o)&&keywords(o).length>0&&(error?.diagnostic?.failureCode==='INSUFFICIENT_EVIDENCE'||/분량|글자|근거|자료|반복/.test(error?.message||''));}
 function queries(writer,research,o,error){
  const keys=keywords(o),subject=compact(research?.linkScope?.links?.map(l=>l.subject).join(' ')||writer.title||o.topic).slice(0,45),gaps=Array.isArray(error?.diagnostic?.evidenceGaps)?error.diagnostic.evidenceGaps:[];
  const defaults=['사용 방법 선택 조건','자세 준비 사용 환경','방법 차이 주의사항','도구 사용 자세 설명','실천 방법 적용 조건'];
