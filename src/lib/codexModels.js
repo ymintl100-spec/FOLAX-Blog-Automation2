@@ -1,14 +1,15 @@
 const { spawn } = require('node:child_process');
 const readline = require('node:readline');
-const { detectCodexInstallation, buildCodexEnvironment } = require('./codexPlatform');
+const { detectCodexInstallation, buildCodexEnvironment, managedCodexInvocation } = require('./codexPlatform');
 
 // Catalog discovery never starts a thread or an inference turn.
 function listCodexModels(command, { spawnProcess = spawn, timeoutMs = 20000 } = {}) {
   return new Promise((resolve, reject) => {
     const batch = process.platform === 'win32' && /\.(cmd|bat)$/i.test(command);
-    const child = spawnProcess(batch ? `"${command}"` : command, ['app-server'], {
-      windowsHide: true, shell: batch, stdio: ['pipe', 'pipe', 'pipe'],
-      env: buildCodexEnvironment({ command })
+    const managed=managedCodexInvocation(command,['app-server']);
+    const child = spawnProcess(managed?.file||(batch ? `"${command}"` : command), managed?.args||['app-server'], {
+      windowsHide: true, shell: managed?false:batch, stdio: ['pipe', 'pipe', 'pipe'],
+      env: managed?.env||buildCodexEnvironment({ command })
     });
     let done = false, requestId = 0, pages = 0;
     const models = new Map(), cursors = new Set();

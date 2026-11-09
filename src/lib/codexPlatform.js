@@ -111,4 +111,12 @@ function detectCodexInstallation(value, options={}) {
   }
   return {installed:false,path:command};
 }
-module.exports = { defaultCodexCommand, isDefaultCodexCommand, resolveCodexCmdPath, buildCodexEnvironment, detectCodexInstallation };
+function managedCodexInvocation(command,args,options={}) {
+  if((options.platform||process.platform)!=='win32'||! /\.cmd$/i.test(command))return null;
+  const node=path.join(path.dirname(command),'node.exe'),cli=path.join(path.dirname(command),'node_modules','@openai','codex','bin','codex.js');
+  if(!fs.existsSync(node)||!fs.existsSync(cli))return null;
+  const env={...(options.env||process.env)};
+  env.PATH=path.dirname(node)+';'+(env.PATH||env.Path||'');
+  return {file:node,args:[cli,...args],env,shell:false};
+}
+module.exports = { defaultCodexCommand, isDefaultCodexCommand, resolveCodexCmdPath, buildCodexEnvironment, detectCodexInstallation, managedCodexInvocation };

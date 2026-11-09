@@ -1532,6 +1532,16 @@ app.whenReady().then(async () => {
   ensureAccountStoreFile(getRuntimeRoot(), readSettings(getRuntimeRoot()));
   createWindow();
   try{prepareExtension({copyPath:false});}catch(error){bridgeError+=' 확장 설치 폴더 준비가 필요합니다: '+error.message;}
+  const codexSetup=new (require('./lib/codexSetup').CodexSetup)(getRuntimeRoot(),{
+    settings:()=>readSettings(getRuntimeRoot()),
+    select:command=>writeSettings(getRuntimeRoot(),{codexCmdPath:command}),
+    progress:state=>emit('codex:setupProgress',state),
+    isBusy:()=>Boolean(activeJob||operations?.busy),
+  },{fetch:(url,options)=>require('electron').net.fetch(url,options)});
+  for(const action of ['status','install','login'])ipcMain.handle('codex:setup:'+action,(event)=>{
+    if(event.sender!==mainWindow?.webContents)throw Error('프로그램 창에서 실행하세요.');
+    return codexSetup[action]();
+  });
 
   ipcMain.handle("app:getInitialData", () => {
     const runtimeRoot = getRuntimeRoot();

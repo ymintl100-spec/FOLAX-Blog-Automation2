@@ -229,3 +229,7 @@ button{transition:background-color .15s,border-color .15s,color .15s}
 .ops-dialog-body p{margin:12px 0}
 #opsTopicStatus{padding:0 24px;flex:none}
 #opsTopicStatus:empty{display:none}
+
+#codexSetupLayer .button-row{grid-template-columns:repeat(3,minmax(0,1fr));margin:16px 0}
+#codexSetupLayer .button-row button{min-height:40px;padding:10px 8px}
+@media(max-width:600px){#codexSetupLayer .button-row{grid-template-columns:1fr}}
