@@ -1,0 +1,34 @@
+name: Windows rc.24.2 full download
+on:
+  push:
+    branches: [build/rc24-full-download-20261109]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  full-windows-bundle:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Run automated tests on Windows
+        run: npm test
+      - name: Build complete Windows EXE
+        run: npm run dist -- --win portable --x64 --config.compression=normal --config.npmRebuild=false
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Package and verify full EXE plus Chrome extension
+        shell: pwsh
+        run: ./scripts/make-windows-bundle.ps1
+      - name: Upload full archive to the existing rc.24.2 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload v0.3.0-rc.24.2 dist/full/FOLAX-Windows-0.3.0-rc.24.2.zip dist/full/FOLAX-Windows-0.3.0-rc.24.2.sha256 dist/full/FOLAX-Windows-0.3.0-rc.24.2-README.txt --repo "$env:GITHUB_REPOSITORY" --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }

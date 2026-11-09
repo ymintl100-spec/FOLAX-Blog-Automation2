@@ -134,3 +134,8 @@ docs/*
 
 !scripts/apply-rc24-patch.cmd
 !docs/plain-prose-rc24-2026-11-09.md
+!.github/
+!.github/workflows/
+!.github/workflows/windows-full-rc24.yml
+!scripts/make-windows-bundle.ps1
+!docs/windows-full-rc24-README.txt
