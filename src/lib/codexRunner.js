@@ -3,7 +3,7 @@ const path = require("node:path");
 const os = require("node:os");
 const { spawn } = require("node:child_process");
 const { normalizeMaxBodyImages, normalizeCodexModel } = require("./settings");
-const { buildCodexEnvironment } = require("./codexPlatform");
+const { buildCodexEnvironment, managedCodexInvocation } = require("./codexPlatform");
 
 const DEFAULT_AGENT_MODELS = {
   main: "high",
@@ -1412,11 +1412,12 @@ async function runCodexTask({
       `model_reasoning_effort=${taskEffort}`,
       "-"
     ];
-    const child = spawn(options.codexCmdPath, args, {
+    const managed=managedCodexInvocation(options.codexCmdPath,args);
+    const child = spawn(managed?.file||options.codexCmdPath, managed?.args||args, {
       cwd: options.jobDir,
-      env: buildCodexEnvironment({ command: options.codexCmdPath }),
+      env: managed?.env||buildCodexEnvironment({ command: options.codexCmdPath }),
       windowsHide: true,
-      shell: shouldRunCodexViaShell(options.codexCmdPath)
+      shell: managed?false:shouldRunCodexViaShell(options.codexCmdPath)
     });
 
     let settled = false;

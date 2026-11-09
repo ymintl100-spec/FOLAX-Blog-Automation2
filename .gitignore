@@ -130,3 +130,5 @@ docs/*
 !docs/windows-extension-bundle-2026-11-06.md
 
 !scripts/package-windows.py
+
+!docs/codex-setup-update-2026-11-09.md

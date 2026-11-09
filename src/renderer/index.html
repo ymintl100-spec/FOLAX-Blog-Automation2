@@ -55,6 +55,7 @@
         </div>
         <div class="header-actions"><button id="themeToggle" class="ghost theme-toggle" type="button" aria-label="라이트 모드로 전환" title="라이트 모드로 전환" aria-pressed="false"></button>
           <span id="codexInstallBadge" class="badge unknown" role="status">Codex 확인 중</span>
+          <button id="openCodexSetup" class="ghost small" type="button">Codex 설치·로그인</button>
           <span id="tokenBadge" class="badge token">누적 0 tokens</span>
           <span id="codexWeeklyLimitBadge" class="badge limit unknown">주간 잔량 -</span>
           <span id="autoRetryStatus" class="badge info" role="status" aria-live="polite">자동 재시도 0/5</span><progress id="autoRetryProgress" value="0" max="5" aria-label="자동 재시도 사용 횟수" style="width:80px"></progress>
@@ -412,7 +413,15 @@
     <div class="button-row"><button id="prepareExtensionFolder" class="primary" type="button">설치 폴더 준비 · 경로 복사</button><button id="copyExtensionsUrl" class="ghost" type="button">Chrome 설정 주소 복사</button></div>
     <p id="extensionFolder" class="hint"></p><strong id="pairingCode" class="pairing-code">계정의 ‘브라우저 연결’을 눌러 주세요.</strong><p id="pairingHelp">업데이트 후에는 Chrome 확장 관리 화면에서 BlogAuto의 새로고침 버튼을 누르세요. 최초 설치 후 이 폴더를 이동하거나 삭제하지 마세요.</p>
     <p class="hint">각 블로그 창의 로그인은 별도 로컬 폴더에 Chrome이 보관합니다. 앱은 쿠키를 읽거나 교체하지 않습니다. 처음에는 계정 창마다 확장을 설치하세요. 이후 세션 만료 시에만 직접 로그인하며 앱은 완료될 때까지 대기합니다.</p>
-    </section></div><script src="./relevance-view.js"></script><script src="./app.js"></script><script src="./operations.js"></script>
+    </section></div>
+    <div id="codexSetupLayer" class="modal-backdrop" hidden><section class="extension-guide" role="dialog" aria-modal="true" aria-labelledby="codexSetupTitle">
+      <div class="panel-head"><h2 id="codexSetupTitle">Codex 설치·로그인</h2><button id="closeCodexSetup" class="ghost" type="button">닫기</button></div>
+      <p>새 Windows PC에서는 아래 순서대로 진행하세요. CMD 명령어를 입력하거나 Node.js를 따로 설치할 필요가 없습니다.</p>
+      <p id="codexSetupInstallation">설치 상태 확인 중</p><p id="codexSetupLogin">로그인 상태 확인 중</p>
+      <div class="button-row"><button id="installCodexButton" class="primary" type="button">1. Codex 설치</button><button id="loginCodexButton" class="primary" type="button">2. ChatGPT 로그인</button><button id="checkCodexSetup" class="ghost" type="button">3. 상태 확인</button></div>
+      <p id="codexSetupMessage" role="status" aria-live="polite"></p>
+      <p class="hint">설치는 몇 분 걸릴 수 있습니다. 공식 Node.js·Codex 파일을 사용자 폴더에 설치하며 관리자 권한은 필요하지 않습니다. 로그인 버튼을 누르면 별도 창과 브라우저에서 로그인합니다. 완료 후 돌아와 상태 확인을 누르세요. 기존 계정·설정·원고·Codex 로그인 정보는 보존합니다.</p>
+    </section></div><script src="./relevance-view.js"></script><script src="./app.js"></script><script src="./codex-setup.js"></script><script src="./operations.js"></script>
     <div id="modelErrorLayer" class="modal-backdrop" hidden>
       <section class="startup-card" role="dialog" aria-modal="true" aria-labelledby="modelErrorTitle">
         <h2 id="modelErrorTitle">모델 응답 대기</h2>
