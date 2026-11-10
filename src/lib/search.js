@@ -662,7 +662,7 @@ async function fetchCandidateContent(candidate, options={}, log=()=>{}) {
     try {
       let html = await readSourceDocument(attemptUrl,{onProgress:message=>log(message,'info'),maxPages:40,maxOcrPages:4});
       if(isLowValueResult(candidate.title,html.url) || (['naver','google'].includes(candidate.provider) && !channelAllows(html.url,normalizeSearchChannel(options.searchChannel),candidate.provider)))throw new Error('검색 범위 밖으로 이동한 원문을 제외했습니다.');
-      if(typeof html.text==='string')return {...candidate,fetchedUrl:html.url,contentLength:html.text.length,fullText:html.text,excerpt:evidenceExcerpt(html.text,(options.searchQueries || []).join(' '),MAX_EXCERPT_CHARS),outboundLinks:[],extractionNote:html.extractionNote || ''};
+      if(typeof html.text==='string')return {...candidate,fetchedUrl:html.url,contentLength:html.text.length,fullText:html.text,excerpt:evidenceExcerpt(html.text,(options.searchQueries || []).join(' '),MAX_EXCERPT_CHARS),outboundLinks:[],imageCandidates:[],extractionNote:html.extractionNote || ''};
       const resolvedUrl=html.url;
       html=html.html;
       let originalTitle=extractSourceTitle(html);
@@ -687,6 +687,7 @@ async function fetchCandidateContent(candidate, options={}, log=()=>{}) {
           fetchedUrl: resolvedUrl,
           contentLength: text.length,
           fullText:text,
+          imageCandidates:require('./sourceImageReferences').extract(html,frameUrl||resolvedUrl),
           excerpt: evidenceExcerpt(text, (options.searchQueries || []).join(" "), MAX_EXCERPT_CHARS),
           outboundLinks: uniqueCandidates(outboundLinks).slice(0, MAX_AUTHORITY_LINK_CANDIDATES)
         };

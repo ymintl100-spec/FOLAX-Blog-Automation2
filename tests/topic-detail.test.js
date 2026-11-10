@@ -4,7 +4,7 @@ function fixture(){
  class Element{
   constructor(id=''){this.id=id;this.dataset={};this.value='';this.checked=false;this.open=false;this.scrollTop=0;this.children=[];this.events={};this.classList={toggle(){}};this.textContent='';this.writes=0;}
   set innerHTML(value){this.html=value;this.writes++;if(this.id==='opsTopicDetail'){
-   for(const m of value.matchAll(/<(input|textarea|select)\b[^>]*\bid="([^"]+)"[^>]*>/g)){const el=new Element(m[2]);el.checked=/\bchecked\b/.test(m[0]);el.value=m[1]==='select'?'naver':'';nodes.set(m[2],el);}
+   for(const m of value.matchAll(/<(input|textarea|select)\b[^>]*\bid="([^"]+)"[^>]*>/g)){const el=new Element(m[2]);el.checked=/\bchecked\b/.test(m[0]);el.value=m[1]==='select'?'naver':m[1]==='textarea'?value.slice(m.index+m[0].length).split('</textarea>')[0]:'';nodes.set(m[2],el);}
   }}
   get innerHTML(){return this.html||'';}
   addEventListener(type,fn){this.events[type]=fn;}
@@ -20,7 +20,7 @@ function fixture(){
  const store={selectedAccountId:'a',accounts:[{id:'a',label:'검증용 계정',blogId:'fixture_a',tistoryBlogId:''}]};
  const topic={id:'topic-1',title:'검증용 주제',keyword:'검증',origin:'user_proposal',reasons:[],parts:[],trend:{periods:{},label:'미확인'},competition:[],duplicate:{status:'new'}};
  const snapshot=()=>({account:{...store.accounts.find(a=>a.id===nodes.get('opsAccount').value)},publicationMode:'approval',analytics:{platforms:[]},documents:[],savedTopics:[],categories:['건강·신체 상식'],topics:{top10:[],candidates:[topic],total:1,coverage:{note:''},scoreNote:''}});
- const api={getInitialData:async()=>{initialReads++;return {accountStore:structuredClone(store)};},getOperations:async()=>{stateReads++;return snapshot();},onAccountsUpdate:fn=>callbacks.accounts=fn,onComplete:fn=>callbacks.complete=fn,operationsAction:async()=>({})};
+ const api={getInitialData:async()=>{initialReads++;return {accountStore:structuredClone(store),defaultWritingRequest:require('../src/lib/defaultWritingRequest')};},getOperations:async()=>{stateReads++;return snapshot();},onAccountsUpdate:fn=>callbacks.accounts=fn,onComplete:fn=>callbacks.complete=fn,operationsAction:async()=>({})};
  const context=vm.createContext({document,window:{blogAuto:api},CSS:{escape:s=>s},console});
  let source=fs.readFileSync(require.resolve('../src/renderer/operations.js'),'utf8');
  source=source.replace('  init().catch((e) => message(e.message, true));', '  globalThis.subject={init,detail,refresh,showTab};');vm.runInContext(source,context);
@@ -41,4 +41,9 @@ test('background completion refresh and explicit detail refresh preserve the sep
 test('tab changes and a changed account target close the old account detail',async()=>{
  const f=fixture();await f.subject.init();f.subject.detail('topic-1');f.subject.showTab('drafts');assert.equal(f.nodes.get('opsTopicDialog').open,false);
  f.subject.showTab('overview');f.subject.detail('topic-1');f.store.accounts[0].blogId='changed_target';f.callbacks.accounts(f.store);await f.settle();assert.equal(f.nodes.get('opsTopicDialog').open,false);
+});
+
+test('topic writing request is prefilled with the user template and an explicitly cleared request remains blank',async()=>{
+ const f=fixture();await f.subject.init();f.subject.detail('topic-1');assert.equal(f.nodes.get('opsWritingRequest').value,require('../src/lib/defaultWritingRequest'));
+ f.nodes.get('opsWritingRequest').value='';f.subject.detail('topic-1');assert.equal(f.nodes.get('opsWritingRequest').value,'');
 });

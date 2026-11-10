@@ -1541,6 +1541,7 @@ app.whenReady().then(async () => {
       runtimeRoot,
       appVersion:require('../package.json').version,
       writingRequirements:require('./lib/generationDefaults').summary(),
+      defaultWritingRequest:require('./lib/defaultWritingRequest'),
       codexCmdPath: resolveCodexCmdPath(settings.codexCmdPath),
       codexInstallation: require('./lib/codexPlatform').detectCodexInstallation(settings.codexCmdPath),
       chrome: detectChromeInstall(),
