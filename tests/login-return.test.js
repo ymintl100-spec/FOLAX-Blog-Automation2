@@ -58,6 +58,9 @@ test('fresh preflight after login stores the verified popup status and preserves
   else{assert.equal(h.results[0].result.status,'valid');assert.equal(h.data.session.status,'valid');assert(h.calls.some(c=>c.kind==='script'&&c.command==='preflightTitle'));}
  }
 });
+test('starting fresh authoring creates a separate tab and never navigates an existing unfinished editor',async()=>{
+ const h=await harness({url:editor,inspect:tab=>({status:'valid',hasContent:tab.id===1})});h.task.payload.preflightTitle=true;await h.api.resume(h.task);assert.equal(h.results[0].result.status,'valid');assert.equal(h.task.tabId,10);assert.equal(h.tabs.get(1).url,editor);assert.equal(h.calls.filter(c=>c.kind==='create').length,1);assert(!h.calls.some(c=>c.kind==='navigate'&&c.id===1));
+});
 test('repeated login redirects stop after three returns with a visible reason and no publication',async()=>{
  const h=await harness();h.task.loginReturnAttempts=3;await h.api.resume(h.task);assert.equal(h.results[0].code,'NAVER_LOGIN_REDIRECT');assert.equal(h.data.session.status,'unknown');assert.match(h.data.session.reason,/글쓰기 권한/);assert.equal(h.data.activeTask,undefined);assert(!h.calls.some(c=>['navigate','create','script'].includes(c.kind)));
 });

@@ -31,6 +31,12 @@ async function editorTab(interactive = false,task) {
   const blogId=task?.blogId || current.connection.blogId;
   const host=tistory?blogId+'.tistory.com':'blog.naver.com';
   const url=tistory?`https://${host}/manage/post`:`https://${host}/${encodeURIComponent(blogId)}/postwrite`;
+  if(task?.freshEditor&&!tistory){
+    // A login check may have adopted the user's existing draft. Start fresh
+    // authoring in a separate tab rather than navigating that draft away.
+    const tab=await chrome.tabs.create({url,active:interactive});
+    await chrome.storage.local.set({editorTab:tab.id});return tab.id;
+  }
   const kind=tab=>{
     let u;try{u=new URL(tab.url || 'about:blank');}catch{return '';}
     if(!tistory && u.hostname==='nid.naver.com')return 'login';
@@ -67,7 +73,7 @@ async function editorTab(interactive = false,task) {
       const snapshot=await command(tab.id,'snapshot',{blogId}).catch(()=>null);
       completed=Boolean(snapshot && JSON.stringify(snapshot)===JSON.stringify(current.completedEditorTab.snapshot));
     }
-    if((task?.freshEditor && !tistory) || sharedRead || kind(tab)==='read' || (kind(tab)==='editor' && completed)){
+    if(sharedRead || kind(tab)==='read' || (kind(tab)==='editor' && completed)){
       tab=await chrome.tabs.update(tab.id,{url,active:interactive});
       await chrome.storage.local.remove('completedEditorTab');
     }else if(interactive)await chrome.tabs.update(tab.id,{active:true});
