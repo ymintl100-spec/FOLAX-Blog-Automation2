@@ -27,6 +27,28 @@ test('new articles target 1500 characters and 15 tags while legacy policies reta
 test('first-pass success spends zero automatic retries',async t=>{
  const h=harness(t),r=await h.run();assert.equal(r.publishable,true,r.failureReason);assert.equal(r.autoRetry.used,0);assert.deepEqual(h.progress.map(p=>p.used),[0]);assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main']);assert.equal(r.tags.length,15);assert.equal(r.writingApplication.lengthBudget.target,1500);
 });
+test('the new 2000-character goal is advisory and short or longer content spends no length retry or search',async t=>{
+ for(const count of [650,1500,2000,2600,4200]){
+  const h=harness(t,{initial:writer(count),options:{articleLengthPolicy:4,onSearchNeeded:()=>{throw Error('Do not search to fill word count');}}}),r=await h.run();
+  assert.equal(r.publishable,true,r.failureReason);assert.equal(L.articleCharacterCount(r.article),count);assert.equal(r.autoRetry.used,0);assert.deepEqual(h.calls.map(c=>c.agent),['research','writer','main']);assert.deepEqual(r.writingApplication.lengthBudget,{target:2000,enforced:false});
+ }
+});
+test('explicit length-only review refusal is advisory only when every actual content check passes',async t=>{
+ const h=harness(t,{initial:writer(1050),options:{articleLengthPolicy:4},intercept:args=>args.agent==='main'?{...review(true),status:'REVISION',publishable:false,lengthOnlyIssue:true,failureReason:'분량이 2000자에 못 미칩니다.',issues:['목표 분량과 다름'],revisionInstructions:['분량 보충']}:undefined}),r=await h.run();
+ assert.equal(r.publishable,true,r.failureReason);assert.equal(r.autoRetry.used,0);assert.equal(r.mainReviewResult.status,'PASS');assert.equal(r.mainReviewResult.lengthAdvisory.originalStatus,'REVISION');assert.equal(r.mainReviewResult.lengthAdvisory.reason,'분량이 2000자에 못 미칩니다.');assert.equal(h.calls.length,3);
+ for(const defect of [{factualityPass:false},{naturalnessPass:false},{inputScopePass:false},{meaningChecks:[{meaningPreserved:false}]}]){
+  const raw={...review(true),status:'BLOCK',publishable:false,lengthOnlyIssue:true,...defect},bytes=JSON.stringify(raw);assert.equal(L.advisoryReview(raw,{articleLengthPolicy:4}),raw);assert.equal(JSON.stringify(raw),bytes);
+ }
+ const noEvidence=L.advisoryReview({...review(true),status:'REVISION',publishable:false,lengthOnlyIssue:true,readerValueAssessment:{}},{articleLengthPolicy:4});assert(require('../src/lib/naverQuality').reviewEvidenceIssue(noEvidence,writer(),{}));
+});
+test('new soft-policy retries reuse the last saved strict-policy manuscript and recheck it without expanding it',async t=>{
+ const original=writer(1177,10),h=harness(t,{options:{articleLengthPolicy:4}}),checkpoint={version:2,attemptNumber:1,generationOptions:{articleLengthPolicy:3,tagCount:10,includeTitleImage:false,maxBodyImages:0},steps:{'1:research-title-prompt.txt':research,'1:prompt.txt':original,'1:main-review-1.txt':{...review(true),status:'BLOCK',publishable:false,failureReason:'기존 분량 미달'}},retrievals:{},articleCheckpoint:{version:1,writer:original,review:{...review(true),status:'BLOCK',publishable:false,failureReason:'기존 분량 미달'},research,feedback:'1400~1600자를 유지하세요.',evidenceContext:{searchResults:[]}}},bytes=JSON.stringify(checkpoint);
+ const r=await generate({...h.opts,generationCheckpoint:checkpoint},()=>{},h.deps);assert.equal(r.publishable,true,r.failureReason);assert.equal(L.articleCharacterCount(r.article),1177);assert.deepEqual(h.calls.map(c=>c.agent),['main']);assert.equal(r.autoRetry.used,0);assert.equal(JSON.stringify(checkpoint),bytes);assert.equal(h.checkpoints.at(-1).generationOptions.articleLengthPolicy,4);assert.equal(r.tags.length,10);
+});
+test('soft length never bypasses empty manuscripts or a genuine factual BLOCK',async t=>{
+ const h=harness(t,{options:{articleLengthPolicy:4},intercept:a=>a.agent==='main'?{...review(true),status:'BLOCK',factualityPass:false,publishable:false,lengthOnlyIssue:true,failureReason:'핵심 사실 근거 없음'}:undefined}),r=await h.run();assert.equal(r.status,'failed');assert.equal(r.failurePhase,'main_review');assert.equal(r.autoRetry.used,0);
+ assert.match(runner.writerOutputIssueReason({...writer(),article:''},{articleLengthPolicy:4}),/본문|article/);
+});
 test('the fifth automatic content correction can pass without a manual click or an extra sixth correction',async t=>{
  const h=harness(t,{passAt:6}),r=await h.run();assert.equal(r.publishable,true,r.failureReason);assert.equal(r.autoRetry.used,5);assert.deepEqual(h.progress.map(p=>p.used),[0,1,2,3,4,5]);assert.equal(h.calls.filter(c=>c.agent==='research').length,1);assert.equal(h.calls.filter(c=>c.agent==='writer').length,6);assert.equal(h.calls.filter(c=>c.agent==='main').length,6);assert.equal(r.autoRetry.history.length,5);assert.equal(L.articleCharacterCount(r.article),1500);
 });

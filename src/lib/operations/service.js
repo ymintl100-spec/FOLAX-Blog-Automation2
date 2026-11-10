@@ -646,6 +646,7 @@ class Operations {
       profile = E.profile(this.db, account);
     return {
       ...document.data.options,
+      articleLengthPolicy: 4,
       formatGuidance: require("../blogFormatProfiles").resolve(
         document.data.options?.formatGuidance,
         document.data.research,
@@ -736,6 +737,7 @@ class Operations {
           const repeatedScope=contract.violation(review);
           if(repeatedScope)throw Error(repeatedScope+' 기존 원고를 보존했습니다.');
         }
+        review=require('../articleRequirements').advisoryReview(review,options);
         if(review.relevanceEvidence)review.relevanceInputHash=require('../articleRelevance').inputHash(options.writerResult);
         const issues = [
             require("../articleRelevance").evidenceIssue(review,options.writerResult,options),

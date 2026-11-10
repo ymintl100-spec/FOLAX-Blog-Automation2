@@ -31,9 +31,9 @@ test('four verified files are required and partial retry requests only missing o
 });
 test('image planning follows the active body budget in Research, Writer, Main and Image Worker',()=>{
  const defaults=require('../src/lib/generationDefaults'),newJob={...options,...defaults.options,runtimeRoot:'/tmp',writerResult:writer()};
- assert.deepEqual(defaults.summary(),{min:1400,max:1600,target:1500,tagCount:15,maxAutoRetries:5});
+ assert.deepEqual(defaults.summary(),{target:2000,enforced:false,tagCount:15,maxAutoRetries:5});
  const stages=[prompts.researchPrompt(newJob),prompts.writerPrompt(newJob),prompts.reviewPrompt(newJob)];
- for(const prompt of stages){assert(prompt.includes('1400~1600자'));assert(!/1,?000\s*~\s*1,?200자/.test(prompt));assert(prompt.includes('최소 4장'));}
+ for(const prompt of stages){assert(prompt.includes('약 2000자'));assert(!/1,?000\s*~\s*1,?200자/.test(prompt));assert(!/undefined~|NaN/.test(prompt));assert(prompt.includes('최소 4장'));}
  const worker=r.buildImageWorkerPrompt(newJob);assert(!/1,?000\s*~\s*1,?200자/.test(worker));assert(!worker.includes('app permits one targeted retry'));
  assert(policy.instruction({...newJob,articleLengthPolicy:1}).includes('1000~1200자'));assert(policy.instruction({...newJob,articleLengthPolicy:2}).includes('1000~1500자'));
 });

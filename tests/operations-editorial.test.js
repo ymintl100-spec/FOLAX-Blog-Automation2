@@ -209,11 +209,11 @@ test("platform variants must have different body, separate review and separate h
   });
   await assert.rejects(() => ops.variant("a", d.id), /본문이 동일/);
   ops.hooks.runTask=async args=>{
-    assert.equal(args.options.tagCount,15);assert.equal(args.options.articleLengthPolicy,3);assert(args.prompt.includes('1400~1600자'));
+    assert.equal(args.options.tagCount,15);assert.equal(args.options.articleLengthPolicy,4);assert(args.prompt.includes('약 2000자'));
     return {...d.data.writer,status:'success',tags:Array.from({length:30},(_,i)=>'주제태그'+i),article:sourceArticle.replace('좋습니다','좋아요'),title:'플랫폼별 별도 제목'};
   };
   const variant=await ops.variant('a',d.id);
-  assert.equal(variant.data.options.articleLengthPolicy,3);assert.equal(variant.current.data.writer.tags.length,15);assert.equal(variant.approved_version,null);
+  assert.equal(variant.data.options.articleLengthPolicy,4);assert.equal(variant.current.data.writer.tags.length,15);assert.equal(variant.approved_version,null);
   const other = E.create(ops.db, "a", {
     platform: "tistory",
     title: "다른 제목",
@@ -453,7 +453,7 @@ test('explicit simplification uses one Writer call, keeps source/images/tags and
  const base=article+'\n\n2025년 기록을 읽고 필요한 물건을 구분합니다.\n[IMAGE INSERT - 1]';
  const length=require('../src/lib/articleRequirements').articleCharacterCount(base),body=base+'\n\n'+'설'.repeat(1100-length);
  const d=E.create(ops.db,'a',{title:'도구를 두는 기준',article:body,data:{options:{articleLengthPolicy:1},writer:{title:'도구를 두는 기준',article:body,tags:['도구정리'],citations:[{sourceId:'kept-source'}],bodyImages:[{sequence:1,sectionHeading:'도구를 두는 기준',prompt:'보존할 그림 설명',path:'existing-fixture.png'}]},images:[]}});
- ops.hooks.runTask=async args=>{calls.push(args);assert.equal(args.agent,'writer');assert(args.prompt.includes('한 문장에는 핵심 뜻 하나'));assert(args.prompt.includes('1000~1200자'));return {after:body.replace('도구를 찾기 어렵다면','도구를 찾기 힘들다면'),reason:'쉬운 표현으로 수정'};};
+ ops.hooks.runTask=async args=>{calls.push(args);assert.equal(args.agent,'writer');assert(args.prompt.includes('한 문장에는 핵심 뜻 하나'));assert(args.prompt.includes('약 2000자'));return {after:body.replace('도구를 찾기 어렵다면','도구를 찾기 힘들다면'),reason:'쉬운 표현으로 수정'};};
  const result=await ops.simplify('a',d.id,{version:1});assert.equal(calls.length,1);assert.equal(result.current_version,2);assert.equal(result.approved_version,null);assert.equal(result.original.article,body);assert(result.current.article.includes('도구를 찾기 힘들다면'));assert.equal(result.current.data.writer.bodyImages[0].path,'existing-fixture.png');assert.deepEqual(result.current.data.writer.tags,['도구정리']);assert.deepEqual(result.current.data.writer.citations,[{sourceId:'kept-source'}]);assert.equal(result.reviews.length,0);
  await assert.rejects(()=>ops.simplify('a',d.id,{version:1}),/저장한 원고/);assert.equal(calls.length,1);
 });
@@ -466,13 +466,13 @@ test('prose simplification merges definition/filler into direct action while ret
  const body=base+'\n\n'+'검'.repeat(1500-L.articleCharacterCount(base)),after=body.replace(redundant+'\n\n','');
  const tags=Array.from({length:15},(_,i)=>'태그'+i),images=[{sequence:1,sectionHeading:'도구를 두는 기준',prompt:'보존할 설명',path:'existing-prose-fixture.png'}];
  const d=E.create(ops.db,'a',{title:'기존 제목',article:body,data:{options:{articleLengthPolicy:3,tagCount:15,maxAutoRetries:5},writer:{title:'기존 제목',article:body,tags,citations:[{sourceId:'preserved-source',url:'https://example.org/source'}],bodyImages:images}}});
- ops.hooks.runTask=async args=>{calls.push(args);assert.equal(args.agent,'writer');assert(args.prompt.includes('앞에 이미 그 행동이 있으면 정의 문장만 삭제한다'));assert(args.prompt.includes('1400~1600자'));assert(args.prompt.includes('원고에 이미 있는 정보만 사용'));return {after,reason:'행동 뒤의 불필요한 정의를 삭제'};};
+ ops.hooks.runTask=async args=>{calls.push(args);assert.equal(args.agent,'writer');assert(args.prompt.includes('앞에 이미 그 행동이 있으면 정의 문장만 삭제한다'));assert(args.prompt.includes('약 2000자'));assert(args.prompt.includes('원고에 이미 있는 정보만 사용'));return {after,reason:'행동 뒤의 불필요한 정의를 삭제'};};
  const updated=await ops.simplify('a',d.id,{version:1});
  assert.equal(calls.length,1);assert.equal(updated.current_version,2);assert.equal(updated.current.title,'기존 제목');assert.equal(updated.current.article,after);assert.equal(updated.original.article,body);assert.equal(updated.approved_version,null);
  assert.deepEqual(updated.current.data.writer.tags,tags);assert.deepEqual(updated.current.data.writer.bodyImages,images);assert.equal(updated.current.data.writer.citations[0].sourceId,'preserved-source');assert.equal(updated.data.options.articleLengthPolicy,3);assert.equal(updated.data.options.maxAutoRetries,5);assert.equal(L.articleLengthIssue(updated.current,{articleLengthPolicy:3}),'');
 });
-for(const defect of ['marker','number','length'])test(`simplification preserves the original draft when ${defect} is changed`,async t=>{
+for(const defect of ['marker','number','empty'])test(`simplification preserves the original draft when ${defect} is changed`,async t=>{
  const {ops,calls}=setup(t),body=article+'\n\n2025년 기록을 확인해 설명합니다.\n[IMAGE INSERT - 1]',d=E.create(ops.db,'a',{title:'도구를 두는 기준',article:body,data:{options:{compactWriting:true},writer:{bodyImages:[]}}});
- ops.hooks.runTask=async args=>{calls.push(args);return {after:defect==='marker'?body.replace('[IMAGE INSERT - 1]',''):defect==='number'?body.replace('2025','2026'):'[SECTION - 도구를 두는 기준]\n[IMAGE INSERT - 1]\n'+(body.replace(/\[(?:SECTION|IMAGE INSERT)[^\]]*\]/g,'').match(/\d+(?:[.,:/-]\d+)*/g)||[]).join(' ')};};
+ ops.hooks.runTask=async args=>{calls.push(args);return {after:defect==='marker'?body.replace('[IMAGE INSERT - 1]',''):defect==='number'?body.replace('2025','2026'):''};};
  await assert.rejects(()=>ops.simplify('a',d.id,{version:1}),/보존|분량/);const stored=ops.document('a',d.id);assert.equal(stored.current_version,1);assert.equal(stored.current.article,body);assert.equal(calls.length,1);
 });
