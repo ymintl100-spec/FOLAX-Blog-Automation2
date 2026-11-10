@@ -1,7 +1,7 @@
-name: Windows rc.24.4 2000-character advisory full download
+name: Windows rc.24.5 Writing request and full article full download
 on:
   push:
-    branches: [fix/rc24-soft-length-20261110]
+    branches: [fix/rc24-writing-request-20261110]
   workflow_dispatch:
 permissions:
   contents: write
@@ -25,10 +25,10 @@ jobs:
       - name: Package and verify full EXE plus Chrome extension
         shell: pwsh
         run: ./scripts/make-windows-bundle.ps1
-      - name: Upload full archive to the rc.24.4 draft release
+      - name: Upload full archive to the rc.24.5 draft release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload v0.3.0-rc.24.4 dist/full/FOLAX-Windows-0.3.0-rc.24.4.zip dist/full/FOLAX-Windows-0.3.0-rc.24.4.sha256 dist/full/FOLAX-Windows-0.3.0-rc.24.4-README.txt --repo "$env:GITHUB_REPOSITORY" --clobber
+          gh release upload v0.3.0-rc.24.5 dist/full/FOLAX-Windows-0.3.0-rc.24.5.zip dist/full/FOLAX-Windows-0.3.0-rc.24.5.sha256 dist/full/FOLAX-Windows-0.3.0-rc.24.5-README.txt --repo "$env:GITHUB_REPOSITORY" --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }

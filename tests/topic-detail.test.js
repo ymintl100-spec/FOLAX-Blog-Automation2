@@ -10,7 +10,7 @@ function fixture(){
   addEventListener(type,fn){this.events[type]=fn;}
   replaceChildren(){this.children=[];this.value='';}
   append(el){this.children.push(el);if(this.id==='opsAccount'&&(el.selected||this.children.length===1))this.value=el.value;}
-  querySelectorAll(selector){return this.id==='opsTopicDialog'&&selector==='input,textarea,select'?[...nodes.values()].filter(el=>el.id.startsWith('opsComp')||el.id.startsWith('opsGenerate')||el.id==='opsExperience'):[];}
+  querySelectorAll(selector){return this.id==='opsTopicDialog'&&selector==='input,textarea,select'?[...nodes.values()].filter(el=>el.id.startsWith('opsComp')||el.id.startsWith('opsGenerate')||el.id==='opsWritingRequest'):[];}
   showModal(){this.open=true;this.opens=(this.opens||0)+1;}
   close(){this.open=false;this.events.close?.();}
   focus(options){this.focusOptions=options;}
@@ -28,15 +28,15 @@ function fixture(){
 }
 test('connection-only account updates do not rebuild an open detail or erase its entered values',async()=>{
  const f=fixture();await f.subject.init();f.subject.detail('topic-1');
- f.nodes.get('opsExperience').value='저장 전 실제 경험 메모';f.nodes.get('opsGenerateImages').checked=false;
+ f.nodes.get('opsWritingRequest').value='저장 전 작성 요청';f.nodes.get('opsGenerateImages').checked=false;
  const before=f.reads(),writes=f.nodes.get('opsContent').writes;
  for(let i=0;i<4;i++)f.callbacks.accounts({...f.store,accounts:f.store.accounts.map(a=>({...a,sessionStatus:'valid',sessionCheckedAt:String(i),connection:{checkedAt:i}}))});
- await f.settle();assert.deepEqual(f.reads(),before);assert.equal(f.nodes.get('opsContent').writes,writes);assert.equal(f.nodes.get('opsTopicDialog').open,true);assert.equal(f.nodes.get('opsExperience').value,'저장 전 실제 경험 메모');assert.equal(f.nodes.get('opsGenerateImages').checked,false);
+ await f.settle();assert.deepEqual(f.reads(),before);assert.equal(f.nodes.get('opsContent').writes,writes);assert.equal(f.nodes.get('opsTopicDialog').open,true);assert.equal(f.nodes.get('opsWritingRequest').value,'저장 전 작성 요청');assert.equal(f.nodes.get('opsGenerateImages').checked,false);
 });
 test('background completion refresh and explicit detail refresh preserve the separate dialog and form',async()=>{
- const f=fixture();await f.subject.init();f.subject.detail('topic-1');const experience=f.nodes.get('opsExperience');experience.value='유지할 메모';f.nodes.get('opsTopicDetail').scrollTop=240;
- f.callbacks.complete({});await f.settle();assert.equal(f.nodes.get('opsTopicDialog').open,true);assert.equal(f.nodes.get('opsExperience'),experience);assert.equal(experience.value,'유지할 메모');
- f.subject.detail('topic-1');assert.equal(f.nodes.get('opsExperience').value,'유지할 메모');assert.equal(f.nodes.get('opsTopicDetail').scrollTop,240);assert.equal(f.nodes.get('opsTopicDialog').opens,1);
+ const f=fixture();await f.subject.init();f.subject.detail('topic-1');const experience=f.nodes.get('opsWritingRequest');experience.value='유지할 메모';f.nodes.get('opsTopicDetail').scrollTop=240;
+ f.callbacks.complete({});await f.settle();assert.equal(f.nodes.get('opsTopicDialog').open,true);assert.equal(f.nodes.get('opsWritingRequest'),experience);assert.equal(experience.value,'유지할 메모');
+ f.subject.detail('topic-1');assert.equal(f.nodes.get('opsWritingRequest').value,'유지할 메모');assert.equal(f.nodes.get('opsTopicDetail').scrollTop,240);assert.equal(f.nodes.get('opsTopicDialog').opens,1);
 });
 test('tab changes and a changed account target close the old account detail',async()=>{
  const f=fixture();await f.subject.init();f.subject.detail('topic-1');f.subject.showTab('drafts');assert.equal(f.nodes.get('opsTopicDialog').open,false);
