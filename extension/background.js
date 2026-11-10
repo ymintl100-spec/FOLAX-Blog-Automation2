@@ -1,4 +1,4 @@
-importScripts('naver-draft.js','editor.js','article-plan.js','writer.js','tistory.js','tistory-writer.js');
+importScripts('naver-draft.js','editor.js','article-plan.js','writer.js','tistory.js','tistory-writer.js','naver-login.js');
 const API = 'http://127.0.0.1:46321';
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 let busy = false;
@@ -31,6 +31,12 @@ async function editorTab(interactive = false,task) {
   const blogId=task?.blogId || current.connection.blogId;
   const host=tistory?blogId+'.tistory.com':'blog.naver.com';
   const url=tistory?`https://${host}/manage/post`:`https://${host}/${encodeURIComponent(blogId)}/postwrite`;
+  if(task?.freshEditor&&!tistory){
+    // A login check may have adopted the user's existing draft. Start fresh
+    // authoring in a separate tab rather than navigating that draft away.
+    const tab=await chrome.tabs.create({url,active:interactive});
+    await chrome.storage.local.set({editorTab:tab.id});return tab.id;
+  }
   const kind=tab=>{
     let u;try{u=new URL(tab.url || 'about:blank');}catch{return '';}
     if(!tistory && u.hostname==='nid.naver.com')return 'login';
@@ -67,7 +73,7 @@ async function editorTab(interactive = false,task) {
       const snapshot=await command(tab.id,'snapshot',{blogId}).catch(()=>null);
       completed=Boolean(snapshot && JSON.stringify(snapshot)===JSON.stringify(current.completedEditorTab.snapshot));
     }
-    if((task?.freshEditor && !tistory) || sharedRead || kind(tab)==='read' || (kind(tab)==='editor' && completed)){
+    if(sharedRead || kind(tab)==='read' || (kind(tab)==='editor' && completed)){
       tab=await chrome.tabs.update(tab.id,{url,active:interactive});
       await chrome.storage.local.remove('completedEditorTab');
     }else if(interactive)await chrome.tabs.update(tab.id,{active:true});
@@ -84,6 +90,38 @@ async function inspectSession(tabId) {
     if(probe?.ok){result.reason=probe.reason;await chrome.storage.local.set({titleProbeBuild:'20260927.7'});}
   }
   const session={...result,checkedAt:new Date().toISOString()}; await chrome.storage.local.set({session});return session;
+}
+async function recoverLoginTab(task) {
+  let tab=await chrome.tabs.get(task.tabId).catch(()=>null);
+  if(task.platform==='tistory'||task.stage!=='waiting_login'||tab?.status==='loading')return tab;
+  const destination=tab?naverLoginReturnUrl(tab.url,task.blogId):null;
+  let loginPage=false;
+  if(tab&&!destination){
+    const url=new URL(tab.url);
+    if(url.hostname!=='nid.naver.com'||url.pathname!=='/nidlogin.login')return tab;
+    // Login can finish in a new tab while the original login tab remains open.
+    // A visible security challenge must still be completed in the original tab.
+    const observed=await inspect(tab.id).catch(()=>({status:'unknown'}));
+    if(observed.status!=='expired')return tab;
+    loginPage=true;
+  }
+  // A successful login may open the editor in another tab. Reuse it without
+  // changing its content; fresh-authoring checks still reject non-empty drafts.
+  const tabs=await chrome.tabs.query({url:'https://blog.naver.com/*'});
+  let editor;
+  for(const candidate of tabs.filter(t=>t.id!==task.tabId&&t.status!=='loading'&&naverTargetEditorUrl(t.url,task.blogId))){
+    if((await inspect(candidate.id).catch(()=>null))?.status==='valid'){editor=candidate;break;}
+  }
+  if(editor){task.tabId=editor.id;tab=editor;}
+  else {
+    if(loginPage)return tab;
+    if((task.loginReturnAttempts||0)>=3)throw Object.assign(new Error('로그인 후 글쓰기 화면으로 돌아오지 못했습니다. 등록된 블로그 주소 ID와 글쓰기 권한을 확인한 뒤 로그인 / 상태 확인을 눌러 주세요. 원고는 보존했습니다.'),{code:'NAVER_LOGIN_REDIRECT'});
+    task.loginReturnAttempts=(task.loginReturnAttempts||0)+1;
+    if(tab)tab=await chrome.tabs.update(tab.id,{url:destination});
+    else {task.tabId=await editorTab(Boolean(task.payload.interactive),task);tab=await chrome.tabs.get(task.tabId);}
+  }
+  await chrome.storage.local.set({editorTab:task.tabId,activeTask:{...task}});
+  return tab;
 }
 async function command(tabId,command,args={}) {
   return withEditorDeadline(()=>commandInEditor(tabId,command,args),({paragraph:'본문 입력',image:'이미지 입력',quote:'소제목 입력',verify:'전체 원고 검증'})[command] || '편집기 '+command,command==='image'?90000:45000);
@@ -196,6 +234,7 @@ async function prepareFreshNaver(task) {
   if(!task.editorResetStarted){
     task.tabId=await editorTab(Boolean(task.payload.interactive || task.type==='publish'),{...task,freshEditor:true});
     task.editorResetStarted=true;
+    task.stage='waiting_login';
     await chrome.storage.local.remove(['authoringCheckpoint','completedEditorTab']);
     await chrome.storage.local.set({activeTask:{...task,stage:'waiting_login'}});
     await api('/progress',{id:task.id,message:'글쓰기 화면을 새로 열어 처음부터 입력할 준비를 합니다. 저장된 본문과 이미지를 재사용합니다.'});
@@ -203,7 +242,7 @@ async function prepareFreshNaver(task) {
   }
   for(let n=0;n<40;n++){
     if((await api('/task/status',{id:task.id})).state!=='running')throw new Error('작업이 취소되었습니다.');
-    const tab=await chrome.tabs.get(task.tabId);
+    const tab=await recoverLoginTab(task);
     if(tab.status==='loading'){await sleep(500);continue;}
     try {
       const dialogs=await frameResults(task.tabId,'dismissResume');
@@ -224,8 +263,18 @@ async function resume(task) {
   const state=await api('/task/status',{id:task.id});if(state.state!=='running'){await chrome.storage.local.remove('activeTask');return;}
   const fresh=task.platform!=='tistory' && (task.type==='publish' || task.payload.preflightTitle);
   let session;
-  try{session=fresh?await prepareFreshNaver(task):await inspectSession(task.tabId);}
-  catch(error){return finish({id:task.id,error:error.message,code:'EDITOR_PREPARATION_FAILED'});}
+  try{
+    if(!fresh&&task.platform!=='tistory')await recoverLoginTab(task);
+    session=fresh?await prepareFreshNaver(task):await inspectSession(task.tabId);
+    await chrome.storage.local.set({session});
+  }
+  catch(error){
+    if(error.code==='NAVER_LOGIN_REDIRECT'){
+      const observed={status:'unknown',reason:error.message,checkedAt:new Date().toISOString()};
+      await chrome.storage.local.set({session:observed});await api('/status',{session:observed});
+    }
+    return finish({id:task.id,error:error.message,code:error.code||'EDITOR_PREPARATION_FAILED'});
+  }
   if(session.status!=='valid') {
     if(['unknown','account_mismatch'].includes(session.status) && !task.payload.interactive) return finish({id:task.id,result:session});
     const tab=await chrome.tabs.get(task.tabId).catch(()=>null);

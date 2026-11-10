@@ -139,3 +139,4 @@ docs/*
 !.github/workflows/windows-full-rc24.yml
 !scripts/make-windows-bundle.ps1
 !docs/windows-full-rc24-README.txt
+!docs/login-return-2026-11-10.md
