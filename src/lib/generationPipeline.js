@@ -353,7 +353,7 @@ async function generateAttempt(options, log, deps) {
   const writingApplication=blogLayout.report(writer,effective);
   options.onArticleReady?.({...writer,previewStage:'approved',writingApplication});
   let savedImages=usableImages(resume?.images,options.jobDir);
-  const checkpoint=()=>options.onImageCheckpoint?.({version:1,title:finalTitle,writer,research,review,images:savedImages,
+  const checkpoint=()=>options.onImageCheckpoint?.({version:1,title:finalTitle,writer,research,review,images:savedImages,sourceImageReferences:effective.sourceImageReferences,
     evidenceContext:{searchResults:effective.searchResults,sourceQuality:effective.sourceQuality},
     imageOptions:{includeTitleImage:options.includeTitleImage,maxBodyImages:options.maxBodyImages,titleImageAspectRatio:options.titleImageAspectRatio,bodyImageAspectRatio:options.bodyImageAspectRatio}});
   const needsImageWork=usesImages && (options.includeTitleImage!==false || writer.bodyImages?.length>0);
@@ -361,6 +361,10 @@ async function generateAttempt(options, log, deps) {
   if(needsImageWork)await checkpoint();
   effective.accountImageStylePrompt='';
   if(needsImageWork){
+    try{
+      effective.sourceImageReferences=await require('./sourceImageReferences').prepare({...effective,sourceImageReferences:resume?.sourceImageReferences},{log:progress});
+      await checkpoint();
+    }catch(error){progress('링크 이미지 참고 준비 실패 · 본문 설명으로 이미지 생성을 계속합니다: '+error.message,'warn');effective.sourceImageReferences=[];}
     try{
       effective.accountImageStylePrompt=await resolveImageStyle({
         read:options.getAccountImageStyle || (()=>options.accountImageStyle || {}),exists:fs.existsSync,log:progress,

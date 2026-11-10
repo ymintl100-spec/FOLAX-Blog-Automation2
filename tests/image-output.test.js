@@ -21,6 +21,11 @@ test('image final JSON is saved by the application without model file writes',as
  assert(invocation.args.includes('--output-last-message'));assert(invocation.args.some(a=>a.endsWith('.last-message.txt')));
  assert(!invocation.input.includes('do not use tools'));assert(!invocation.input.includes('Write a UTF-8 JSON file'));assert(invocation.input.includes('Use the tools needed'));
 });
+test('source reference images are attached to the actual image CLI invocation only',async()=>{
+ const file=path.join(temp,'source-reference.jpg');fs.writeFileSync(file,'fixture image');
+ const {invocation,jobDir}=await run('fixture-json','image',{sourceImageReferences:[{path:file,sourceUrl:'https://example.com'}]});
+ const flag=invocation.args.indexOf('--image');assert(flag>=0);assert.equal(path.resolve(jobDir,invocation.args[flag+1]),file);assert(invocation.input.includes(JSON.stringify(file)));
+});
 test('image tool failure returns the actual failure reason rather than missing-file error',async()=>{
  const {result,logs}=await run('fixture-failed');assert(logs.some(a=>a[0].includes('이미지 생성 도구')));assert.equal(result.status,'failed');assert.match(result.failureReason,/画像|이미지 생성 도구/);assert.equal(result.titleImagePath,'');
 });
