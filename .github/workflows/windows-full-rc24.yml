@@ -1,7 +1,7 @@
-name: Windows rc.24.2 full download
+name: Windows rc.24.3 login recovery full download
 on:
   push:
-    branches: [build/rc24-full-download-20261109]
+    branches: [fix/rc24-login-return-20261110]
   workflow_dispatch:
 permissions:
   contents: write
@@ -25,10 +25,10 @@ jobs:
       - name: Package and verify full EXE plus Chrome extension
         shell: pwsh
         run: ./scripts/make-windows-bundle.ps1
-      - name: Upload full archive to the existing rc.24.2 release
+      - name: Upload full archive to the rc.24.3 draft release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload v0.3.0-rc.24.2 dist/full/FOLAX-Windows-0.3.0-rc.24.2.zip dist/full/FOLAX-Windows-0.3.0-rc.24.2.sha256 dist/full/FOLAX-Windows-0.3.0-rc.24.2-README.txt --repo "$env:GITHUB_REPOSITORY" --clobber
+          gh release upload v0.3.0-rc.24.3 dist/full/FOLAX-Windows-0.3.0-rc.24.3.zip dist/full/FOLAX-Windows-0.3.0-rc.24.3.sha256 dist/full/FOLAX-Windows-0.3.0-rc.24.3-README.txt --repo "$env:GITHUB_REPOSITORY" --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }

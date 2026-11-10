@@ -2,7 +2,7 @@ param([string]$OutputDirectory)
 $ErrorActionPreference='Stop'
 $repoRoot=Split-Path $PSScriptRoot -Parent
 $version=(Get-Content -LiteralPath (Join-Path $repoRoot 'package.json') -Raw | ConvertFrom-Json).version
-if ($version -notmatch '^0\.3\.0-rc\.24\.2$') { throw 'This bundle is for rc.24.2 only' }
+if ($version -notmatch '^0\.3\.0-rc\.24\.\d+$') { throw 'This bundle is for the rc.24 maintenance releases only' }
 if (!$OutputDirectory) { $OutputDirectory=Join-Path $repoRoot 'dist/full' }
 [void](New-Item -ItemType Directory -Path $OutputDirectory -Force)
 $baseName='FOLAX-Windows-'+$version
