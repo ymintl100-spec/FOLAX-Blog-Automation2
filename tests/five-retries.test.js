@@ -20,6 +20,20 @@ function harness(t,{passAt=1,initial=writer(),partial,intercept,options={}}={}){
  const deps={runTask:base,bodyImageLimit:Number,researchPrompt:P.researchPrompt,researchRetry:P.researchPrompt,writerPrompt:P.writerPrompt,writerRetry:P.writerPrompt,reviewPrompt:P.reviewPrompt,writerIssue:runner.writerOutputIssueReason,imagePromptIssue:runner.writerImageContractIssueReason,reviewIssue:runner.mainReviewPassIssueReason,applyImages:w=>w};
  return {root,opts,deps,calls,checkpoints,progress,run:()=>generate(opts,()=>{},deps)};
 }
+test('writing request survives checkpoints and a nominal PASS cannot skip an unmet request',async t=>{
+ let mains=0;const request='걷기 전에 준비할 조건을 쉬운 말로 설명해 주세요.';
+ const h=harness(t,{initial:writer(669),options:{articleLengthPolicy:4,writingRequest:request},intercept:args=>{
+  if(args.agent!=='main')return;
+  const pass=++mains>1;
+  return {...review(true),writingRequestReview:{pass,reason:pass?'요청한 준비 조건을 본문으로 설명했습니다.':'요청한 설명을 보완하세요.',evidence:pass?[{requirement:'준비 조건',articleQuote:opening}]:[],omissions:[]}};
+ }});
+ const result=await h.run();assert.equal(result.publishable,true,result.failureReason);
+ assert.equal(result.autoRetry.used,1);assert.equal(h.calls.filter(c=>c.agent==='research').length,1);assert.equal(mains,2);
+ assert.equal(h.checkpoints.at(-1).generationOptions.writingRequest,request);
+ for(const call of h.calls)assert.equal(call.options.writingRequest,request);
+ assert.equal(h.checkpoints.at(-1).generationOptions.experienceNotes,undefined);
+ assert(L.articleCharacterCount(result.article)<2000); // Request repair, never a length retry.
+});
 test('new articles target 1500 characters and 15 tags while legacy policies retain their original ranges',()=>{
  assert.deepEqual(L.limits({articleLengthPolicy:3}),{min:1400,max:1600,target:1500});assert.equal(L.articleLengthIssue(writer(1400),{articleLengthPolicy:3}),'');assert.equal(L.articleLengthIssue(writer(1600),{articleLengthPolicy:3}),'');assert.match(L.articleLengthIssue(writer(1399),{articleLengthPolicy:3}),/1400~1600/);assert.match(L.articleLengthIssue(writer(1601),{articleLengthPolicy:3}),/1400~1600/);assert.equal(L.limits({articleLengthPolicy:2}).target,1300);assert.equal(L.limits({articleLengthPolicy:1}).max,1200);
  assert.equal(T.issue(writer(),{tagCount:15}),'');assert.match(T.issue(writer(1500,14),{tagCount:15}),/15개/);assert.equal(T.forPlatform(writer().tags,'naver').length,15);assert.equal(T.forPlatform(writer().tags,'tistory').length,10);assert.equal(R.feedback(['본문 1000~1500자'],{articleLengthPolicy:3}),'본문 1400~1600자');

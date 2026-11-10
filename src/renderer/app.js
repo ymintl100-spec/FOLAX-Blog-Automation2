@@ -183,13 +183,9 @@ function addLog(payload) {
   stream.scrollTop = stream.scrollHeight;
 }
 
-const experienceUses=new Map();
 async function runAutoStartJob(form) {
-  const field=$('#experienceNotes'),notes=field?.dataset.accountId===form.accountId?field.value.trim():'';
-  const id=notes?crypto.randomUUID():'';
-  if(id)experienceUses.set(id,{accountId:form.accountId,text:notes});
-  try{return await window.blogAuto.startJob({...form,experienceNotes:notes,experienceNotesId:id});}
-  finally{if(id)experienceUses.delete(id);}
+  const field=$('#writingRequest'),request=field?.dataset.accountId===form.accountId?field.value.trim():'';
+  return window.blogAuto.startJob({...form,writingRequest:request});
 }
 
 function clearAgentLogs() {
@@ -1438,10 +1434,6 @@ async function boot() {
   });
   $('#showMobilePreview').addEventListener('click',()=>{mobilePreviewChosen=true;$('#articlePreview').hidden=true;$('#articleFormattedPreview').hidden=false;});
   $('#showRawPreview').addEventListener('click',()=>{mobilePreviewChosen=false;$('#articlePreview').hidden=false;$('#articleFormattedPreview').hidden=true;});
-  window.blogAuto.onExperienceConsumed(payload=>{
-    const use=experienceUses.get(payload.id),field=$('#experienceNotes');
-    if(use&&payload.accountId===use.accountId&&field.dataset.accountId===use.accountId&&field.value.trim()===use.text)field.value='';
-  });
   $("#runtimePath").textContent = initial.runtimeRoot;
   renderCodexInstallation(initial.codexInstallation);
   state.chrome = initial.chrome || state.chrome;
@@ -1992,7 +1984,7 @@ async function refreshWritingLearning(){
   writingStatus('불러오는 중');
   $('#writingSampleText').value='';$('#writingOriginalText').value='';$('#writingSampleTitle').value='';$('#writingSampleApproved').checked=false;
   $('#writingFormatProfile').value='balanced';
-  const note=$('#experienceNotes');if(note.dataset.accountId!==(account?.id||'')){note.value='';note.dataset.accountId=account?.id||'';}
+  const note=$('#writingRequest');if(note.dataset.accountId!==(account?.id||'')){note.value='';note.dataset.accountId=account?.id||'';}
   if(!account){writingStatus('계정을 선택하세요');$('#writingLearningAccount').textContent='';$('#writingExamples').replaceChildren();return;}
   try{const profile=await window.blogAuto.getWritingProfile(account.id);if(request===writingRequestSequence&&selectedAccount()?.id===account.id)renderWritingProfile(profile,account);}catch(error){if(request===writingRequestSequence)writingStatus(error.message);}
 }

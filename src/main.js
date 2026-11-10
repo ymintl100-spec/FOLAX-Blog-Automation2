@@ -1044,6 +1044,7 @@ async function startJob(form) {
         writingGuidance: require('./lib/writingMemory').guidance(runtimeRoot,account.id),
         formatGuidance: require('./lib/writingMemory').formatGuidance(runtimeRoot,account.id),
         blogDirection:require('./lib/writingMemory').direction(runtimeRoot,account.id),
+        writingRequest:form.writingRequest||'',
         experienceNotes:form.experienceNotes||'',experienceNotesId:form.experienceNotesId||'',
         onWritingApplication: applied=>{
           safeLog(jobId,`실제 생성 설정: ${applied.label} · 형식 v${applied.guideVersion} · 수정·승인 예시 ${applied.approvedExamples}개${applied.resumed?' · 재개 작업의 기존 설정 사용':''}`);

@@ -174,21 +174,21 @@
     )
     .join(
       "",
-    )}<div class="ops-notice"><h3>선택한 주제만 작성</h3><label>원고 플랫폼<select id="opsGeneratePlatform"><option value="naver">네이버</option><option value="tistory">티스토리(등록 계정)</option></select></label><label class="compact-check"><input id="opsGenerateImages" type="checkbox" checked/>이미지 총 4장 이상 생성 · 대표 1장 + 본문 최소 3장(추가 사용량)</label><label>이번 글의 실제 경험 메모<textarea id="opsExperience" maxlength="2000" placeholder="직접 겪은 사실만 입력. 없으면 1인칭 경험을 만들지 않습니다."></textarea></label>${button("generate", "이 주제로 원고 작성 · 사용자 검수 대기", id, "primary")}</div></section>`;
+    )}<div class="ops-notice"><h3>선택한 주제만 작성</h3><label>원고 플랫폼<select id="opsGeneratePlatform"><option value="naver">네이버</option><option value="tistory">티스토리(등록 계정)</option></select></label><label class="compact-check"><input id="opsGenerateImages" type="checkbox" checked/>이미지 총 4장 이상 생성 · 대표 1장 + 본문 최소 3장(추가 사용량)</label><label>이번 글의 작성 요청<textarea id="opsWritingRequest" maxlength="2000" placeholder="원하는 주제·제품·강조점·말투를 입력하세요. 요청은 실제 사용 경험으로 간주하지 않습니다."></textarea></label>${button("generate", "이 주제로 원고 작성 · 사용자 검수 대기", id, "primary")}</div></section>`;
     detailAccount=account();
     detailTarget=targetKey(snapshot.account);
     for(const field of saved){const el=document.getElementById(field.id);if(el){el.value=field.value;el.checked=field.checked;}}
     Array.from(dialog.querySelectorAll('details')).forEach((el,i)=>{el.open=openDetails[i]||false;});
     $('#opsTopicDetail').scrollTop=scrollTop;
     if(!dialog.open){$('#opsTopicStatus').textContent='';dialog.showModal();}
-    if(generate)$('#opsExperience').focus({preventScroll:true});
+    if(generate)$('#opsWritingRequest').focus({preventScroll:true});
   }
   function compose(){
     const draft=composeDraft,criteria=snapshot.writingRequirements;
     const criteriaText=criteria?`본문 공백 제외 약 ${fmt(criteria.target)}자 목표${criteria.enforced===false?' · 분량 차이로 중단하지 않음':`(${fmt(criteria.min)}~${fmt(criteria.max)}자)`} · 태그 ${fmt(criteria.tagCount)}개 · 핵심 문장 볼드 · 자동 재시도 최대 ${fmt(criteria.maxAutoRetries)}회`:'새 글 기준을 확인 중입니다.';
-    $('#opsContent').innerHTML=`<h2>키워드·링크로 글 작성</h2><p>입력한 항목을 모두 분석해 한 글로 엮습니다. 빈 칸은 제외하고 같은 입력은 한 번만 분석합니다.</p><div class="ops-grid"><label>작성 방식<select id="opsInputMode"><option value="keywords">키워드</option><option value="links">링크</option><option value="mixed">키워드 + 링크 혼합</option></select></label><label>카테고리<select id="opsInputCategory">${options(snapshot.categories,draft.category||snapshot.categories[0],null)}</select></label><label>플랫폼<select id="opsInputPlatform"><option value="naver">네이버</option><option value="tistory">티스토리</option></select></label></div><div id="opsKeywordFields" class="ops-grid">${[1,2,3].map(n=>`<label>키워드 ${n}<input id="opsKeyword${n}" maxlength="100" value="${esc(draft.keywords[n-1]||'')}" placeholder="${n===1?'작성할 핵심 키워드':'선택 입력'}"/></label>`).join('')}</div><div id="opsLinkFields" class="ops-grid">${[1,2,3].map(n=>`<label>링크 ${n}<input id="opsInputUrl${n}" type="url" maxlength="2048" value="${esc(draft.urls[n-1]||'')}" placeholder="https://..."/></label>`).join('')}</div><label>실제 경험 메모 (선택)<textarea id="opsInputExperience" maxlength="2000">${esc(draft.experience||'')}</textarea></label><label class="compact-check"><input id="opsInputImages" type="checkbox" ${draft.images!==false?'checked':''}/>이미지 최소 4장 생성</label><p class="hint">${esc(criteriaText)}. 링크 방식은 입력한 공개 원문 범위에서 작성합니다. 혼합 방식은 링크의 주제·사용 목적을 중심으로 작성하고, 부족한 설명만 입력 키워드로 검색해 보충합니다. 키워드 방식은 입력어로 자료를 검색합니다. 비공개·로그인 전용 링크를 읽지 못하면 주소를 표시하고 중지합니다.</p>${button('generateInputs','입력 항목 분석 후 원고 작성 · 검수 대기','','primary')}`;
+    $('#opsContent').innerHTML=`<h2>키워드·링크로 글 작성</h2><p>입력한 항목을 모두 분석해 한 글로 엮습니다. 빈 칸은 제외하고 같은 입력은 한 번만 분석합니다.</p><div class="ops-grid"><label>작성 방식<select id="opsInputMode"><option value="keywords">키워드</option><option value="links">링크</option><option value="mixed">키워드 + 링크 혼합</option></select></label><label>카테고리<select id="opsInputCategory">${options(snapshot.categories,draft.category||snapshot.categories[0],null)}</select></label><label>플랫폼<select id="opsInputPlatform"><option value="naver">네이버</option><option value="tistory">티스토리</option></select></label></div><div id="opsKeywordFields" class="ops-grid">${[1,2,3].map(n=>`<label>키워드 ${n}<input id="opsKeyword${n}" maxlength="100" value="${esc(draft.keywords[n-1]||'')}" placeholder="${n===1?'작성할 핵심 키워드':'선택 입력'}"/></label>`).join('')}</div><div id="opsLinkFields" class="ops-grid">${[1,2,3].map(n=>`<label>링크 ${n}<input id="opsInputUrl${n}" type="url" maxlength="2048" value="${esc(draft.urls[n-1]||'')}" placeholder="https://..."/></label>`).join('')}</div><label>작성 요청 (선택)<textarea id="opsInputWritingRequest" maxlength="2000" placeholder="예: 포렉스 꾹꾹 매트의 활용법과 장점을 강조해 주세요. 원문 속 제품 구조·사용 순서·세척 방법까지 쉬운 말로 약 2,000자에 가깝게 작성해 주세요.">${esc(draft.writingRequest||'')}</textarea></label><label class="compact-check"><input id="opsInputImages" type="checkbox" ${draft.images!==false?'checked':''}/>이미지 최소 4장 생성</label><p class="hint">${esc(criteriaText)}. 링크 방식은 입력한 공개 원문 범위에서 작성합니다. 혼합 방식은 링크의 주제·사용 목적을 중심으로 작성하고, 부족한 설명만 입력 키워드로 검색해 보충합니다. 키워드 방식은 입력어로 자료를 검색합니다. 비공개·로그인 전용 링크를 읽지 못하면 주소를 표시하고 중지합니다.</p>${button('generateInputs','입력 항목 분석 후 원고 작성 · 검수 대기','','primary')}`;
     $('#opsInputMode').value=draft.mode;$('#opsInputPlatform').value=draft.platform;
-    const change=()=>{composeDraft={mode:$('#opsInputMode').value,keywords:[1,2,3].map(n=>$('#opsKeyword'+n).value),urls:[1,2,3].map(n=>$('#opsInputUrl'+n).value),category:$('#opsInputCategory').value,platform:$('#opsInputPlatform').value,experience:$('#opsInputExperience').value,images:$('#opsInputImages').checked};$('#opsKeywordFields').hidden=composeDraft.mode==='links';$('#opsLinkFields').hidden=composeDraft.mode==='keywords';};
+    const change=()=>{composeDraft={mode:$('#opsInputMode').value,keywords:[1,2,3].map(n=>$('#opsKeyword'+n).value),urls:[1,2,3].map(n=>$('#opsInputUrl'+n).value),category:$('#opsInputCategory').value,platform:$('#opsInputPlatform').value,writingRequest:$('#opsInputWritingRequest').value,images:$('#opsInputImages').checked};$('#opsKeywordFields').hidden=composeDraft.mode==='links';$('#opsLinkFields').hidden=composeDraft.mode==='keywords';};
     for(const el of $('#opsContent').querySelectorAll('input,textarea,select'))el.addEventListener('input',change);
     $('#opsInputMode').addEventListener('change',change);change();
   }
@@ -403,7 +403,7 @@
       return refresh();
     }
     if(actionName==='generateInputs'){
-      const d=composeDraft,result=await action('generateInputs',{inputBrief:{mode:d.mode,keywords:d.mode==='links'?[]:d.keywords,urls:d.mode==='keywords'?[]:d.urls},category:d.category,platform:d.platform,images:d.images,experienceNotes:d.experience});
+      const d=composeDraft,result=await action('generateInputs',{inputBrief:{mode:d.mode,keywords:d.mode==='links'?[]:d.keywords,urls:d.mode==='keywords'?[]:d.urls},category:d.category,platform:d.platform,images:d.images,writingRequest:d.writingRequest});
       if(result?.documentId)return openDocument(result.documentId);
       throw Error(result?.reason||'저장된 진행 기록과 오류 메시지를 확인하세요.');
     }
@@ -412,7 +412,7 @@
         id,
         platform: val("#opsGeneratePlatform"),
         images: $("#opsGenerateImages").checked,
-        experienceNotes: val("#opsExperience"),
+        writingRequest: val("#opsWritingRequest"),
       });
       if (result?.documentId) return openDocument(result.documentId);
       throw Error(

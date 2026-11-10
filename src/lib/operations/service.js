@@ -236,8 +236,9 @@ class Operations {
   async generate(
     account,
     id,
-    { images = false, experienceNotes = "", platform = "naver" } = {},
+    { images = false, writingRequest = "", experienceNotes = "", platform = "naver" } = {},
   ) {
+    writingRequest=require('../writingRequest').normalize(writingRequest);
     const a = this.account(account),
       t = this.topic(account, id);
     if (
@@ -267,6 +268,7 @@ class Operations {
         includeTitleImage: images === true,
         maxBodyImages: images === true ? Math.max(3,require('../settings').normalizeMaxBodyImages(this.hooks.settings().maxBodyImages)) : 0,
         minimumImageCount: images === true ? 4 : 0,
+        writingRequest,
         experienceNotes,
         publishAfterGenerate: false,
         searchChannel: "web",
@@ -274,7 +276,8 @@ class Operations {
       }),
     );
   }
-  async generateInputs(account,{inputBrief,category,platform='naver',images=true,experienceNotes=''}){
+  async generateInputs(account,{inputBrief,category,platform='naver',images=true,writingRequest='',experienceNotes=''}){
+    writingRequest=require('../writingRequest').normalize(writingRequest);
     const a=this.account(account),brief=require('../inputWorkflow').normalize(inputBrief);
     const settings=this.hooks.settings();
     if(settings.pendingGenerationDraft||settings.pendingNaverPublishDraft)throw Error('중단된 기존 작업이 있습니다. 작업 이력에서 재개하거나 취소한 뒤 새 입력 원고를 작성하세요. 기존 원고는 보존했습니다.');
@@ -285,7 +288,7 @@ class Operations {
     const existing=this.db.prepare('SELECT status FROM ops_topics WHERE id=? AND account=?').get(baseId,account);
     const id=existing?S.id():baseId;
     this.db.prepare('INSERT OR IGNORE INTO ops_topics VALUES (?,?,?,?,?,?,?,?,?)').run(id,account,brief.keywords.join(', ')||'입력 링크',title,category,'selected',at,at,JSON.stringify({origin:'user_input',inputBrief:brief}));
-    return this.lock(()=>this.hooks.startJob({accountId:account,blogId:a.blogId,category,keyword:brief.keywords.join(', ')||'입력 링크',inputBrief:brief,topicMode:'input',operationsDraft:true,operationsTopicId:id,platform,requireApproval:true,includeTitleImage:images===true,maxBodyImages:images===true?Math.max(3,require('../settings').normalizeMaxBodyImages(this.hooks.settings().maxBodyImages)):0,trustBlogAsSource:brief.mode==='links',searchChannel:'web',experienceNotes,publishAfterGenerate:false}));
+    return this.lock(()=>this.hooks.startJob({accountId:account,blogId:a.blogId,category,keyword:brief.keywords.join(', ')||'입력 링크',inputBrief:brief,topicMode:'input',operationsDraft:true,operationsTopicId:id,platform,requireApproval:true,includeTitleImage:images===true,maxBodyImages:images===true?Math.max(3,require('../settings').normalizeMaxBodyImages(this.hooks.settings().maxBodyImages)):0,trustBlogAsSource:brief.mode==='links',searchChannel:'web',writingRequest,experienceNotes,publishAfterGenerate:false}));
   }
   async refresh(account, { provider = "cache", hints = [] } = {}) {
     this.account(account);
@@ -730,11 +733,11 @@ class Operations {
             require("../generationPrompts").reviewPrompt(options),
             options,
           );
-        const contract=require('../reviewContract'),scopeIssue=contract.violation(review);
+        const contract=require('../reviewContract'),scopeIssue=[contract.violation(review),require('../writingRequest').evidenceIssue(review,options.writerResult,options)].filter(Boolean).join(' / ');
         if(scopeIssue){
           this.hooks.progress?.(id,'본문 보존 · 검수 단계 오류만 다시 확인합니다.','warn');
           review=await this.model(account,d,'main',require('../generationPrompts').reviewPrompt({...options,reviewContractCorrection:scopeIssue}),options);
-          const repeatedScope=contract.violation(review);
+          const repeatedScope=[contract.violation(review),require('../writingRequest').evidenceIssue(review,options.writerResult,options)].filter(Boolean).join(' / ');
           if(repeatedScope)throw Error(repeatedScope+' 기존 원고를 보존했습니다.');
         }
         review=require('../articleRequirements').advisoryReview(review,options);
@@ -743,6 +746,8 @@ class Operations {
             require("../articleRelevance").evidenceIssue(review,options.writerResult,options),
             require("../articleRelevance").qualityIssue(options.writerResult,options,review),
             runner.mainReviewPassIssueReason(review),
+            require("../writingRequest").evidenceIssue(review,options.writerResult,options),
+            require("../writingRequest").reviewIssue(review,options),
             require("../naverQuality").reviewEvidenceIssue(
               review,
               options.writerResult,

@@ -17,7 +17,7 @@ function issue(writer,options={}){
  const layout=inspect(writer?.article);
  if(!layout.opening)return '벤치마크 형식: 첫 소제목 앞에 독자의 상황과 핵심 답을 연결하는 짧은 도입이 필요합니다.';
  const minimum=options.formatGuidance?.version>=3?options.formatGuidance.surface?.minSections??2:2;
- if(options.formatGuidance?.version>=4&&layout.sections.length>(options.formatGuidance.id==='essay'?2:3))return '짧은 글 형식: 소제목은 정보형 최대 3개, 일상형 최대 2개입니다. 필요한 내용을 합치고 이미지 장수를 위해 소제목을 늘리지 마세요.';
+ if(options.articleLengthPolicy!==4&&options.formatGuidance?.version>=4&&layout.sections.length>(options.formatGuidance.id==='essay'?2:3))return '짧은 글 형식: 소제목은 정보형 최대 3개, 일상형 최대 2개입니다. 필요한 내용을 합치고 이미지 장수를 위해 소제목을 늘리지 마세요.';
  if(layout.sections.length<minimum||layout.sections.some(s=>!s.heading||!s.body))return `벤치마크 형식: 해당 글의 역할에 맞는 소제목 ${minimum}개 이상과 각 소제목의 본문이 필요합니다. 참고자료는 제외합니다.`;
  const approved=Number(options.writingGuidance?.typicalParagraphCharacters)||0;
  const limit=Math.min(600,Math.max(300,Math.round(approved*2.5)));
