@@ -18,7 +18,7 @@ function harness(t,{reply,passAt=2,options={}}={}){
 test('paragraph edits need no echoed fingerprint and preserve all unaffected data',()=>{
  const w=writer(),before=JSON.stringify(w),c=R.context(w),p=c.document.find(p=>p.id==='p3'),result=R.apply(w,{status:'success',edits:[{paragraphId:'p3',after:p.text.replace('바꿀 구절','고칠 부분')}]},c);
  assert.equal(JSON.stringify(w),before);assert.equal(result.article,w.article.replace('바꿀 구절','고칠 부분'));for(const k of ['title','tags','citations','bodyImages','boldSentences'])assert.deepEqual(result[k],w[k]);
- const prompt=R.repairPrompt(w,'반복 정리',require('../src/lib/generationDefaults').options,c),payload=JSON.parse(prompt.split('\n').at(-1));assert.equal(payload.revisionProtocol,2);assert.equal(payload.fingerprint,undefined);assert.equal(payload.writer.article,undefined);assert.equal(payload.articleCharacters,1427);assert.equal(payload.lengthBudget.minimumChange,-27);
+ const prompt=R.repairPrompt(w,'반복 정리',require('../src/lib/generationDefaults').options,c),payload=JSON.parse(prompt.split('\n').at(-1));assert.equal(payload.revisionProtocol,2);assert.equal(payload.fingerprint,undefined);assert.equal(payload.writer.article,undefined);assert.equal(payload.articleCharacters,1427);assert.deepEqual(payload.lengthBudget,{target:2000,enforced:false});assert.equal(payload.lengthBudget.minimumChange,undefined);
 });
 test('app-owned binding safely accepts an exact literal edit even if the model omitted or mistyped the obsolete hash',()=>{
  const w=writer(),c=R.context(w);for(const fingerprint of [undefined,'wrong-hash']){const result=R.apply(w,{status:'success',fingerprint,edits:[{before:help,after:help.replace('선택할 기준','고를 기준')}]},c);assert(result.article.includes('고를 기준'));}
