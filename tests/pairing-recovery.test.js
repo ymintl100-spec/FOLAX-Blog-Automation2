@@ -42,6 +42,8 @@ test('reconnecting cannot mistake a cancelled old check for a successful fresh l
  const {bridge,token}=fixture(t);await bridge.start();const pending=observe(bridge.request('a','session',{})),task=[...bridge.tasks.values()][0],pair=bridge.pairCode('a','fixture','계정');await pending;
  const send=async(route,body,auth)=>fetch('http://127.0.0.1:'+bridge.port+route,{method:'POST',headers:{'Content-Type':'application/json',...(auth?{Authorization:'Bearer '+auth}:{})},body:JSON.stringify(body)});
  assert.equal((await send('/result',{id:task.id,result:{status:'valid',checkedAt:new Date().toISOString()}},token)).status,200);assert.notEqual(bridge.clients.get(token).status,'valid');
+ const timed=observe(bridge.request('a','session',{})),stalled=[...bridge.tasks.values()].at(-1);stalled.state='running';bridge.lastSeen.set(token,Date.now()-80000);bridge.checkDisconnectedTasks();assert.equal((await timed).error.code,'EXTENSION_DISCONNECTED');assert.equal(stalled.state,'interrupted');
+ assert.equal((await send('/result',{id:stalled.id,result:{status:'valid',checkedAt:new Date().toISOString()}},token)).status,200);assert.notEqual(bridge.clients.get(token).status,'valid');
  const response=await send('/pair',{code:pair.code,deviceId:'fixture-device-123456789'});assert.equal(response.status,200);const connection=await response.json();assert.equal(bridge.clients.has(token),false);assert.equal(bridge.snapshot('a').status,'unknown');
  const next=observe(bridge.request('a','session',{})),fresh=[...bridge.tasks.values()].at(-1);
  await send('/result',{id:fresh.id,result:{status:'valid',editorBuild:'20261106.1'}},connection.token);assert.equal((await next).value.status,'valid');assert.equal(bridge.snapshot('a').status,'valid');

@@ -175,7 +175,7 @@ class ExtensionBridge extends EventEmitter {
     }
     if (url.pathname === '/result' && req.method === 'POST') {
       const t = this.tasks.get(body.id); if (!t || t.clientToken !== token) return this.reply(res,404,{error:'Unknown task'});
-      if (['done','failed','cancelled','expired'].includes(t.state)) return this.reply(res,200,{ok:true});
+      if (['done','failed','cancelled','expired'].includes(t.state) || t.type==='session'&&t.state==='interrupted') return this.reply(res,200,{ok:true});
       if(t.type==='publish' && !body.error){
         const draft=t.platform==='naver' && t.payload.publishVisibility==='draft';
         const valid=draft ? body.result?.saved===true && body.result.title===t.payload.title && require('./publishRecovery').confirmedPublication(body.result) : body.result?.published===true && body.result?.saved!==true;
