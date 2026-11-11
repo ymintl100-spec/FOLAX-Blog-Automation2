@@ -1,7 +1,7 @@
-name: Windows rc.24.6 Default request and source image references full download
+name: Windows rc.24.7 Pairing recovery during login wait full download
 on:
   push:
-    branches: [fix/rc24-source-images-20261110]
+    branches: [fix/rc24-pairing-recovery-20261111]
   workflow_dispatch:
 permissions:
   contents: write
@@ -25,10 +25,10 @@ jobs:
       - name: Package and verify full EXE plus Chrome extension
         shell: pwsh
         run: ./scripts/make-windows-bundle.ps1
-      - name: Upload full archive to the rc.24.6 draft release
+      - name: Upload full archive to the rc.24.7 draft release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload v0.3.0-rc.24.6 dist/full/FOLAX-Windows-0.3.0-rc.24.6.zip dist/full/FOLAX-Windows-0.3.0-rc.24.6.sha256 dist/full/FOLAX-Windows-0.3.0-rc.24.6-README.txt --repo "$env:GITHUB_REPOSITORY" --clobber
+          gh release upload v0.3.0-rc.24.7 dist/full/FOLAX-Windows-0.3.0-rc.24.7.zip dist/full/FOLAX-Windows-0.3.0-rc.24.7.sha256 dist/full/FOLAX-Windows-0.3.0-rc.24.7-README.txt --repo "$env:GITHUB_REPOSITORY" --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }
