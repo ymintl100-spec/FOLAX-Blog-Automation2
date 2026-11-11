@@ -32,17 +32,30 @@ class ExtensionBridge extends EventEmitter {
   stop() { clearInterval(this.monitor);this.server?.close();this.server?.closeAllConnections(); this.server = null; for (const w of this.waiters.values()) { clearTimeout(w.timer); w.reject(failure('앱 연결이 종료되었습니다.')); } this.waiters.clear(); }
   pairCode(accountId, blogId, label, platform = 'naver') {
     if (!/^[a-zA-Z0-9_-]{1,100}$/.test(blogId)) throw new Error('블로그 ID를 확인해 주세요.');
+    this.assertPairingAllowed(accountId);
+    this.cancelSessions(accountId);
     for (const [key,value] of this.codes) if (value.accountId === accountId || value.expires < Date.now()) this.codes.delete(key);
     const code = crypto.randomBytes(5).toString('hex').toUpperCase();
     this.codes.set(code, { accountId, blogId, label, platform, expires: Date.now() + 600000 });
     return { code, expiresAt: new Date(Date.now()+600000).toISOString(), port: this.port };
   }
   clientFor(accountId) { return [...this.clients.values()].find(c => c.accountId === accountId); }
+  assertPairingAllowed(accountId) {
+    if([...this.tasks.values()].some(t=>t.accountId===accountId && ['queued','running'].includes(t.state) && t.type!=='session'))throw failure('글 입력·발행 작업 중에는 확장을 다시 연결할 수 없습니다. 열린 Chrome의 원고와 발행 상태를 확인한 뒤 작업을 마치거나 대기 취소를 사용하세요.','ACCOUNT_BUSY');
+  }
+  cancelSessions(accountId) {
+    let changed=false;
+    for(const task of this.tasks.values())if(task.accountId===accountId && task.type==='session' && ['queued','running'].includes(task.state)){
+      task.state='cancelled';task.code='SESSION_CHECK_REPLACED';task.error='확장 연결 코드를 받기 위해 이전 로그인 확인만 종료했습니다. 새 연결 후 로그인과 글쓰기 권한을 다시 확인합니다.';changed=true;
+      const waiter=this.waiters.get(task.id);if(waiter){clearTimeout(waiter.timer);this.waiters.delete(task.id);waiter.reject(failure(task.error,task.code));}
+    }
+    if(changed){this.saveTasks();this.emit('status',accountId,this.snapshot(accountId));}
+  }
   snapshot(accountId) {
     const c = this.clientFor(accountId); const online = c && Date.now() - (this.lastSeen.get(c.token) || 0) < 75000;
     const fresh = c?.checkedAt && Date.now() - Date.parse(c.checkedAt) < 120000;
-    const task=[...this.tasks.values()].find(t=>t.accountId===accountId && ['queued','running'].includes(t.state));
-    return { connected: Boolean(online), loginStatus:online ? c.confirmedStatus || (c.status==='valid'?'valid':'unknown') : 'disconnected', rechecking:Boolean(online && (!fresh || ['unknown','checking'].includes(c.status))), status: !online ? 'disconnected' : task?.waiting ? 'waiting_login' : fresh ? c.status || 'unknown' : 'unknown', checkedAt: c?.checkedAt || '', label: c?.label || '', reason: c?.reason || '', busy:Boolean(task), stage:task?.stage || '' };
+    const pending=[...this.tasks.values()].filter(t=>t.accountId===accountId && ['queued','running'].includes(t.state)),task=pending.find(t=>t.type!=='session')||pending[0];
+    return { connected: Boolean(online), loginStatus:online ? c.confirmedStatus || (c.status==='valid'?'valid':'unknown') : 'disconnected', rechecking:Boolean(online && (!fresh || ['unknown','checking'].includes(c.status))), status: !online ? 'disconnected' : task?.waiting ? 'waiting_login' : fresh ? c.status || 'unknown' : 'unknown', checkedAt: c?.checkedAt || '', label: c?.label || '', reason: c?.reason || '', busy:Boolean(task), stage:task?.stage || '', taskType:task?.type||'', pairingAllowed:!pending.some(t=>t.type!=='session') };
   }
   revoke(accountId) {
     this.cancelAccount(accountId);
@@ -56,11 +69,17 @@ class ExtensionBridge extends EventEmitter {
     }
     this.saveTasks();this.emit('status',accountId,this.snapshot(accountId));
   }
-  checkDisconnectedTasks() {
+  checkDisconnectedTasks(now=Date.now()) {
     for(const task of this.tasks.values()) {
-      if(task.state!=='running' || task.waiting || Date.now()-(this.lastSeen.get(task.clientToken)||0)<120000)continue;
-      task.state='interrupted';this.saveTasks();const waiter=this.waiters.get(task.id);
-      if(waiter){clearTimeout(waiter.timer);this.waiters.delete(task.id);waiter.reject(failure('확장 연결이 끊겼습니다. 작성된 글과 발행 여부를 확인하세요.',task.stage==='final_publish'?'PUBLISH_UNCERTAIN':'EXTENSION_DISCONNECTED'));}
+      if(!['queued','running'].includes(task.state))continue;
+      const offlineFor=now-(this.lastSeen.get(task.clientToken)||0),age=now-Date.parse(task.claimedAt||task.createdAt||new Date(now).toISOString());
+      const sessionStalled=task.type==='session'&&(offlineFor>=75000||task.state==='queued'&&age>=30000||task.state==='running'&&!task.waiting&&age>=120000);
+      const publishDisconnected=task.type!=='session'&&task.state==='running'&&!task.waiting&&offlineFor>=120000;
+      if(!sessionStalled&&!publishDisconnected)continue;
+      task.state=task.state==='queued'?'expired':'interrupted';task.code=task.stage==='final_publish'?'PUBLISH_UNCERTAIN':'EXTENSION_DISCONNECTED';task.error=task.type==='session'?'로그인 확인에 대한 확장 응답을 받지 못해 대기를 해제했습니다. 확장프로그램 연결에서 코드를 받아 다시 연결하세요. Chrome 로그인과 원고는 보존했습니다.':'확장 연결이 끊겼습니다. 작성된 글과 발행 여부를 확인하세요.';
+      this.saveTasks();const waiter=this.waiters.get(task.id);
+      if(waiter){clearTimeout(waiter.timer);this.waiters.delete(task.id);waiter.reject(failure(task.error,task.code));}
+      this.emit('status',task.accountId,this.snapshot(task.accountId));
     }
   }
   async request(accountId, type, payload = {}, timeoutMs = 0) {
@@ -115,6 +134,8 @@ class ExtensionBridge extends EventEmitter {
       if (!/^[a-zA-Z0-9-]{20,80}$/.test(body.deviceId || '')) throw new Error('Invalid device');
       const existing=[...this.clients.values()].find(c=>c.deviceId===body.deviceId && c.accountId!==entry.accountId);
       if(existing)return this.reply(res,409,{error:'이 창은 다른 블로그의 로그인 저장 공간입니다. 앱에서 연결할 블로그의 ‘블로그 열기’를 누른 뒤 그 창에 확장을 설치하세요. Google 계정은 필요하지 않습니다.'});
+      try{this.assertPairingAllowed(entry.accountId);}catch(error){return this.reply(res,409,{error:error.message});}
+      this.cancelSessions(entry.accountId);
       this.revoke(entry.accountId);
       const token = crypto.randomBytes(32).toString('hex');
       const c = { ...entry, deviceId: body.deviceId, token, status:'unknown' }; delete c.expires;
@@ -149,7 +170,7 @@ class ExtensionBridge extends EventEmitter {
       this.updateSession(c,body.session);
       const busy=[...this.tasks.values()].some(t=>t.state==='running' && this.clients.get(t.clientToken)?.deviceId===c.deviceId);
       const task = !busy && [...this.tasks.values()].find(t => t.clientToken === token && t.state === 'queued');
-      if (task) { task.state='running'; this.saveTasks(); }
+      if (task) { task.state='running';task.claimedAt=new Date().toISOString(); this.saveTasks(); }
       return this.reply(res,200,{ task:task ? { id:task.id,type:task.type,payload:this.publicPayload(task),blogId:task.blogId,platform:task.platform } : null });
     }
     if (url.pathname === '/result' && req.method === 'POST') {

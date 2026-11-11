@@ -338,39 +338,55 @@ function signalAutoSessionResume(accountId) {
   }
 }
 
-const openingAccounts = new Set();
-const checkingAccounts = new Set();
+const openingAccounts = new Map();
+const checkingAccounts = new Map();
+function abortAccountChecks(accountId){
+  openingAccounts.get(accountId)?.abort();checkingAccounts.get(accountId)?.abort();
+  openingAccounts.delete(accountId);checkingAccounts.delete(accountId);
+}
+async function cancelAccountCheck(accountId){
+  abortAccountChecks(accountId);
+  try{state.accountStore=await window.blogAuto.cancelConnectionTask(accountId);}
+  catch(error){addLog({level:'error',message:error.message});}
+  finally{renderAccounts();}
+}
 async function openAccountAndCheck(account) {
   if(openingAccounts.has(account.id) || checkingAccounts.has(account.id) || account.connection?.busy || (account.connection?.connected && account.sessionStatus==='valid'))return;
-  openingAccounts.add(account.id);renderAccounts();
+  const controller=new AbortController();openingAccounts.set(account.id,controller);renderAccounts();
   try {
     await window.blogAuto.openAccountChrome(account.id);
+    if(controller.signal.aborted)return;
     // Chrome may need a few seconds to start the extension heartbeat.
     for(let attempt=0;attempt<20;attempt++) {
+      if(controller.signal.aborted)return;
       const store=await window.blogAuto.getConnections();
       const current=store.accounts.find(a=>a.id===account.id);
       if(!current)return;
       if(current.connection?.connected) {
-        if(!current.connection.busy && current.sessionStatus!=='valid')await checkAccountSession(current);
+        if(!current.connection.busy && current.sessionStatus!=='valid')await checkAccountSession(current,{signal:controller.signal});
         return;
       }
       await new Promise(resolve=>setTimeout(resolve,1000));
     }
     addLog({level:'warn',message:accountDisplayName(account)+': Chrome은 열렸지만 확장 연결이 확인되지 않았습니다. 해당 창에서 확장을 켜거나 ‘확장프로그램 연결’을 진행하세요.',at:new Date().toISOString()});
-  }catch(error){addLog({level:'error',message:error.message,at:new Date().toISOString()});}
-  finally{openingAccounts.delete(account.id);renderAccounts();}
+  }catch(error){if(!controller.signal.aborted)addLog({level:'error',message:error.message,at:new Date().toISOString()});}
+  finally{if(openingAccounts.get(account.id)===controller)openingAccounts.delete(account.id);renderAccounts();}
 }
 async function checkAccountSession(account,options={}) {
   if(!account || checkingAccounts.has(account.id) || account.connection?.busy || (account.connection?.connected && account.sessionStatus==='valid'))return;
-  checkingAccounts.add(account.id);renderAccounts();
+  const controller=new AbortController(),abort=()=>controller.abort();
+  if(options.signal?.aborted)return;
+  options.signal?.addEventListener('abort',abort,{once:true});
+  checkingAccounts.set(account.id,controller);renderAccounts();
   try {
     const result=await window.blogAuto.checkAccountSession(account.id,{interactive:options.interactive!==false});
+    if(controller.signal.aborted)return;
     account.sessionStatus=result.status; renderAccounts();
     if(result.status==='valid')signalAutoSessionResume(account.id);
     if(result.status==='disconnected' && options.interactive!==false) await connectAccount(account);
     else if(result.status!=='valid') addLog({level:'warn',message:accountDisplayName(account)+': '+(result.reason || result.status),at:new Date().toISOString()});
-  }catch(error){addLog({level:'error',message:error.message,at:new Date().toISOString()});}
-  finally{checkingAccounts.delete(account.id);renderAccounts();}
+  }catch(error){if(!controller.signal.aborted)addLog({level:'error',message:error.message,at:new Date().toISOString()});}
+  finally{options.signal?.removeEventListener('abort',abort);if(checkingAccounts.get(account.id)===controller)checkingAccounts.delete(account.id);renderAccounts();}
 }
 async function checkSelectedAccountSessions() {
   if(state.bulkChecking || state.running || state.autoRunning)return;
@@ -384,8 +400,10 @@ async function checkSelectedAccountSessions() {
   finally{state.bulkChecking=false;renderAccounts();updateRunControls();$('#startButton').disabled=state.running || state.autoRunning;}
 }
 async function connectAccount(account) {
+  abortAccountChecks(account.id);renderAccounts();
   const guide=$('#extensionGuide'); guide.hidden=false;
-  try{const pairing=await window.blogAuto.pairExtension(account.id);$('#pairingCode').textContent=pairing.code;$('#pairingHelp').textContent=accountDisplayName(account)+' 연결 코드가 복사되었습니다. 해당 Chrome의 BlogAuto 확장에 붙여넣으세요. 10분 동안 유효합니다.';}catch(e){$('#pairingHelp').textContent=e.message;}
+  $('#pairingCode').textContent='코드 발급 중…';
+  try{const pairing=await window.blogAuto.pairExtension(account.id);$('#pairingCode').textContent=pairing.code;$('#pairingHelp').textContent=accountDisplayName(account)+' 연결 코드가 복사되었습니다. 해당 Chrome의 BlogAuto 확장에 붙여넣으세요. 10분 동안 유효합니다.';}catch(e){$('#pairingCode').textContent='코드 발급 불가';$('#pairingHelp').textContent=e.message;}
 }
 
 function showStartupNoticeIfNeeded() {
@@ -637,7 +655,7 @@ function renderTistoryConnection(){
   const panel=$('#tistoryConnectionPanel');if(!panel)return;panel.hidden=!targets.length;
   const connection=state.accountStore.tistoryConnection || {};
   $('#tistoryConnectionStatus').textContent=connection.connected?(connection.status==='valid'?'공용 로그인 확인 완료':connection.loginStatus==='valid' && ['unknown','checking'].includes(connection.status)?'공용 로그인 확인됨 · 상태 갱신 중':connection.reason || '로그인 상태 확인 중'):'네이버 계정에 지정된 모든 티스토리 블로그가 한 로그인 공간을 사용합니다.';
-  $('#pairTistoryButton').disabled=Boolean(connection.connected || connection.busy);
+  $('#pairTistoryButton').disabled=connection.pairingAllowed===false || Boolean(connection.busy&&connection.taskType!=='session');
   $('#openTistoryButton').disabled=Boolean(connection.busy);
   $('#cancelTistoryButton').hidden=!connection.busy;
   $('#openTistoryButton').onclick=async()=>{
@@ -700,8 +718,8 @@ function renderAccounts() {
       <div class="account-status">${sessionBadge(account)}</div>
       <div class="account-actions">
         <button type="button" class="ghost small" data-action="open" ${ready || busy?'disabled':''} title="${ready?'로그인 확인이 완료되었습니다.':'계정 Chrome을 열고 로그인 상태를 확인합니다.'}">${openingAccounts.has(account.id)?'연결·로그인 확인 중':'블로그 열기 / 로그인'}</button>
-        <button type="button" class="ghost small extension-connect" data-action="connect" ${connected || account.connection?.busy?'disabled':''} title="${connected?'확장프로그램이 이미 연결되어 있습니다.':'처음 설치하거나 확장을 다시 연결할 때 사용합니다.'}">확장프로그램 연결</button>
-        <button type="button" class="ghost small" data-action="cancel" ${account.connection?.busy?'':'hidden'}>대기 취소</button>
+        <button type="button" class="ghost small extension-connect" data-action="connect" ${account.connection?.pairingAllowed===false||account.connection?.busy&&account.connection.taskType!=='session'?'disabled':''} title="로그인 확인 중에도 연결 코드를 받을 수 있습니다. 글 입력·발행 중에는 다시 연결할 수 없습니다.">${connected?'확장 다시 연결':'확장프로그램 연결'}</button>
+        <button type="button" class="ghost small" data-action="cancel" ${busy?'':'hidden'}>대기 취소</button>
       </div>
     `;
     const dragHandle = row.querySelector(".account-drag-handle");
@@ -749,7 +767,7 @@ function renderAccounts() {
     });
     row.querySelector('[data-action="open"]').addEventListener('click',event=>{event.stopPropagation();openAccountAndCheck(account);});
     row.querySelector('[data-action="connect"]').addEventListener('click',event=>{event.stopPropagation();connectAccount(account);});
-    row.querySelector('[data-action="cancel"]').addEventListener('click',async event=>{event.stopPropagation();await window.blogAuto.cancelConnectionTask(account.id);});
+    row.querySelector('[data-action="cancel"]').addEventListener('click',event=>{event.stopPropagation();cancelAccountCheck(account.id);});
     row.querySelector("[data-action='delete']").addEventListener("click", async (event) => {
       event.stopPropagation();
       if (state.running || state.autoRunning || state.bulkChecking) return;
